@@ -1,0 +1,49 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens do 7Service (docs/02-design/DESIGN_SYSTEM.md).
+ * - fundo predominantemente branco;
+ * - azul institucional Consult Services como cor primária;
+ * - sem roxo como cor estrutural.
+ *
+ * O tom exato do azul institucional deve ser confirmado com a marca;
+ * `--color-brand-600` é o placeholder usado até essa validação.
+ */
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-500: #2563eb;
+  --color-brand-600: #1d4ed8;
+  --color-brand-700: #1e40af;
+
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-danger: #b91c1c;
+  --color-muted: #64748b;
+  --color-border: #e2e8f0;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand-50: var(--color-brand-50);
+  --color-brand-100: var(--color-brand-100);
+  --color-brand-500: var(--color-brand-500);
+  --color-brand-600: var(--color-brand-600);
+  --color-brand-700: var(--color-brand-700);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-danger: var(--color-danger);
+  --color-muted: var(--color-muted);
+  --color-border: var(--color-border);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}

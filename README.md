@@ -20,3 +20,9 @@ O 7Service será a origem administrativa de identidade e autorização para o fu
 ## Documentação
 
 Comece por `docs/DEV_START_HERE.md`.
+
+## Desenvolvimento
+
+Setup local, scripts e estrutura de pastas: `docs/SETUP.md`.
+
+Stack: Next.js (App Router) + TypeScript + Tailwind CSS + Supabase.
