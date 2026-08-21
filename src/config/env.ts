@@ -45,3 +45,26 @@ export function getServerEnv() {
     APP_ENV: process.env.APP_ENV ?? process.env.NEXT_PUBLIC_APP_ENV,
   });
 }
+
+/**
+ * Indica se há um projeto Supabase real configurado neste ambiente.
+ *
+ * Enquanto nenhum projeto for provisionado (docs/MIGRATIONS.md -
+ * "Estado atual"), o 7Service roda em MODO DEMONSTRAÇÃO: navegação e
+ * regras de negócio funcionam contra `src/lib/mock`, sem autenticação
+ * real e sem persistência entre instâncias. Assim que as variáveis
+ * NEXT_PUBLIC_SUPABASE_URL/ANON_KEY forem configuradas, esta função passa
+ * a retornar `true` e a autenticação real (`src/lib/supabase`) assume —
+ * sem precisar tocar em UI.
+ *
+ * Seguro para uso em Client e Server Components: não lança, apenas
+ * verifica presença/formato.
+ */
+export function isSupabaseConfigured(): boolean {
+  const result = publicEnvSchema.safeParse({
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
+  });
+  return result.success;
+}
