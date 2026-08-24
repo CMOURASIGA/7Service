@@ -2,12 +2,22 @@ import { notFound } from 'next/navigation';
 
 import { ConfirmAction } from '@/components/ui/confirm-action';
 import { StatusBadge } from '@/components/ui/status-badge';
+import {
+  GrantAccessForm,
+  type GrantableSubscription,
+} from '@/features/access/components/grant-access-form';
 import { getMockStore } from '@/lib/mock/store';
 import { ACCESS_STATUS_LABEL, IDENTITY_STATUS_LABEL } from '@/lib/status-labels';
 import { listAuditLogs } from '@/services/audit';
 import { getIdentity } from '@/services/identities';
 
-import { reactivateAccessAction, revokeAccessAction, suspendAccessAction } from './actions';
+import {
+  grantAccessAction,
+  initiateRecoveryAction,
+  reactivateAccessAction,
+  revokeAccessAction,
+  suspendAccessAction,
+} from './actions';
 
 export default async function IdentityDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,11 +29,23 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
   const store = getMockStore();
   const client = store.clients.find((c) => c.id === identity.clientId);
   const access = store.userProductAccess.filter((a) => a.identityId === id);
+  const grantedSubscriptionIds = new Set(access.map((a) => a.subscriptionId));
   const invitations = store.invitations.filter((inv) => inv.identityId === id);
   const auditLogs = listAuditLogs().filter(
     (log) => log.targetId === id || access.some((a) => a.id === log.targetId),
   );
   const statusInfo = IDENTITY_STATUS_LABEL[identity.status];
+
+  const grantOptions: GrantableSubscription[] = store.subscriptions
+    .filter((s) => s.clientId === identity.clientId && !grantedSubscriptionIds.has(s.id))
+    .map((subscription) => ({
+      subscription,
+      product: store.products.find((p) => p.id === subscription.productId)!,
+    }))
+    .filter((o) => o.product);
+
+  const boundGrantAccess = grantAccessAction.bind(null, id);
+  const boundInitiateRecovery = initiateRecoveryAction.bind(null, id);
 
   return (
     <div className="flex flex-col gap-6">
@@ -43,6 +65,12 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
         <div className="flex flex-col gap-6 lg:col-span-2">
           <div className="border-border bg-background rounded-lg border p-6">
             <h2 className="text-foreground mb-3 text-sm font-semibold">Acessos aos produtos</h2>
+
+            <div className="border-border mb-4 rounded-md border border-dashed p-3">
+              <p className="text-muted mb-2 text-xs font-medium">Adicionar produto ao usuário</p>
+              <GrantAccessForm action={boundGrantAccess} options={grantOptions} />
+            </div>
+
             {access.length === 0 ? (
               <p className="text-muted text-sm">Nenhum acesso concedido ainda.</p>
             ) : (
@@ -103,7 +131,17 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
           </div>
 
           <div className="border-border bg-background rounded-lg border p-6">
-            <h2 className="text-foreground mb-3 text-sm font-semibold">Convites</h2>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-foreground text-sm font-semibold">Convites / Segurança</h2>
+              {identity.status === 'ACTIVE' ? (
+                <ConfirmAction
+                  triggerLabel="Iniciar recuperação de acesso"
+                  impactMessage="Um fluxo seguro de redefinição de credencial será iniciado pelo provedor de autenticação. O 7Service não visualiza nem define a senha do usuário."
+                  action={boundInitiateRecovery}
+                  confirmLabel="Iniciar recuperação"
+                />
+              ) : null}
+            </div>
             {invitations.length === 0 ? (
               <p className="text-muted text-sm">Nenhum convite registrado.</p>
             ) : (

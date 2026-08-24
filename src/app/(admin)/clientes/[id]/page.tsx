@@ -3,6 +3,10 @@ import { notFound } from 'next/navigation';
 
 import { ConfirmAction } from '@/components/ui/confirm-action';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { ContractForm } from '@/features/contracts/components/contract-form';
+import { UploadDocumentForm } from '@/features/contracts/components/upload-document-form';
+import { ClientForm } from '@/features/clients/components/client-form';
+import { SubscriptionForm } from '@/features/subscriptions/components/subscription-form';
 import { getSubscriptionEffectiveStatus } from '@/lib/domain-rules';
 import { getMockStore } from '@/lib/mock/store';
 import {
@@ -12,9 +16,18 @@ import {
 } from '@/lib/status-labels';
 import { listAuditLogs } from '@/services/audit';
 import { getClient } from '@/services/clients';
-import { ClientForm } from '@/features/clients/components/client-form';
+import { listContractsForClient } from '@/services/contracts';
 
-import { reactivateClientAction, suspendClientAction, updateClientAction } from '../actions';
+import {
+  closeClientAction,
+  createContractAction,
+  createSubscriptionAction,
+  reactivateClientAction,
+  recordExportDeliveryAction,
+  suspendClientAction,
+  updateClientAction,
+  uploadContractDocumentAction,
+} from '../actions';
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -25,14 +38,20 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   }
 
   const store = getMockStore();
+  const contracts = listContractsForClient(id);
   const subscriptions = store.subscriptions.filter((s) => s.clientId === id);
   const identities = store.identities.filter((i) => i.clientId === id);
   const auditLogs = listAuditLogs({ clientId: id });
   const statusInfo = CLIENT_STATUS_LABEL[client.status];
+  const activeProducts = store.products.filter((p) => p.status === 'ACTIVE');
 
   const updateAction = updateClientAction.bind(null, id);
   const suspendAction = suspendClientAction.bind(null, id);
   const reactivateAction = reactivateClientAction.bind(null, id);
+  const closeAction = closeClientAction.bind(null, id);
+  const deliveryAction = recordExportDeliveryAction.bind(null, id);
+  const newContractAction = createContractAction.bind(null, id);
+  const newSubscriptionAction = createSubscriptionAction.bind(null, id);
 
   return (
     <div className="flex flex-col gap-6">
@@ -50,7 +69,19 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <a
+            href={`/api/clients/${id}/export`}
+            className="border-border rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
+          >
+            Exportar dados
+          </a>
+          <ConfirmAction
+            triggerLabel="Registrar entrega"
+            impactMessage="Confirma que o pacote de dados foi entregue/comunicado ao cliente. Gera registro formal na auditoria (client.export_delivered)."
+            action={deliveryAction}
+            confirmLabel="Registrar"
+          />
           {client.status === 'ACTIVE' ? (
             <ConfirmAction
               triggerLabel="Suspender cliente"
@@ -68,6 +99,16 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
               confirmLabel="Reativar"
             />
           ) : null}
+          {client.status !== 'CLOSED' ? (
+            <ConfirmAction
+              triggerLabel="Encerrar cliente"
+              impactMessage="O cliente passa para ENCERRADO. Dados são preservados (sem exclusão física); acessos seguem regidos pelas assinaturas. Recomendado exportar os dados antes de encerrar."
+              action={closeAction}
+              requireReason
+              tone="danger"
+              confirmLabel="Encerrar"
+            />
+          ) : null}
         </div>
       </div>
 
@@ -79,16 +120,54 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </div>
 
           <div className="border-border bg-background rounded-lg border p-6">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-foreground text-sm font-semibold">Produtos contratados</h2>
-              <span className="text-muted text-xs">
-                Etapa 5/6 entregam contratação completa por aqui
-              </span>
-            </div>
-            {subscriptions.length === 0 ? (
-              <p className="text-muted text-sm">Nenhuma assinatura registrada ainda.</p>
+            <h2 className="text-foreground mb-3 text-sm font-semibold">Contratos</h2>
+            <ContractForm action={newContractAction} />
+            {contracts.length === 0 ? (
+              <p className="text-muted mt-4 text-sm">Nenhum contrato cadastrado ainda.</p>
             ) : (
-              <ul className="flex flex-col gap-2">
+              <ul className="mt-4 flex flex-col gap-3">
+                {contracts.map((contract) => {
+                  const uploadAction = uploadContractDocumentAction.bind(null, id, contract.id);
+                  return (
+                    <li key={contract.id} className="border-border rounded-md border p-3">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-foreground font-medium">{contract.reference}</span>
+                        <span className="text-muted text-xs">
+                          {new Date(contract.startDate).toLocaleDateString('pt-BR')}
+                          {contract.endDate
+                            ? ` – ${new Date(contract.endDate).toLocaleDateString('pt-BR')}`
+                            : ''}
+                        </span>
+                      </div>
+                      {contract.documents.length > 0 ? (
+                        <ul className="mb-2 flex flex-col gap-1">
+                          {contract.documents.map((doc) => (
+                            <li key={doc.id} className="text-muted text-xs">
+                              📄 {doc.originalName} ({Math.round(doc.sizeBytes / 1024)} KB) —
+                              armazenamento privado
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                      <UploadDocumentForm action={uploadAction} />
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          <div className="border-border bg-background rounded-lg border p-6">
+            <h2 className="text-foreground mb-3 text-sm font-semibold">Produtos contratados</h2>
+            <SubscriptionForm
+              action={newSubscriptionAction}
+              contracts={contracts}
+              products={activeProducts}
+            />
+            {subscriptions.length === 0 ? (
+              <p className="text-muted mt-4 text-sm">Nenhuma assinatura registrada ainda.</p>
+            ) : (
+              <ul className="mt-4 flex flex-col gap-2">
                 {subscriptions.map((sub) => {
                   const product = store.products.find((p) => p.id === sub.productId);
                   const effective = getSubscriptionEffectiveStatus(sub);
