@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { getLicenseUsage } from '@/lib/domain-rules';
+import { getLicenseUsage, getSubscriptionEffectiveStatus } from '@/lib/domain-rules';
 import { generateId, getMockStore, nowIso, todayIso } from '@/lib/mock/store';
 import { AppError } from '@/lib/errors';
 import type { AccessStatus, Id, InternalUser, UserProductAccess } from '@/types/domain';
@@ -29,6 +29,17 @@ export function grantAccess(input: GrantAccessInput, actor: InternalUser): UserP
   const subscription = store.subscriptions.find((s) => s.id === input.subscriptionId);
   if (!subscription) {
     throw new AppError('NOT_FOUND', 'Assinatura não encontrada');
+  }
+
+  // Decisão de acesso (docs/01-architecture/ACCESS_DECISION.md): a
+  // vigência efetiva (considerando carência) é revalidada aqui, no
+  // momento da concessão — nunca basta o status administrativo bruto.
+  const effectiveStatus = getSubscriptionEffectiveStatus(subscription);
+  if (effectiveStatus !== 'ACTIVE' && effectiveStatus !== 'GRACE_PERIOD') {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      `Assinatura não está em condição de conceder acesso (status efetivo: ${effectiveStatus})`,
+    );
   }
 
   const usage = getLicenseUsage(subscription, store.userProductAccess, store.licenseOverrides);
