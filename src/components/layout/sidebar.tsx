@@ -122,7 +122,6 @@ export function Sidebar({
           isMobileOpen ? 'is-open' : '',
         ].join(' ')}
       >
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-72 bg-[radial-gradient(circle_at_95%_15%,rgba(0,174,239,0.28),transparent_2px),linear-gradient(135deg,transparent_0%,transparent_64%,rgba(0,174,239,0.18)_64%,transparent_65%)] opacity-70" />
         <div className="sidebar-brand-panel relative">
           <div className="sidebar-brand-logo-frame">
             {/* eslint-disable-next-line @next/next/no-img-element -- logo remoto (whitelabel-ready), sem domínio fixo configurável em next/image */}
@@ -131,23 +130,23 @@ export function Sidebar({
           <button
             type="button"
             onClick={onCloseMobile}
-            className="sidebar-close sidebar-rail-only absolute top-3 right-3 md:hidden"
+            className="sidebar-close absolute top-6 right-6 md:hidden"
             aria-label="Fechar menu"
           >
             ×
           </button>
         </div>
-        <div className="sidebar-product sidebar-rail-only relative">
+        <div className="sidebar-product relative">
           <p className="sidebar-product-name">{BRAND_NAME}</p>
           <p className="sidebar-product-subtitle">{BRAND_SUBTITLE}</p>
           <p className="sidebar-product-owner">Uma plataforma {COMPANY_NAME}</p>
         </div>
 
-        <nav className="relative mt-5 flex flex-col gap-5 px-3 pb-5">
+        <nav className="relative flex flex-col gap-5 px-3 py-4">
           {sections.map((section) => (
             <div key={section}>
-              <p className="sidebar-section-label sidebar-rail-only mb-2 px-2">{section}</p>
-              <div className="flex flex-col gap-2">
+              <p className="sidebar-section-label mb-2 px-2">{section}</p>
+              <div className="flex flex-col gap-1">
                 {NAV_ITEMS.filter((item) => item.section === section).map((item) => {
                   const isActive =
                     item.href === '/' ? pathname === item.href : pathname.startsWith(item.href);
@@ -158,12 +157,12 @@ export function Sidebar({
                       title={item.label}
                       aria-current={isActive ? 'page' : undefined}
                       className={[
-                        'sidebar-nav-link flex items-center gap-3 rounded-lg px-3 py-[9px] text-sm font-medium transition-colors md:justify-center lg:justify-start',
+                        'sidebar-nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
                         isActive ? 'sidebar-nav-link-active shadow-sm' : '',
                       ].join(' ')}
                     >
                       <NavIcon name={item.icon} />
-                      <span className="sidebar-rail-only">{item.label}</span>
+                      <span>{item.label}</span>
                     </Link>
                   );
                 })}
