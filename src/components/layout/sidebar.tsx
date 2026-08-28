@@ -122,6 +122,7 @@ export function Sidebar({
           isMobileOpen ? 'is-open' : '',
         ].join(' ')}
       >
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-72 bg-[radial-gradient(circle_at_95%_15%,rgba(0,174,239,0.28),transparent_2px),linear-gradient(135deg,transparent_0%,transparent_64%,rgba(0,174,239,0.18)_64%,transparent_65%)] opacity-70" />
         <div className="sidebar-brand-panel relative">
           <div className="sidebar-brand-logo-frame">
             {/* eslint-disable-next-line @next/next/no-img-element -- logo remoto (whitelabel-ready), sem domínio fixo configurável em next/image */}

@@ -91,6 +91,8 @@ body {
   align-items: center;
   justify-content: center;
   width: min(100%, 188px);
+  height: 96px;
+  flex: 0 0 auto;
   overflow: hidden;
 }
 
@@ -240,7 +242,12 @@ body {
   }
   .sidebar-brand-logo-frame {
     width: 52px;
+    height: 52px;
     flex-basis: 52px;
+  }
+  .sidebar-brand-logo {
+    width: 100%;
+    height: 100%;
   }
 }
 
@@ -257,5 +264,10 @@ body {
   }
   .sidebar-brand-logo-frame {
     width: min(100%, 188px);
+    height: 96px;
+  }
+  .sidebar-brand-logo {
+    width: 136%;
+    height: 136%;
   }
 }
