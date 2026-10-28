@@ -18,7 +18,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Apply compatible vulnerability patches
-        run: npm audit fix --omit=dev
+        run: npm audit fix --omit=dev || test "$?" -eq 1
       - name: Commit changes only if lockfile changed
         run: |
           git config user.name "github-actions[bot]"
