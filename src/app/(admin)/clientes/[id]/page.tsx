@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { ClientForm } from '@/features/clients/components/client-form';
+import { ClientFeaturesPanel } from '@/features/clients/components/client-features-panel';
 import { ContractForm } from '@/features/contracts/components/contract-form';
 import { UploadDocumentForm } from '@/features/contracts/components/upload-document-form';
 import { SubscriptionForm } from '@/features/subscriptions/components/subscription-form';
@@ -166,6 +167,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           submitLabel="Salvar alteracoes"
         />
       </section>
+      <ClientFeaturesPanel clientId={id} />
       <section className="grid gap-4 md:grid-cols-2">
         <div className="rounded-lg border p-5">
           <h2 className="mb-2 font-semibold">Contratos</h2>
