@@ -78,7 +78,7 @@ export default async function AuditPage({
                   <td className="text-foreground px-4 py-2 font-medium">{log.action}</td>
                   <td className="text-muted px-4 py-2">
                     {log.target_type}
-                    {log.target_id ? ` · ${log.targetId.slice(0, 8)}` : ''}
+                    {log.target_id ? ` · ${log.target_id.slice(0, 8)}` : ''}
                   </td>
                   <td className="text-muted px-4 py-2">{[log.internal_users?.first_name, log.internal_users?.last_name].filter(Boolean).join(' ') || 'Sistema'}</td>
                   <td className="text-muted px-4 py-2">{log.reason ?? '—'}</td>
