@@ -9,7 +9,7 @@ export async function proxy(request: NextRequest) {
     // Supabase provisionado não há sessão real para validar. A requisição
     // segue livre; a autorização por sessão volta a valer automaticamente
     // assim que NEXT_PUBLIC_SUPABASE_URL/ANON_KEY forem configuradas.
-    return NextResponse.next();
+    return new NextResponse('7Service nao configurado', { status: 503 });
   }
 
   return updateSession(request);
