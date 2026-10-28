@@ -1,11 +1,13 @@
 import { ConfirmAction } from '@/components/ui/confirm-action';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { RoleEditor } from '@/features/internal-users/components/role-editor';
+import { NewInternalUserForm } from '@/features/internal-users/components/new-internal-user-form';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { InternalRole,InternalUser,InternalRoleCode } from '@/types/domain';
 
 import {
+  createInternalUserAction,
   blockInternalUserAction,
   reactivateInternalUserAction,
   updateInternalUserRolesAction,
@@ -43,10 +45,11 @@ export default async function InternalOperatorsPage() {
         </p>
       </div>
 
-      <p className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
-        O cadastramento de novos operadores exige primeiro provisionar uma identidade no Supabase Auth.
-        Nenhum operador é criado sem vinculo autenticado.
-      </p>
+      <section className="rounded-lg border p-6">
+        <h2 className="mb-3 font-semibold">Convidar operador</h2>
+        <p className="mb-3 text-sm text-muted">O usuario recebera um convite do Supabase Auth. A autorizacao so existe com perfil ativo registrado.</p>
+        <NewInternalUserForm roles={roles} />
+      </section>
 
       <div className="border-border bg-background overflow-x-auto rounded-lg border">
         <table className="w-full text-left text-sm">
