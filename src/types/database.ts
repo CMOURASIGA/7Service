@@ -1806,6 +1806,10 @@ export type Database = {
         };
         Returns: string;
       };
+      grant_license_override_atomic: {
+        Args: { p_actor: string; p_subscription: string; p_extra: number; p_reason: string };
+        Returns: string;
+      };
       create_subscription_atomic: {
         Args: {
           p_actor: string;
