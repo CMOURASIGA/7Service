@@ -2,23 +2,13 @@ import 'server-only';
 
 import { isSupabaseConfigured } from '@/config/env';
 import { AppError } from '@/lib/errors';
-import { getMockCurrentInternalUser, userHasPermission } from '@/services/internal-users';
-import type { InternalUser } from '@/types/domain';
+import { createClient } from '@/lib/supabase/server';
+import type { InternalRoleCode, InternalUser } from '@/types/domain';
 
 /**
- * Sessão administrativa atual do 7Service.
- *
- * `mode: 'mock'` enquanto não houver projeto Supabase configurado
- * (docs/MIGRATIONS.md - "Estado atual"): toda a navegação funciona sem
- * exigir login real, sempre como o SUPER_ADMIN de demonstração. Isso é
- * INTENCIONAL e temporário — nunca deve ser interpretado como o
- * comportamento final de autorização (docs/01-architecture/AUTHORIZATION.md
- * - "Backend como autoridade" continua valendo: esta função concentra a
- * decisão para o resto do app não precisar saber qual modo está ativo).
- *
- * Quando `isSupabaseConfigured()` passar a `true`, este é o único lugar
- * que precisa ganhar a implementação real (ler `auth.getUser()` e
- * carregar o `internal_users` correspondente).
+ * Fail-closed internal administration: a Supabase Auth login by itself
+ * never grants access to 7Service. An ACTIVE internal_users record and
+ * an assigned internal role must both exist.
  */
 export interface CurrentSession {
   mode: 'mock' | 'supabase';
@@ -26,25 +16,65 @@ export interface CurrentSession {
 }
 
 export async function getCurrentSession(): Promise<CurrentSession> {
-  if (isSupabaseConfigured()) {
-    // TODO(Supabase): substituir por auth.getUser() + lookup em
-    // internal_users assim que o projeto for provisionado (Etapa 1 real).
-    // Até lá, mesmo com envs presentes, seguimos em modo demonstração para
-    // não quebrar a navegação com um projeto ainda vazio.
+  if (!isSupabaseConfigured()) {
+    throw new AppError('FORBIDDEN', 'Banco administrativo não configurado. Acesso indisponível.');
   }
-
+  const supabase = await createClient();
+  const { data: auth, error: authError } = await supabase.auth.getUser();
+  if (authError || !auth.user) {
+    throw new AppError('FORBIDDEN', 'Sessão inexistente ou expirada.');
+  }
+  const { data: operator, error } = await supabase
+    .from('internal_users')
+    .select('id,auth_user_id,first_name,last_name,email,status,created_at,updated_at')
+    .eq('auth_user_id', auth.user.id)
+    .eq('status', 'ACTIVE')
+    .maybeSingle();
+  if (error || !operator) {
+    throw new AppError('FORBIDDEN', 'Usuário não autorizado a administrar o 7Service.');
+  }
+  const { data: assigned, error: roleError } = await supabase
+    .from('internal_user_roles')
+    .select('internal_roles(code)')
+    .eq('internal_user_id', operator.id);
+  if (roleError || !assigned || assigned.length === 0) {
+    throw new AppError('FORBIDDEN', 'Operador sem perfil administrativo autorizado.');
+  }
+  const roleCodes = assigned.flatMap((entry) => {
+    const role = entry.internal_roles as unknown as { code: InternalRoleCode } | null;
+    return role ? [role.code] : [];
+  });
   return {
-    mode: 'mock',
-    internalUser: getMockCurrentInternalUser(),
+    mode: 'supabase',
+    internalUser: {
+      id: operator.id,
+      authUserId: operator.auth_user_id,
+      firstName: operator.first_name,
+      lastName: operator.last_name,
+      email: operator.email,
+      status: 'ACTIVE',
+      roleCodes,
+      createdAt: operator.created_at,
+      updatedAt: operator.updated_at,
+    },
   };
 }
 
 export async function requirePermission(permissionCode: string): Promise<CurrentSession> {
   const session = await getCurrentSession();
-
-  if (!userHasPermission(session.internalUser, permissionCode)) {
-    throw new AppError('FORBIDDEN', `Permissão negada: ${permissionCode}`);
-  }
-
+  const supabase = await createClient();
+  const { data: roles, error: rolesError } = await supabase
+    .from('internal_roles')
+    .select('id')
+    .in('code', session.internalUser.roleCodes);
+  if (rolesError || !roles?.length) throw new AppError('FORBIDDEN', 'Permissão negada.');
+  const { data: assigned, error: assignedError } = await supabase
+    .from('internal_role_permissions')
+    .select('internal_permissions(code)')
+    .in('role_id', roles.map((role) => role.id));
+  if (assignedError || !assigned?.some((row) => {
+    const permission = row.internal_permissions as unknown as { code: string } | null;
+    return permission?.code === permissionCode;
+  })) throw new AppError('FORBIDDEN', 'Permissão negada: ' + permissionCode);
   return session;
 }
