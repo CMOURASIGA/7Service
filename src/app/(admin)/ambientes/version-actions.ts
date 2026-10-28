@@ -31,10 +31,16 @@ export async function recordDeploymentVersion(
   // Manual reports never activate infrastructure; production success requires verified integration.
   if (status === 'SUCCESS') {
     const db = createAdminClient();
-    const { data: target, error: readError } = await db.from('product_environments')
-      .select('environment').eq('id', environmentId).maybeSingle();
+    const { data: target, error: readError } = await db
+      .from('product_environments')
+      .select('environment')
+      .eq('id', environmentId)
+      .maybeSingle();
     if (readError || !target) return { error: 'Ambiente não encontrado.' };
-    if (target.environment === 'PRODUCTION') return { error: 'Sucesso em produção exige comprovação da integração de deploy, não relato manual.' };
+    if (target.environment === 'PRODUCTION')
+      return {
+        error: 'Sucesso em produção exige comprovação da integração de deploy, não relato manual.',
+      };
   }
   const { error } = await createAdminClient().rpc('record_deployment_version_atomic', {
     p_actor_id: internalUser.id,
