@@ -2,6 +2,7 @@ import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { EnvironmentRegistry } from './registry';
 import { VersionHistoryForm } from '@/features/environments/components/version-history-form';
+import { EvidenceForm } from '@/features/environments/components/evidence-form';
 
 export const dynamic = 'force-dynamic';
 export default async function AmbientesPage() {
@@ -53,6 +54,7 @@ export default async function AmbientesPage() {
           label: `${e.product_deployments?.name ?? 'Implantação'} / ${e.environment}`,
         }))}
       />
+      <EvidenceForm environments={(environmentsResult.data ?? []).map((e) => ({ id: e.id, label: `${e.product_deployments?.name ?? 'Implantação'} / ${e.environment}` }))} />
       <section className="flex flex-col gap-3">
         <h2 className="font-semibold">Ambientes registrados</h2>
         {environmentsResult.data?.length ? (
