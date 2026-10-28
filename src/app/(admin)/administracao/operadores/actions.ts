@@ -62,15 +62,12 @@ export async function updateInternalUserRolesAction(userId:string, formData:Form
   const {internalUser} = await requirePermission('internal_users.manage');
   const roles = formData.getAll('roleCodes').filter((x):x is string => typeof x === 'string');
   if (!roles.length || roles.some(x => !validRoles.includes(x as InternalRoleCode))) throw new Error('Perfis invalidos');
-  await assertLastAdminSafe(userId,roles as InternalRoleCode[]);
-  const db = createAdminClient();
-  const {data: roleRows,error:roleError} = await db.from('internal_roles').select('id,code').in('code',roles);
-  if(roleError || roleRows?.length !== new Set(roles).size) throw new Error('Perfis nao encontrados');
-  const {error:deleteError} = await db.from('internal_user_roles').delete().eq('internal_user_id',userId);
-  if(deleteError) throw deleteError;
-  const {error:insertError} = await db.from('internal_user_roles').insert((roleRows??[]).map(x=>({internal_user_id:userId,role_id:x.id,assigned_by:internalUser.id})));
-  if(insertError) throw insertError;
-  await recordAudit(internalUser.id,'internal_user.roles_updated',userId);
+  const {error} = await createAdminClient().rpc('replace_internal_operator_roles', {
+    p_actor_id: internalUser.id,
+    p_target_id: userId,
+    p_role_codes: roles,
+  });
+  if(error) throw new Error('Falha na atualizacao atomica dos perfis: ' + error.message);
   revalidatePath('/administracao/operadores');
 }
 export async function blockInternalUserAction(userId:string,_form:FormData) {
