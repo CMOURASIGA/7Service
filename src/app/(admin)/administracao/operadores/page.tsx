@@ -7,7 +7,6 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import type { InternalRole,InternalUser,InternalRoleCode } from '@/types/domain';
 
 import {
-  createInternalUserAction,
   blockInternalUserAction,
   reactivateInternalUserAction,
   updateInternalUserRolesAction,
