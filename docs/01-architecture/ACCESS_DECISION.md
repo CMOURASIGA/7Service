@@ -74,3 +74,7 @@ A implementação pode utilizar claims/cache de curta duração quando seguro, m
 ## 7HUB
 
 O 7HUB pode consultar uma operação agregada `my-products`, derivada deste mesmo domínio, para montar os cards. Essa lista não substitui a validação executada pelo produto ao receber o usuário.
+
+
+## Atualizacao de contrato — 28/10/2026
+A verificacao `identity.client_id` descrita acima deixa de ser valida no modelo multiempresa. A autorizacao deve validar uma `client_membership` ATIVA para `(identity_id, client_id)` e, para acesso ao produto, subscription e user_product_access correspondentes ao mesmo cliente, alem do escopo, role, vigencia e status. O contexto deve ser explicitamente selecionado e verificado no backend. A revogacao de uma membership nao revoga as demais. Ver `docs/SPEC_00_CENTRAL_PLATFORM.md`.
