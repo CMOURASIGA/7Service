@@ -87,7 +87,19 @@ export async function reactivateAccessAction(accessId:string,identityId:string,_
 export async function revokeAccessAction(accessId:string,identityId:string,form:FormData){
   return changeStatus(accessId,identityId,'REVOKED',String(form.get('reason')??'').trim()||null);
 }
-export async function initiateRecoveryAction(_identityId:string,_form:FormData){
-  await requirePermission('recovery.initiate');
-  throw new Error('Recuperacao indisponivel ate integrar fluxo seguro Supabase Auth.');
+export async function initiateRecoveryAction(identityId:string,_form:FormData) {
+  const {internalUser}=await requirePermission('recovery.initiate');
+  const db=createAdminClient();
+  const {data:identity,error}=await db.from('identities')
+    .select('id,email,auth_user_id,status').eq('id',identityId).maybeSingle();
+  if(error||!identity||!identity.auth_user_id||identity.status==='REMOVED')
+    throw new Error('Identidade nao habilitada para recuperacao.');
+  const {error:resetError}=await db.auth.resetPasswordForEmail(identity.email);
+  if(resetError) throw new Error('Nao foi possivel solicitar recuperacao.');
+  const {error:auditError}=await db.from('audit_logs').insert({
+    actor_internal_user_id:internalUser.id,action:'identity.recovery_requested',
+    target_type:'identity',target_id:identityId,source:'7service'
+  });
+  if(auditError) throw new Error('Recuperacao solicitada, mas auditoria falhou.');
+  revalidatePath('/usuarios/'+identityId);
 }
