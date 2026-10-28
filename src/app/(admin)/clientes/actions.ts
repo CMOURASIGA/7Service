@@ -334,52 +334,27 @@ export async function createSubscriptionAction(
   const session = await requirePermission('contracts.manage');
 
   try {
-    const db = await createDbClient();
     const contractId = String(formData.get('contractId') ?? '');
     const productId = String(formData.get('productId') ?? '');
     const startDate = String(formData.get('startDate') ?? '');
     const licenseLimit = Number(formData.get('licenseLimit'));
-    if (
-      !/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate) ||
-      !Number.isInteger(licenseLimit) ||
-      licenseLimit < 0
-    )
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate) || !Number.isInteger(licenseLimit) || licenseLimit < 0)
       return { error: 'Informe data e licencas validas.' };
-    const { data: contract, error: contractError } = await db
-      .from('contracts')
-      .select('id')
-      .eq('id', contractId)
-      .eq('client_id', clientId)
-      .maybeSingle();
-    if (contractError || !contract) return { error: 'Contrato nao pertence ao cliente.' };
-    const { data: subscription, error } = await db
-      .from('subscriptions')
-      .insert({
-        client_id: clientId,
-        contract_id: contractId,
-        product_id: productId,
-        start_date: startDate,
-        end_date: formData.get('endDate')?.toString() || null,
-        grace_days: Number(formData.get('graceDays') ?? 5),
-        license_limit: licenseLimit,
-        monthly_value: formData.get('monthlyValue') ? Number(formData.get('monthlyValue')) : null,
-        implementation_value: formData.get('implementationValue')
-          ? Number(formData.get('implementationValue'))
-          : null,
-      })
-      .select('id')
-      .single();
-    if (error || !subscription) throw error ?? new Error('Falha ao cadastrar assinatura');
-    const { error: auditError } = await createAdminClient().from('audit_logs').insert({
-      action: 'subscription.created',
-      target_type: 'subscription',
-      target_id: subscription.id,
-      client_id: clientId,
-      product_id: productId,
-      actor_internal_user_id: session.internalUser.id,
-      source: '7service',
+    const { error } = await createAdminClient().rpc('create_subscription_atomic', {
+      p_actor: session.internalUser.id,
+      p_client: clientId,
+      p_contract: contractId,
+      p_product: productId,
+      p_start: startDate,
+      p_end: formData.get('endDate')?.toString() || null,
+      p_grace: Number(formData.get('graceDays') ?? 5),
+      p_limit: licenseLimit,
+      p_monthly: formData.get('monthlyValue') ? Number(formData.get('monthlyValue')) : null,
+      p_implementation: formData.get('implementationValue')
+        ? Number(formData.get('implementationValue'))
+        : null,
     });
-    if (auditError) throw auditError;
+    if (error) throw new Error('Não foi possível cadastrar a assinatura com auditoria.');
     revalidatePath(`/clientes/${clientId}`);
     return { error: null };
   } catch (error) {
