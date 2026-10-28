@@ -1635,6 +1635,14 @@ export type Database = {
         Returns: boolean
       }
       is_internal_operator: { Args: never; Returns: boolean }
+      replace_internal_operator_roles: {
+        Args: {
+          p_actor_id: string
+          p_role_codes: string[]
+          p_target_id: string
+        }
+        Returns: undefined
+      }
       subscription_effective_status: {
         Args: { sub: Database["public"]["Tables"]["subscriptions"]["Row"] }
         Returns: string
