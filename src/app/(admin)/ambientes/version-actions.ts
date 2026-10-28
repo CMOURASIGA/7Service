@@ -28,39 +28,15 @@ export async function recordDeploymentVersion(
       error: 'Informe ambiente, SHA completo de 40 caracteres, status e observações válidas.',
     };
   const { environmentId, commitSha, status, notes } = input.data;
-  // A record of a report is NOT evidence of successful provisioning or deployment.
-  // Human-entered reports cannot mark an environment ACTIVE or change its current SHA.
-  const db = createAdminClient();
-  const { data: environment, error: environmentError } = await db
-    .from('product_environments')
-    .select('id,deployment_id')
-    .eq('id', environmentId)
-    .maybeSingle();
-  if (environmentError || !environment) return { error: 'Ambiente não encontrado.' };
-  const { data: version, error } = await db
-    .from('deployment_versions')
-    .insert({
-      environment_id: environmentId,
-      commit_sha: commitSha.toLowerCase(),
-      status,
-      notes: notes || null,
-      actor_id: internalUser.id,
-    })
-    .select('id')
-    .single();
-  if (error || !version)
-    return { error: error?.message ?? 'Não foi possível registrar o histórico.' };
-  const { error: auditError } = await db.from('audit_logs').insert({
-    actor_internal_user_id: internalUser.id,
-    action: 'deployment.version_reported',
-    target_type: 'deployment_version',
-    target_id: version.id,
-    after_json: { commitSha: commitSha.toLowerCase(), reportedStatus: status },
-    reason: notes || null,
-    source: '7service',
+  // Human-reported versions never activate infrastructure or update its verified SHA.
+  const { error } = await createAdminClient().rpc('record_deployment_version_atomic', {
+    p_actor_id: internalUser.id,
+    p_environment_id: environmentId,
+    p_sha: commitSha,
+    p_status: status,
+    p_notes: notes,
   });
-  if (auditError)
-    return { error: 'Registro persistido, mas auditoria falhou. Requer conciliação.' };
+  if (error) return { error: error.message };
   revalidatePath('/ambientes');
   return {
     error: null,
