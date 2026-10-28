@@ -1,4 +1,5 @@
 import { StatusBadge } from '@/components/ui/status-badge';
+import { CreateProductForm } from '@/features/products/components/create-product-form';
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 
@@ -23,6 +24,7 @@ export default async function ProductsPage() {
         </p>
       </div>
 
+      <CreateProductForm />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {(products ?? []).map((product) => (
           <div key={product.id} className="border-border bg-background rounded-lg border p-4">
@@ -53,7 +55,7 @@ export default async function ProductsPage() {
             </div>
             {product.entry_url ? (
               <p className="text-muted mt-3 text-xs">
-                Entrada: <span className="text-brand-700">{product.entryUrl}</span>
+                Entrada: <span className="text-brand-700">{product.entry_url}</span>
               </p>
             ) : null}
           </div>
