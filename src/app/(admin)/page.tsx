@@ -2,13 +2,15 @@ import Link from 'next/link';
 
 import { KpiCard } from '@/components/ui/kpi-card';
 import { getDashboardKpis } from '@/services/dashboard';
+import { requirePermission } from '@/lib/auth/session';
 
 export const metadata = {
   title: 'Dashboard - 7Service',
 };
 
-export default function DashboardPage() {
-  const kpis = getDashboardKpis();
+export default async function DashboardPage() {
+  await requirePermission('clients.view');
+  const kpis = await getDashboardKpis();
 
   return (
     <div className="flex flex-col gap-6">
