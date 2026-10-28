@@ -30,9 +30,10 @@ export async function createIdentityMembershipAction(
     return { error: 'Empresa não encontrada ou não está ativa.' };
   }
 
-  let { data: identity, error: lookupError } = await db.from('identities')
+  const lookupResult = await db.from('identities')
     .select('id,email,auth_user_id,status').ilike('email', email).maybeSingle();
-  if (lookupError) return { error: 'Falha ao pesquisar identidade global.' };
+  let identity = lookupResult.data;
+  if (lookupResult.error) return { error: 'Falha ao pesquisar identidade global.' };
   if (identity && ['REMOVED','BLOCKED'].includes(identity.status)) {
     return { error: 'Identidade existente está bloqueada ou removida.' };
   }
