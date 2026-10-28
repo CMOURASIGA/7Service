@@ -4,12 +4,15 @@ import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ConfirmAction } from '@/components/ui/confirm-action';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { GrantAccessForm, type GrantableSubscription } from '@/features/access/components/grant-access-form';
+import type { Product, Subscription, ProductRole } from '@/types/domain';
 import { IDENTITY_STATUS_LABEL, ACCESS_STATUS_LABEL } from '@/lib/status-labels';
 import {
   suspendAccessAction,
   reactivateAccessAction,
   revokeAccessAction,
   initiateRecoveryAction,
+  grantAccessAction,
 } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -33,6 +36,49 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
   if (identity.error || memberships.error || accesses.error)
     throw new Error('Falha ao carregar identidade.');
   if (!identity.data) notFound();
+  const clientIds=(memberships.data??[]).filter(m=>m.status==='ACTIVE').map(m=>m.client_id);
+  const candidateSubscriptions=clientIds.length
+    ? await db.from('subscriptions')
+        .select('id,client_id,contract_id,product_id,plan_id,start_date,end_date,grace_days,monthly_value,implementation_value,license_limit,status,created_at')
+        .in('client_id',clientIds).eq('status','ACTIVE')
+    : {data:[],error:null};
+  if(candidateSubscriptions.error) throw new Error('Falha ao consultar assinaturas elegíveis');
+  const productIds=[...new Set((candidateSubscriptions.data??[]).map(x=>x.product_id))];
+  const [productsResult,rolesResult]=await Promise.all([
+    productIds.length
+      ? db.from('products').select('id,code,name,status,description,entry_url,login_url,logo_path,created_at').in('id',productIds)
+      : Promise.resolve({data:[],error:null}),
+    productIds.length
+      ? db.from('product_roles').select('id,product_id,code,name,status').in('product_id',productIds).eq('status','ACTIVE')
+      : Promise.resolve({data:[],error:null}),
+  ]);
+  if(productsResult.error||rolesResult.error) throw new Error('Falha ao consultar perfis dos produtos');
+  const alreadyGranted=new Set((accesses.data??[]).map(x=>x.subscription_id));
+  const productsById=new Map((productsResult.data??[]).map(x=>[x.id,x]));
+  const grantOptions:GrantableSubscription[]=(candidateSubscriptions.data??[])
+    .filter(x=>!alreadyGranted.has(x.id) && productsById.has(x.product_id))
+    .map(x=>{
+      const p=productsById.get(x.product_id)!;
+      const product:Product={
+        id:p.id,code:p.code,name:p.name,status:p.status as Product['status'],
+        description:p.description,entryUrl:p.entry_url,loginUrl:p.login_url,
+        logoPath:p.logo_path,createdAt:p.created_at,
+        roles:(rolesResult.data??[]).filter(r=>r.product_id===p.id).map(r=>({
+          id:r.id,productId:r.product_id,code:r.code,name:r.name,
+          status:r.status as ProductRole['status'],
+        })),
+        modules:[],features:[],
+      };
+      const subscription:Subscription={
+        id:x.id,clientId:x.client_id,contractId:x.contract_id,
+        productId:x.product_id,planId:x.plan_id,startDate:x.start_date,
+        endDate:x.end_date,graceDays:x.grace_days,
+        monthlyValue:x.monthly_value,implementationValue:x.implementation_value,
+        licenseLimit:x.license_limit,status:x.status as Subscription['status'],
+        createdAt:x.created_at,
+      };
+      return {product,subscription};
+    });
   const user = identity.data;
   const badge = IDENTITY_STATUS_LABEL[user.status as keyof typeof IDENTITY_STATUS_LABEL];
   return (
@@ -74,6 +120,7 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
       </section>
       <section className="rounded-lg border p-5">
         <h2 className="mb-3 font-semibold">Acessos aos produtos</h2>
+        <GrantAccessForm action={grantAccessAction.bind(null,id)} options={grantOptions}/>
         {accesses.data?.length ? (
           <ul className="space-y-3">
             {accesses.data.map((a) => {
