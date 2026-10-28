@@ -45,29 +45,41 @@ export async function registerEnvironment(
   _state: EnvironmentFormState,
   formData: FormData,
 ): Promise<EnvironmentFormState> {
-  await requirePermission('clients.manage');
+  const { internalUser } = await requirePermission('clients.manage');
   const parsed = environmentInput.safeParse(Object.fromEntries(formData));
   if (!parsed.success)
     return { error: 'Dados inválidos: use um endereço HTTPS ou deixe a URL vazia.' };
-  const db = await createClient();
+  const db = createAdminClient();
   const { deploymentId, environment, entryUrl } = parsed.data;
-  const { data: deployment } = await db
+  const { data: deployment, error: deploymentError } = await db
     .from('product_deployments')
-    .select('id,model')
+    .select('id,model,product_id,status')
     .eq('id', deploymentId)
     .maybeSingle();
-  if (!deployment) return { error: 'Implantação não encontrada.' };
-  const { error } = await db.from('product_environments').insert({
+  if (deploymentError || !deployment || deployment.status === 'RETIRED')
+    return { error: 'Implantação inexistente ou retirada.' };
+  const { data: entry, error } = await db.from('product_environments').insert({
     deployment_id: deploymentId,
     environment,
     entry_url: entryUrl || null,
     status: 'PLANNED',
+  }).select('id').single();
+  if (error || !entry) return { error: error?.message ?? 'Falha ao cadastrar ambiente.' };
+  const { error: auditError } = await db.from('audit_logs').insert({
+    actor_internal_user_id: internalUser.id,
+    action: 'environment.planned',
+    target_type: 'product_environment',
+    target_id: entry.id,
+    product_id: deployment.product_id,
+    source: '7service',
   });
-  if (error) return { error: error.message };
+  if (auditError) {
+    await db.from('product_environments').delete().eq('id', entry.id);
+    return { error: 'Ambiente cadastrado, mas auditoria indisponível. Verifique conciliação.' };
+  }
   revalidatePath('/ambientes');
   return {
     error: null,
-    success:
-      'Ambiente cadastrado como planejado. Não equivale a deploy, banco ativo ou acesso concedido.',
+    success: 'Ambiente cadastrado e auditado como planejado; nenhum recurso foi provisionado.',
   };
 }
