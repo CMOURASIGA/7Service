@@ -21,7 +21,10 @@ export async function grantAccessAction(
       p_subscription: subscriptionId,
       p_role: roleId,
     });
-    if (error) return { error: 'Não foi possível conceder acesso. Confira vínculo, licença, vigência e perfil.' };
+    if (error)
+      return {
+        error: 'Não foi possível conceder acesso. Confira vínculo, licença, vigência e perfil.',
+      };
     revalidatePath('/usuarios/' + identityId);
     return { error: null };
   } catch (e) {
