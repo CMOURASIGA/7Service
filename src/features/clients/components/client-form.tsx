@@ -1,11 +1,13 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 import type { Client } from '@/types/domain';
 
 export interface ClientFormState {
   error: string | null;
+  createdId?: string;
 }
 
 interface ClientFormProps {
@@ -19,9 +21,13 @@ const inputClass =
 const labelClass = 'text-sm font-medium text-foreground';
 
 export function ClientForm({ action, client, submitLabel }: ClientFormProps) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState<ClientFormState, FormData>(action, {
     error: null,
   });
+  useEffect(() => {
+    if (state.createdId) router.push(`/clientes/${state.createdId}`);
+  }, [state.createdId, router]);
 
   return (
     <form action={formAction} className="flex flex-col gap-6">
