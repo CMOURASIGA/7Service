@@ -25,7 +25,8 @@ export default async function InvitationsPage() {
       <div>
         <h1 className="text-foreground text-xl font-semibold">Convites</h1>
         <p className="text-muted text-sm">
-          O prazo exibido é do acompanhamento administrativo. A validade e a revogação do link de autenticação são controladas pelo Supabase Auth.
+          O prazo exibido é do acompanhamento administrativo. A validade e a revogação do link de
+          autenticação são controladas pelo Supabase Auth.
         </p>
       </div>
 
@@ -42,11 +43,17 @@ export default async function InvitationsPage() {
           <tbody>
             {(invitations ?? []).map((inv) => {
               const identity = inv.identities;
-              const effectiveStatus = ['PENDING', 'SENT'].includes(inv.status) && new Date(inv.expires_at).getTime() <= now ? 'EXPIRED' : inv.status;
+              const effectiveStatus =
+                ['PENDING', 'SENT'].includes(inv.status) &&
+                new Date(inv.expires_at).getTime() <= now
+                  ? 'EXPIRED'
+                  : inv.status;
               const statusInfo =
                 INVITATION_STATUS_LABEL[effectiveStatus as keyof typeof INVITATION_STATUS_LABEL];
               const cancel = cancelInvitationAction.bind(null, inv.id);
-              const isActionable = (inv.status === 'SENT' || inv.status === 'PENDING') && effectiveStatus !== 'EXPIRED';
+              const isActionable =
+                (inv.status === 'SENT' || inv.status === 'PENDING') &&
+                effectiveStatus !== 'EXPIRED';
 
               return (
                 <tr key={inv.id} className="border-border border-b last:border-0 hover:bg-slate-50">
