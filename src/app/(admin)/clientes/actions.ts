@@ -6,7 +6,6 @@ import { requirePermission } from '@/lib/auth/session';
 import { createClient as createDbClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isAppError } from '@/lib/errors';
-import { recordExportDelivery } from '@/services/export';
 import type { ClientAddress, PersonType } from '@/types/domain';
 
 export interface ClientFormState {
@@ -226,27 +225,12 @@ export async function createContractAction(
 }
 
 export async function uploadContractDocumentAction(
-  clientId: string,
-  contractId: string,
-  formData: FormData,
+  _clientId: string,
+  _contractId: string,
+  _formData: FormData,
 ) {
-  const session = await requirePermission('contracts.manage');
-  const file = formData.get('file');
-
-  if (file instanceof File && file.size > 0) {
-    addContractDocument(
-      {
-        contractId,
-        originalName: file.name,
-        mimeType: file.type || 'application/octet-stream',
-        sizeBytes: file.size,
-        signedDocument: true,
-      },
-      session.internalUser,
-    );
-  }
-
-  revalidatePath(`/clientes/${clientId}`);
+  await requirePermission('contracts.manage');
+  throw new Error('Upload de documentos indisponivel ate a integracao com armazenamento privado.');
 }
 
 export interface SubscriptionFormState {
@@ -301,6 +285,11 @@ export async function createSubscriptionAction(
 export async function recordExportDeliveryAction(clientId: string, formData: FormData) {
   const session = await requirePermission('clients.manage');
   const note = formData.get('reason')?.toString().trim();
-  recordExportDelivery(clientId, session.internalUser, note || undefined);
+  const {error} = await createAdminClient().from('audit_logs').insert({
+    action:'client.export_delivered',target_type:'client',target_id:clientId,
+    client_id:clientId,actor_internal_user_id:session.internalUser.id,
+    reason:note || null,source:'7service',
+  });
+  if(error) throw error;
   revalidatePath(`/clientes/${clientId}`);
 }
