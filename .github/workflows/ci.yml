@@ -23,6 +23,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run format:check # gate obrigatorio
+      - run: npm audit --omit=dev --audit-level=critical
 
   integration:
     name: Integration tests (RLS/multi-tenant/IDOR)
