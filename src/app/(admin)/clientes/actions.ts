@@ -13,6 +13,7 @@ import type { ClientAddress, PersonType } from '@/types/domain';
 
 export interface ClientFormState {
   error: string | null;
+  createdId?: string;
 }
 
 function readAddress(formData: FormData): ClientAddress | null {
@@ -56,7 +57,7 @@ export async function createClientAction(
     );
 
     revalidatePath('/clientes');
-    redirect(`/clientes/${client.id}`);
+    return { error: null, createdId: client.id };
   } catch (error) {
     if (isAppError(error)) {
       return { error: error.message };
@@ -117,7 +118,7 @@ export async function reactivateClientAction(clientId: string, _formData: FormDa
 }
 
 export async function closeClientAction(clientId: string, formData: FormData) {
-  const session = await requirePermission('contracts.manage');
+  const session = await requirePermission('clients.manage');
   const reason = formData.get('reason')?.toString().trim();
   setClientStatus(clientId, 'CLOSED', session.internalUser, reason || undefined);
   revalidatePath(`/clientes/${clientId}`);
