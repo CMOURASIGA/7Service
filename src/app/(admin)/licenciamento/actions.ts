@@ -23,38 +23,13 @@ export async function grantLicenseOverrideAction(
     return {
       error: 'Informe licença adicional válida e justificativa com pelo menos 10 caracteres.',
     };
-  const db = createAdminClient();
-  const { data: subscription, error: readError } = await db
-    .from('subscriptions')
-    .select('id,client_id,product_id,status')
-    .eq('id', subscriptionId)
-    .maybeSingle();
-  if (readError || !subscription || subscription.status !== 'ACTIVE')
-    return { error: 'Assinatura inexistente ou não ativa.' };
-  const { data: override, error } = await db
-    .from('license_overrides')
-    .insert({
-      subscription_id: subscriptionId,
-      granted_by: internalUser.id,
-      reason,
-      extra_licenses: extraLicenses,
-    })
-    .select('id')
-    .single();
-  if (error || !override) return { error: 'Falha ao conceder exceção de licenças.' };
-  const { error: auditError } = await db.from('audit_logs').insert({
-    actor_internal_user_id: internalUser.id,
-    action: 'licenses.override_granted',
-    target_type: 'license_override',
-    target_id: override.id,
-    client_id: subscription.client_id,
-    product_id: subscription.product_id,
-    reason,
-    after_json: { extra_licenses: extraLicenses },
-    source: '7service',
+  const { error } = await createAdminClient().rpc('grant_license_override_atomic', {
+    p_actor: internalUser.id,
+    p_subscription: subscriptionId,
+    p_extra: extraLicenses,
+    p_reason: reason,
   });
-  if (auditError)
-    return { error: 'Licenças concedidas, mas auditoria não persistiu. Requer conciliação.' };
+  if (error) return { error: 'Não foi possível registrar a exceção de licenças com auditoria.' };
   revalidatePath('/licenciamento');
   return { error: null, success: 'Exceção de licenças registrada e auditada.' };
 }
