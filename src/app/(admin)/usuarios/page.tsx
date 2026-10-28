@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
 import { StatusBadge } from '@/components/ui/status-badge';
-import { getMockStore } from '@/lib/mock/store';
+import { requirePermission } from '@/lib/auth/session';
+import { createClient } from '@/lib/supabase/server';
 import { IDENTITY_STATUS_LABEL } from '@/lib/status-labels';
-import { listIdentities } from '@/services/identities';
 
 export const metadata = {
   title: 'Usuários - 7Service',
@@ -15,8 +15,15 @@ export default async function IdentitiesPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const params = await searchParams;
-  const identities = listIdentities({ search: params.q });
-  const store = getMockStore();
+  await requirePermission('users.manage');
+  const db = await createClient();
+  let query = db.from('identities').select('id,first_name,last_name,email,status,client_memberships(status,clients(legal_name,trade_name)),user_product_access(status)').order('first_name');
+  if (params.q?.trim()) {
+    const term = params.q.trim().replace(/[,%()]/g, '');
+    query = query.or('first_name.ilike.%' + term + '%,last_name.ilike.%' + term + '%,email.ilike.%' + term + '%');
+  }
+  const { data: identities, error } = await query;
+  if (error) throw new Error('Falha ao consultar identidades');
 
   return (
     <div className="flex flex-col gap-4">
@@ -55,12 +62,10 @@ export default async function IdentitiesPage({
             </tr>
           </thead>
           <tbody>
-            {identities.map((identity) => {
-              const client = store.clients.find((c) => c.id === identity.clientId);
-              const activeProducts = store.userProductAccess.filter(
-                (a) => a.identityId === identity.id && a.status === 'ACTIVE',
-              ).length;
-              const statusInfo = IDENTITY_STATUS_LABEL[identity.status];
+            {(identities ?? []).map((identity) => {
+              const clients = identity.client_memberships.filter(x => x.status === 'ACTIVE').map(x => x.clients?.trade_name || x.clients?.legal_name).filter(Boolean);
+              const activeProducts = identity.user_product_access.filter(x => x.status === 'ACTIVE').length;
+              const statusInfo = IDENTITY_STATUS_LABEL[identity.status as keyof typeof IDENTITY_STATUS_LABEL];
 
               return (
                 <tr
@@ -72,12 +77,12 @@ export default async function IdentitiesPage({
                       href={`/usuarios/${identity.id}`}
                       className="text-brand-700 font-medium hover:underline"
                     >
-                      {identity.firstName} {identity.lastName}
+                      {identity.first_name} {identity.last_name}
                     </Link>
                   </td>
                   <td className="text-muted px-4 py-2">{identity.email}</td>
                   <td className="text-muted px-4 py-2">
-                    {client?.tradeName ?? client?.legalName ?? '—'}
+                    {clients.join(', ') || '—'}
                   </td>
                   <td className="text-muted px-4 py-2">{activeProducts}</td>
                   <td className="px-4 py-2">
