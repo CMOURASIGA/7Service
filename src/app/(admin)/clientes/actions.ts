@@ -378,17 +378,11 @@ export async function createSubscriptionAction(
 export async function recordExportDeliveryAction(clientId: string, formData: FormData) {
   const session = await requirePermission('clients.manage');
   const note = formData.get('reason')?.toString().trim();
-  const { error } = await createAdminClient()
-    .from('audit_logs')
-    .insert({
-      action: 'client.export_delivered',
-      target_type: 'client',
-      target_id: clientId,
-      client_id: clientId,
-      actor_internal_user_id: session.internalUser.id,
-      reason: note || null,
-      source: '7service',
-    });
+  const { error } = await createAdminClient().rpc('record_client_export_delivery_atomic', {
+    p_actor: session.internalUser.id,
+    p_client: clientId,
+    p_reason: note || '',
+  });
   if (error) throw error;
   revalidatePath(`/clientes/${clientId}`);
 }
