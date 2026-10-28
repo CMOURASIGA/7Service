@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { requirePermission } from '@/lib/auth/session';
+import { createClient as createDbClient } from '@/lib/supabase/server';
 import { isAppError } from '@/lib/errors';
 import { addContractDocument, createContract } from '@/services/contracts';
 import { createClient, setClientStatus, updateClient } from '@/services/clients';
@@ -40,21 +41,50 @@ export async function createClientAction(
   const session = await requirePermission('clients.manage');
 
   try {
-    const client = createClient(
-      {
-        personType: formData.get('personType') as PersonType,
-        document: String(formData.get('document') ?? ''),
-        legalName: String(formData.get('legalName') ?? ''),
-        tradeName: formData.get('tradeName')?.toString() || null,
-        phone: formData.get('phone')?.toString() || null,
-        email: formData.get('email')?.toString() || null,
-        contactName: formData.get('contactName')?.toString() || null,
-        notes: formData.get('notes')?.toString() || null,
-        address: readAddress(formData),
-      },
-      session.internalUser,
-    );
-
+    const db = await createDbClient();
+    const personType = String(formData.get('personType') ?? '');
+    const document = String(formData.get('document') ?? '').replace(/\\D/g, '');
+    const legalName = String(formData.get('legalName') ?? '').trim();
+    if (!['PF', 'PJ'].includes(personType) || document.length !== (personType === 'PF' ? 11 : 14) || !legalName) {
+      return { error: 'Informe tipo, documento e nome validos.' };
+    }
+    const { data: existing, error: existingError } = await db.from('clients')
+      .select('id').eq('document', document).neq('status', 'CLOSED').limit(1);
+    if (existingError) throw existingError;
+    if (existing?.length) return { error: 'Ja existe um cliente ativo com este documento.' };
+    const { data: client, error: createError } = await db.from('clients').insert({
+      person_type: personType,
+      document,
+      legal_name: legalName,
+      trade_name: formData.get('tradeName')?.toString().trim() || null,
+      phone: formData.get('phone')?.toString().trim() || null,
+      email: formData.get('email')?.toString().trim() || null,
+      contact_name: formData.get('contactName')?.toString().trim() || null,
+      notes: formData.get('notes')?.toString().trim() || null,
+      relationship_start_date: new Date().toISOString().slice(0, 10),
+    }).select('id').single();
+    if (createError) throw createError;
+    const address = readAddress(formData);
+    if (address) {
+      const { error: addressError } = await db.from('client_addresses').insert({
+        client_id: client.id,
+        postal_code: address.postalCode,
+        street: address.street,
+        number: address.number,
+        complement: address.complement,
+        district: address.district,
+        city: address.city,
+        state: address.state,
+        country: address.country,
+      });
+      if (addressError) throw addressError;
+    }
+    const { error: auditError } = await db.from('audit_logs').insert({
+      action: 'client.created', target_type: 'client', target_id: client.id,
+      client_id: client.id, actor_internal_user_id: session.internalUser.id,
+      reason: 'Cadastro administrativo', source: '7service',
+    });
+    if (auditError) throw auditError;
     revalidatePath('/clientes');
     return { error: null, createdId: client.id };
   } catch (error) {
