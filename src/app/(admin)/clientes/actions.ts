@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-import { getCurrentSession } from '@/lib/auth/session';
+import { requirePermission } from '@/lib/auth/session';
 import { isAppError } from '@/lib/errors';
 import { addContractDocument, createContract } from '@/services/contracts';
 import { createClient, setClientStatus, updateClient } from '@/services/clients';
@@ -37,7 +37,7 @@ export async function createClientAction(
   _prevState: ClientFormState,
   formData: FormData,
 ): Promise<ClientFormState> {
-  const session = await getCurrentSession();
+  const session = await requirePermission('clients.manage');
 
   try {
     const client = createClient(
@@ -73,7 +73,7 @@ export async function updateClientAction(
   _prevState: ClientFormState,
   formData: FormData,
 ): Promise<ClientFormState> {
-  const session = await getCurrentSession();
+  const session = await requirePermission('clients.manage');
 
   try {
     updateClient(
@@ -102,7 +102,7 @@ export async function updateClientAction(
 }
 
 export async function suspendClientAction(clientId: string, formData: FormData) {
-  const session = await getCurrentSession();
+  const session = await requirePermission('clients.manage');
   const reason = formData.get('reason')?.toString().trim();
   setClientStatus(clientId, 'SUSPENDED', session.internalUser, reason || undefined);
   revalidatePath(`/clientes/${clientId}`);
@@ -110,14 +110,14 @@ export async function suspendClientAction(clientId: string, formData: FormData) 
 }
 
 export async function reactivateClientAction(clientId: string, _formData: FormData) {
-  const session = await getCurrentSession();
+  const session = await requirePermission('clients.manage');
   setClientStatus(clientId, 'ACTIVE', session.internalUser);
   revalidatePath(`/clientes/${clientId}`);
   revalidatePath('/clientes');
 }
 
 export async function closeClientAction(clientId: string, formData: FormData) {
-  const session = await getCurrentSession();
+  const session = await requirePermission('contracts.manage');
   const reason = formData.get('reason')?.toString().trim();
   setClientStatus(clientId, 'CLOSED', session.internalUser, reason || undefined);
   revalidatePath(`/clientes/${clientId}`);
@@ -133,7 +133,7 @@ export async function createContractAction(
   _prevState: ContractFormState,
   formData: FormData,
 ): Promise<ContractFormState> {
-  const session = await getCurrentSession();
+  const session = await requirePermission('contracts.manage');
 
   try {
     createContract(
@@ -159,7 +159,7 @@ export async function uploadContractDocumentAction(
   contractId: string,
   formData: FormData,
 ) {
-  const session = await getCurrentSession();
+  const session = await requirePermission('contracts.manage');
   const file = formData.get('file');
 
   if (file instanceof File && file.size > 0) {
@@ -187,7 +187,7 @@ export async function createSubscriptionAction(
   _prevState: SubscriptionFormState,
   formData: FormData,
 ): Promise<SubscriptionFormState> {
-  const session = await getCurrentSession();
+  const session = await requirePermission('contracts.manage');
 
   try {
     createSubscription(
@@ -223,7 +223,7 @@ export async function createSubscriptionAction(
  * entrega foi confirmada pelo operador, não apenas gerada.
  */
 export async function recordExportDeliveryAction(clientId: string, formData: FormData) {
-  const session = await getCurrentSession();
+  const session = await requirePermission('clients.manage');
   const note = formData.get('reason')?.toString().trim();
   recordExportDelivery(clientId, session.internalUser, note || undefined);
   revalidatePath(`/clientes/${clientId}`);
