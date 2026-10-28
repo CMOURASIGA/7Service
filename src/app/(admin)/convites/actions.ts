@@ -2,12 +2,11 @@
 
 import { revalidatePath } from 'next/cache';
 import { requirePermission } from '@/lib/auth/session';
-import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function cancelInvitationAction(invitationId: string, _formData: FormData) {
   const { internalUser } = await requirePermission('invitations.manage');
-  const db = await createClient();
+  const db = createAdminClient();
   const { data: old, error: readError } = await db.from('invitations')
     .select('id,status,identity_id').eq('id',invitationId).single();
   if (readError || !old) throw new Error('Convite nao encontrado');
