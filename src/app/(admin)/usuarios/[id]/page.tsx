@@ -7,6 +7,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { GrantAccessForm, type GrantableSubscription } from '@/features/access/components/grant-access-form';
 import { EnvironmentGrantForm } from '@/features/access/components/environment-grant-form';
 import { revokeEnvironmentAction } from './ambientes/actions';
+import { setMembershipStatusAction } from './memberships/actions';
 import type { Product, Subscription, ProductRole } from '@/types/domain';
 import { IDENTITY_STATUS_LABEL, ACCESS_STATUS_LABEL } from '@/lib/status-labels';
 import {
@@ -140,6 +141,21 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                   {m.clients?.trade_name || m.clients?.legal_name || m.client_id}
                 </Link>
                 <span className="text-muted ml-2 text-sm">{m.status}</span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {m.status==='ACTIVE'?<>
+                    <ConfirmAction triggerLabel="Suspender nesta empresa"
+                      impactMessage="Suspende apenas o vínculo com esta empresa, sem afetar outras empresas."
+                      action={setMembershipStatusAction.bind(null,id,m.id,'SUSPENDED')}
+                      requireReason tone="danger" confirmLabel="Suspender"/>
+                    <ConfirmAction triggerLabel="Revogar vínculo"
+                      impactMessage="Revoga os acessos desta empresa. Outras empresas não são afetadas."
+                      action={setMembershipStatusAction.bind(null,id,m.id,'REVOKED')}
+                      requireReason tone="danger" confirmLabel="Revogar"/>
+                  </>:null}
+                  {m.status==='SUSPENDED'?<ConfirmAction triggerLabel="Reativar nesta empresa"
+                    impactMessage="Reativa apenas este vínculo empresarial."
+                    action={setMembershipStatusAction.bind(null,id,m.id,'ACTIVE')} confirmLabel="Reativar"/>:null}
+                </div>
               </li>
             ))}
           </ul>
