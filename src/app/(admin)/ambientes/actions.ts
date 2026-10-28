@@ -54,7 +54,7 @@ export async function registerEnvironment(
     p_actor_id: internalUser.id,
     p_deployment_id: deploymentId,
     p_environment: environment,
-    p_entry_url: entryUrl || null,
+    p_entry_url: entryUrl || '',
   });
   if (error) return { error: error.message };
   revalidatePath('/ambientes');
