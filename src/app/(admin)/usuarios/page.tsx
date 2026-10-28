@@ -17,10 +17,17 @@ export default async function IdentitiesPage({
   const params = await searchParams;
   await requirePermission('users.manage');
   const db = await createClient();
-  let query = db.from('identities').select('id,first_name,last_name,email,status,client_memberships(status,clients(legal_name,trade_name)),user_product_access(status)').order('first_name');
+  let query = db
+    .from('identities')
+    .select(
+      'id,first_name,last_name,email,status,client_memberships(status,clients(legal_name,trade_name)),user_product_access(status)',
+    )
+    .order('first_name');
   if (params.q?.trim()) {
     const term = params.q.trim().replace(/[,%()]/g, '');
-    query = query.or('first_name.ilike.%' + term + '%,last_name.ilike.%' + term + '%,email.ilike.%' + term + '%');
+    query = query.or(
+      'first_name.ilike.%' + term + '%,last_name.ilike.%' + term + '%,email.ilike.%' + term + '%',
+    );
   }
   const { data: identities, error } = await query;
   if (error) throw new Error('Falha ao consultar identidades');
@@ -63,9 +70,15 @@ export default async function IdentitiesPage({
           </thead>
           <tbody>
             {(identities ?? []).map((identity) => {
-              const clients = identity.client_memberships.filter(x => x.status === 'ACTIVE').map(x => x.clients?.trade_name || x.clients?.legal_name).filter(Boolean);
-              const activeProducts = identity.user_product_access.filter(x => x.status === 'ACTIVE').length;
-              const statusInfo = IDENTITY_STATUS_LABEL[identity.status as keyof typeof IDENTITY_STATUS_LABEL];
+              const clients = identity.client_memberships
+                .filter((x) => x.status === 'ACTIVE')
+                .map((x) => x.clients?.trade_name || x.clients?.legal_name)
+                .filter(Boolean);
+              const activeProducts = identity.user_product_access.filter(
+                (x) => x.status === 'ACTIVE',
+              ).length;
+              const statusInfo =
+                IDENTITY_STATUS_LABEL[identity.status as keyof typeof IDENTITY_STATUS_LABEL];
 
               return (
                 <tr
@@ -81,9 +94,7 @@ export default async function IdentitiesPage({
                     </Link>
                   </td>
                   <td className="text-muted px-4 py-2">{identity.email}</td>
-                  <td className="text-muted px-4 py-2">
-                    {clients.join(', ') || '—'}
-                  </td>
+                  <td className="text-muted px-4 py-2">{clients.join(', ') || '—'}</td>
                   <td className="text-muted px-4 py-2">{activeProducts}</td>
                   <td className="px-4 py-2">
                     <StatusBadge label={statusInfo.label} tone={statusInfo.tone} />

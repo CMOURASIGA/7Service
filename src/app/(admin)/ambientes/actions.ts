@@ -29,7 +29,11 @@ export async function createDedicatedDeployment(
   const db = await createClient();
   const { clientId, productId, name } = parsed.data;
   const { data: client } = await db.from('clients').select('id').eq('id', clientId).maybeSingle();
-  const { data: product } = await db.from('products').select('id').eq('id', productId).maybeSingle();
+  const { data: product } = await db
+    .from('products')
+    .select('id')
+    .eq('id', productId)
+    .maybeSingle();
   if (!client || !product) return { error: 'Cliente ou produto não encontrado.' };
 
   const { data: deployment, error: deploymentError } = await db
@@ -37,7 +41,8 @@ export async function createDedicatedDeployment(
     .insert({ product_id: productId, model: 'DEDICATED', name, status: 'PLANNED' })
     .select('id')
     .single();
-  if (deploymentError || !deployment) return { error: deploymentError?.message ?? 'Falha ao criar implantação.' };
+  if (deploymentError || !deployment)
+    return { error: deploymentError?.message ?? 'Falha ao criar implantação.' };
 
   const { error: associationError } = await db
     .from('client_deployments')
@@ -48,7 +53,11 @@ export async function createDedicatedDeployment(
   }
 
   revalidatePath('/ambientes');
-  return { error: null, success: 'Implantação dedicada cadastrada como planejada. Nenhum banco foi provisionado automaticamente.' };
+  return {
+    error: null,
+    success:
+      'Implantação dedicada cadastrada como planejada. Nenhum banco foi provisionado automaticamente.',
+  };
 }
 
 export async function registerEnvironment(
@@ -57,11 +66,15 @@ export async function registerEnvironment(
 ): Promise<EnvironmentFormState> {
   await requirePermission('clients.manage');
   const parsed = environmentInput.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { error: 'Dados inválidos: use um endereço HTTPS ou deixe a URL vazia.' };
+  if (!parsed.success)
+    return { error: 'Dados inválidos: use um endereço HTTPS ou deixe a URL vazia.' };
   const db = await createClient();
   const { deploymentId, environment, entryUrl } = parsed.data;
-  const { data: deployment } = await db.from('product_deployments')
-    .select('id,model').eq('id', deploymentId).maybeSingle();
+  const { data: deployment } = await db
+    .from('product_deployments')
+    .select('id,model')
+    .eq('id', deploymentId)
+    .maybeSingle();
   if (!deployment) return { error: 'Implantação não encontrada.' };
   const { error } = await db.from('product_environments').insert({
     deployment_id: deploymentId,
@@ -71,5 +84,9 @@ export async function registerEnvironment(
   });
   if (error) return { error: error.message };
   revalidatePath('/ambientes');
-  return { error: null, success: 'Ambiente cadastrado como planejado. Não equivale a deploy, banco ativo ou acesso concedido.' };
+  return {
+    error: null,
+    success:
+      'Ambiente cadastrado como planejado. Não equivale a deploy, banco ativo ou acesso concedido.',
+  };
 }

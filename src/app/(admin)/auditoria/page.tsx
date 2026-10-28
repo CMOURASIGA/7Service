@@ -1,7 +1,6 @@
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 
-
 export const metadata = {
   title: 'Auditoria - 7Service',
 };
@@ -14,13 +13,17 @@ export default async function AuditPage({
   const params = await searchParams;
   await requirePermission('audit.view');
   const db = await createClient();
-  let query = db.from('audit_logs')
-    .select('id,occurred_at,action,target_type,target_id,reason,actor_internal_user_id,internal_users(first_name,last_name)')
-    .order('occurred_at', { ascending: false }).limit(250);
+  let query = db
+    .from('audit_logs')
+    .select(
+      'id,occurred_at,action,target_type,target_id,reason,actor_internal_user_id,internal_users(first_name,last_name)',
+    )
+    .order('occurred_at', { ascending: false })
+    .limit(250);
   if (params.action?.trim()) query = query.eq('action', params.action.trim());
   const { data: logs, error } = await query;
   if (error) throw new Error('Falha ao consultar auditoria');
-  const actions = Array.from(new Set((logs ?? []).map(l => l.action))).sort();
+  const actions = Array.from(new Set((logs ?? []).map((l) => l.action))).sort();
 
   return (
     <div className="flex flex-col gap-4">
@@ -80,7 +83,11 @@ export default async function AuditPage({
                     {log.target_type}
                     {log.target_id ? ` · ${log.target_id.slice(0, 8)}` : ''}
                   </td>
-                  <td className="text-muted px-4 py-2">{[log.internal_users?.first_name, log.internal_users?.last_name].filter(Boolean).join(' ') || 'Sistema'}</td>
+                  <td className="text-muted px-4 py-2">
+                    {[log.internal_users?.first_name, log.internal_users?.last_name]
+                      .filter(Boolean)
+                      .join(' ') || 'Sistema'}
+                  </td>
                   <td className="text-muted px-4 py-2">{log.reason ?? '—'}</td>
                 </tr>
               ))}

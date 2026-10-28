@@ -10,7 +10,8 @@ export const metadata = {
 export default async function ProductsPage() {
   await requirePermission('clients.view');
   const db = await createClient();
-  const { data: products, error } = await db.from('products')
+  const { data: products, error } = await db
+    .from('products')
     .select('id,name,status,description,entry_url,product_roles(id,name)')
     .order('name');
   if (error) throw new Error('Falha ao consultar catalogo de produtos');

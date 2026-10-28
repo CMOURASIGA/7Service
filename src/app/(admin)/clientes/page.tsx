@@ -27,14 +27,29 @@ export default async function ClientsPage({
   const params = await searchParams;
   await requirePermission('clients.view');
   const db = await createClient();
-  let query = db.from('clients').select('id,person_type,document,legal_name,trade_name,phone,email,contact_name,status,relationship_start_date').order('legal_name');
-  if (params.status && ['ACTIVE','SUSPENDED','CLOSED'].includes(params.status)) query = query.eq('status', params.status);
-  if (params.q?.trim()) query = query.or(['legal_name','trade_name','document','email'].map(field => field + '.ilike.%' + params.q!.trim().replace(/[,%()]/g,'') + '%').join(','));
+  let query = db
+    .from('clients')
+    .select(
+      'id,person_type,document,legal_name,trade_name,phone,email,contact_name,status,relationship_start_date',
+    )
+    .order('legal_name');
+  if (params.status && ['ACTIVE', 'SUSPENDED', 'CLOSED'].includes(params.status))
+    query = query.eq('status', params.status);
+  if (params.q?.trim())
+    query = query.or(
+      ['legal_name', 'trade_name', 'document', 'email']
+        .map((field) => field + '.ilike.%' + params.q!.trim().replace(/[,%()]/g, '') + '%')
+        .join(','),
+    );
   const { data: clients, error } = await query;
   if (error) throw new Error('Falha ao consultar clientes: ' + error.message);
-  const { data: subscriptions, error: subsError } = await db.from('subscriptions').select('client_id,product_id,status');
+  const { data: subscriptions, error: subsError } = await db
+    .from('subscriptions')
+    .select('client_id,product_id,status');
   if (subsError) throw new Error('Falha ao consultar produtos contratados');
-  const { data: memberships, error: membershipsError } = await db.from('client_memberships').select('client_id,status');
+  const { data: memberships, error: membershipsError } = await db
+    .from('client_memberships')
+    .select('client_id,status');
   if (membershipsError) throw new Error('Falha ao consultar vinculos de usuarios');
 
   return (
@@ -98,9 +113,16 @@ export default async function ClientsPage({
             </thead>
             <tbody>
               {(clients ?? []).map((client) => {
-                const productsCount = new Set((subscriptions ?? []).filter(s => s.client_id === client.id && s.status === 'ACTIVE').map(s => s.product_id)).size;
-                const usersCount = (memberships ?? []).filter(m => m.client_id === client.id && m.status === 'ACTIVE').length;
-                const statusInfo = CLIENT_STATUS_LABEL[client.status as keyof typeof CLIENT_STATUS_LABEL];
+                const productsCount = new Set(
+                  (subscriptions ?? [])
+                    .filter((s) => s.client_id === client.id && s.status === 'ACTIVE')
+                    .map((s) => s.product_id),
+                ).size;
+                const usersCount = (memberships ?? []).filter(
+                  (m) => m.client_id === client.id && m.status === 'ACTIVE',
+                ).length;
+                const statusInfo =
+                  CLIENT_STATUS_LABEL[client.status as keyof typeof CLIENT_STATUS_LABEL];
 
                 return (
                   <tr

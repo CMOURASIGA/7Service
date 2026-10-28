@@ -13,7 +13,10 @@ export const metadata = {
 export default async function InvitationsPage() {
   await requirePermission('invitations.manage');
   const db = createAdminClient();
-  const { data: invitations, error } = await db.from('invitations').select('id,status,expires_at,identity_id,identities(first_name,last_name)').order('created_at',{ascending:false});
+  const { data: invitations, error } = await db
+    .from('invitations')
+    .select('id,status,expires_at,identity_id,identities(first_name,last_name)')
+    .order('created_at', { ascending: false });
   if (error) throw new Error('Falha ao consultar convites');
 
   return (
@@ -38,7 +41,8 @@ export default async function InvitationsPage() {
           <tbody>
             {(invitations ?? []).map((inv) => {
               const identity = inv.identities;
-              const statusInfo = INVITATION_STATUS_LABEL[inv.status as keyof typeof INVITATION_STATUS_LABEL];
+              const statusInfo =
+                INVITATION_STATUS_LABEL[inv.status as keyof typeof INVITATION_STATUS_LABEL];
               const cancel = cancelInvitationAction.bind(null, inv.id);
               const isActionable = inv.status === 'SENT' || inv.status === 'PENDING';
 

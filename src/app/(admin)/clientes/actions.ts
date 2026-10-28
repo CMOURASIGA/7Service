@@ -42,24 +42,36 @@ export async function createClientAction(
     const personType = String(formData.get('personType') ?? '');
     const document = String(formData.get('document') ?? '').replace(/\D/g, '');
     const legalName = String(formData.get('legalName') ?? '').trim();
-    if (!['PF', 'PJ'].includes(personType) || document.length !== (personType === 'PF' ? 11 : 14) || !legalName) {
+    if (
+      !['PF', 'PJ'].includes(personType) ||
+      document.length !== (personType === 'PF' ? 11 : 14) ||
+      !legalName
+    ) {
       return { error: 'Informe tipo, documento e nome validos.' };
     }
-    const { data: existing, error: existingError } = await db.from('clients')
-      .select('id').eq('document', document).neq('status', 'CLOSED').limit(1);
+    const { data: existing, error: existingError } = await db
+      .from('clients')
+      .select('id')
+      .eq('document', document)
+      .neq('status', 'CLOSED')
+      .limit(1);
     if (existingError) throw existingError;
     if (existing?.length) return { error: 'Ja existe um cliente ativo com este documento.' };
-    const { data: client, error: createError } = await db.from('clients').insert({
-      person_type: personType as PersonType,
-      document,
-      legal_name: legalName,
-      trade_name: formData.get('tradeName')?.toString().trim() || null,
-      phone: formData.get('phone')?.toString().trim() || null,
-      email: formData.get('email')?.toString().trim() || null,
-      contact_name: formData.get('contactName')?.toString().trim() || null,
-      notes: formData.get('notes')?.toString().trim() || null,
-      relationship_start_date: new Date().toISOString().slice(0, 10),
-    }).select('id').single();
+    const { data: client, error: createError } = await db
+      .from('clients')
+      .insert({
+        person_type: personType as PersonType,
+        document,
+        legal_name: legalName,
+        trade_name: formData.get('tradeName')?.toString().trim() || null,
+        phone: formData.get('phone')?.toString().trim() || null,
+        email: formData.get('email')?.toString().trim() || null,
+        contact_name: formData.get('contactName')?.toString().trim() || null,
+        notes: formData.get('notes')?.toString().trim() || null,
+        relationship_start_date: new Date().toISOString().slice(0, 10),
+      })
+      .select('id')
+      .single();
     if (createError) throw createError;
     const address = readAddress(formData);
     if (address) {
@@ -77,9 +89,13 @@ export async function createClientAction(
       if (addressError) throw addressError;
     }
     const { error: auditError } = await createAdminClient().from('audit_logs').insert({
-      action: 'client.created', target_type: 'client', target_id: client.id,
-      client_id: client.id, actor_internal_user_id: session.internalUser.id,
-      reason: 'Cadastro administrativo', source: '7service',
+      action: 'client.created',
+      target_type: 'client',
+      target_id: client.id,
+      client_id: client.id,
+      actor_internal_user_id: session.internalUser.id,
+      reason: 'Cadastro administrativo',
+      source: '7service',
     });
     if (auditError) throw auditError;
     revalidatePath('/clientes');
@@ -104,39 +120,61 @@ export async function updateClientAction(
 
   try {
     const db = await createDbClient();
-    const { data: current, error: readError } = await db.from('clients')
-      .select('id,legal_name').eq('id', clientId).single();
+    const { data: current, error: readError } = await db
+      .from('clients')
+      .select('id,legal_name')
+      .eq('id', clientId)
+      .single();
     if (readError || !current) throw new Error('Cliente nao encontrado');
-    const { error: writeError } = await db.from('clients').update({
-      legal_name: String(formData.get('legalName') ?? '').trim(),
-      trade_name: formData.get('tradeName')?.toString().trim() || null,
-      phone: formData.get('phone')?.toString().trim() || null,
-      email: formData.get('email')?.toString().trim() || null,
-      contact_name: formData.get('contactName')?.toString().trim() || null,
-      notes: formData.get('notes')?.toString().trim() || null,
-    }).eq('id', clientId);
+    const { error: writeError } = await db
+      .from('clients')
+      .update({
+        legal_name: String(formData.get('legalName') ?? '').trim(),
+        trade_name: formData.get('tradeName')?.toString().trim() || null,
+        phone: formData.get('phone')?.toString().trim() || null,
+        email: formData.get('email')?.toString().trim() || null,
+        contact_name: formData.get('contactName')?.toString().trim() || null,
+        notes: formData.get('notes')?.toString().trim() || null,
+      })
+      .eq('id', clientId);
     if (writeError) throw writeError;
     const address = readAddress(formData);
     if (address) {
       const addressRow = {
-        postal_code: address.postalCode, street: address.street,
-        number: address.number, complement: address.complement,
-        district: address.district, city: address.city,
-        state: address.state, country: address.country,
+        postal_code: address.postalCode,
+        street: address.street,
+        number: address.number,
+        complement: address.complement,
+        district: address.district,
+        city: address.city,
+        state: address.state,
+        country: address.country,
       };
-      const { data: foundAddress, error: addrReadError } = await db.from('client_addresses')
-        .select('id').eq('client_id', clientId).order('created_at').limit(1).maybeSingle();
+      const { data: foundAddress, error: addrReadError } = await db
+        .from('client_addresses')
+        .select('id')
+        .eq('client_id', clientId)
+        .order('created_at')
+        .limit(1)
+        .maybeSingle();
       if (addrReadError) throw addrReadError;
       const result = foundAddress
         ? await db.from('client_addresses').update(addressRow).eq('id', foundAddress.id)
         : await db.from('client_addresses').insert({ client_id: clientId, ...addressRow });
       if (result.error) throw result.error;
     }
-    const { error: auditError } = await createAdminClient().from('audit_logs').insert({
-      action:'client.updated',target_type:'client',target_id:clientId,client_id:clientId,
-      actor_internal_user_id:session.internalUser.id, source:'7service',
-      before_json:{ legal_name: current.legal_name }, after_json:{ legal_name:String(formData.get('legalName') ?? '').trim() },
-    });
+    const { error: auditError } = await createAdminClient()
+      .from('audit_logs')
+      .insert({
+        action: 'client.updated',
+        target_type: 'client',
+        target_id: clientId,
+        client_id: clientId,
+        actor_internal_user_id: session.internalUser.id,
+        source: '7service',
+        before_json: { legal_name: current.legal_name },
+        after_json: { legal_name: String(formData.get('legalName') ?? '').trim() },
+      });
     if (auditError) throw auditError;
     revalidatePath(`/clientes/${clientId}`);
     revalidatePath('/clientes');
@@ -149,20 +187,44 @@ export async function updateClientAction(
   }
 }
 
-async function changeClientStatus(clientId: string, status: 'ACTIVE' | 'SUSPENDED' | 'CLOSED', actorId: string, reason: string | null) {
+async function changeClientStatus(
+  clientId: string,
+  status: 'ACTIVE' | 'SUSPENDED' | 'CLOSED',
+  actorId: string,
+  reason: string | null,
+) {
   const db = await createDbClient();
-  const { data: before, error: readError } = await db.from('clients')
-    .select('id,status').eq('id', clientId).single();
+  const { data: before, error: readError } = await db
+    .from('clients')
+    .select('id,status')
+    .eq('id', clientId)
+    .single();
   if (readError || !before) throw new Error('Cliente nao encontrado');
-  const { data: changed, error } = await db.from('clients').update({ status })
-    .eq('id', clientId).select('id').single();
+  const { data: changed, error } = await db
+    .from('clients')
+    .update({ status })
+    .eq('id', clientId)
+    .select('id')
+    .single();
   if (error || !changed) throw error ?? new Error('Alteracao nao confirmada');
-  const { error: auditError } = await createAdminClient().from('audit_logs').insert({
-    action: status === 'ACTIVE' ? 'client.reactivated' : status === 'CLOSED' ? 'client.closed' : 'client.suspended',
-    target_type: 'client', target_id: clientId, client_id: clientId,
-    actor_internal_user_id: actorId, before_json:{status:before.status},
-    after_json:{status},reason,source:'7service',
-  });
+  const { error: auditError } = await createAdminClient()
+    .from('audit_logs')
+    .insert({
+      action:
+        status === 'ACTIVE'
+          ? 'client.reactivated'
+          : status === 'CLOSED'
+            ? 'client.closed'
+            : 'client.suspended',
+      target_type: 'client',
+      target_id: clientId,
+      client_id: clientId,
+      actor_internal_user_id: actorId,
+      before_json: { status: before.status },
+      after_json: { status },
+      reason,
+      source: '7service',
+    });
   if (auditError) throw auditError;
 }
 
@@ -203,17 +265,28 @@ export async function createContractAction(
   try {
     const reference = String(formData.get('reference') ?? '').trim();
     const startDate = String(formData.get('startDate') ?? '');
-    if (!reference || !/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate)) return { error:'Informe referencia e data de inicio validas.' };
+    if (!reference || !/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate))
+      return { error: 'Informe referencia e data de inicio validas.' };
     const db = await createDbClient();
-    const {data: contract,error} = await db.from('contracts').insert({
-      client_id: clientId, reference, start_date: startDate,
-      end_date: formData.get('endDate')?.toString() || null,
-      notes: formData.get('notes')?.toString() || null,
-    }).select('id').single();
+    const { data: contract, error } = await db
+      .from('contracts')
+      .insert({
+        client_id: clientId,
+        reference,
+        start_date: startDate,
+        end_date: formData.get('endDate')?.toString() || null,
+        notes: formData.get('notes')?.toString() || null,
+      })
+      .select('id')
+      .single();
     if (error || !contract) throw error ?? new Error('Falha ao registrar contrato');
-    const {error: auditError} = await createAdminClient().from('audit_logs').insert({
-      action:'contract.created', target_type:'contract', target_id:contract.id,
-      client_id:clientId, actor_internal_user_id:session.internalUser.id, source:'7service',
+    const { error: auditError } = await createAdminClient().from('audit_logs').insert({
+      action: 'contract.created',
+      target_type: 'contract',
+      target_id: contract.id,
+      client_id: clientId,
+      actor_internal_user_id: session.internalUser.id,
+      source: '7service',
     });
     if (auditError) throw auditError;
     revalidatePath(`/clientes/${clientId}`);
@@ -250,22 +323,47 @@ export async function createSubscriptionAction(
     const productId = String(formData.get('productId') ?? '');
     const startDate = String(formData.get('startDate') ?? '');
     const licenseLimit = Number(formData.get('licenseLimit'));
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate) || !Number.isInteger(licenseLimit) || licenseLimit < 0) return { error:'Informe data e licencas validas.' };
-    const {data: contract,error:contractError} = await db.from('contracts').select('id').eq('id',contractId).eq('client_id',clientId).maybeSingle();
-    if (contractError || !contract) return {error:'Contrato nao pertence ao cliente.'};
-    const {data: subscription,error} = await db.from('subscriptions').insert({
-      client_id:clientId, contract_id:contractId, product_id:productId,
-      start_date:startDate, end_date:formData.get('endDate')?.toString() || null,
-      grace_days:Number(formData.get('graceDays') ?? 5),license_limit:licenseLimit,
-      monthly_value:formData.get('monthlyValue') ? Number(formData.get('monthlyValue')) : null,
-      implementation_value:formData.get('implementationValue') ? Number(formData.get('implementationValue')) : null,
-    }).select('id').single();
-    if(error || !subscription) throw error ?? new Error('Falha ao cadastrar assinatura');
-    const {error:auditError} = await createAdminClient().from('audit_logs').insert({
-      action:'subscription.created',target_type:'subscription',target_id:subscription.id,
-      client_id:clientId,product_id:productId,actor_internal_user_id:session.internalUser.id,source:'7service',
+    if (
+      !/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate) ||
+      !Number.isInteger(licenseLimit) ||
+      licenseLimit < 0
+    )
+      return { error: 'Informe data e licencas validas.' };
+    const { data: contract, error: contractError } = await db
+      .from('contracts')
+      .select('id')
+      .eq('id', contractId)
+      .eq('client_id', clientId)
+      .maybeSingle();
+    if (contractError || !contract) return { error: 'Contrato nao pertence ao cliente.' };
+    const { data: subscription, error } = await db
+      .from('subscriptions')
+      .insert({
+        client_id: clientId,
+        contract_id: contractId,
+        product_id: productId,
+        start_date: startDate,
+        end_date: formData.get('endDate')?.toString() || null,
+        grace_days: Number(formData.get('graceDays') ?? 5),
+        license_limit: licenseLimit,
+        monthly_value: formData.get('monthlyValue') ? Number(formData.get('monthlyValue')) : null,
+        implementation_value: formData.get('implementationValue')
+          ? Number(formData.get('implementationValue'))
+          : null,
+      })
+      .select('id')
+      .single();
+    if (error || !subscription) throw error ?? new Error('Falha ao cadastrar assinatura');
+    const { error: auditError } = await createAdminClient().from('audit_logs').insert({
+      action: 'subscription.created',
+      target_type: 'subscription',
+      target_id: subscription.id,
+      client_id: clientId,
+      product_id: productId,
+      actor_internal_user_id: session.internalUser.id,
+      source: '7service',
     });
-    if(auditError) throw auditError;
+    if (auditError) throw auditError;
     revalidatePath(`/clientes/${clientId}`);
     return { error: null };
   } catch (error) {
@@ -285,11 +383,17 @@ export async function createSubscriptionAction(
 export async function recordExportDeliveryAction(clientId: string, formData: FormData) {
   const session = await requirePermission('clients.manage');
   const note = formData.get('reason')?.toString().trim();
-  const {error} = await createAdminClient().from('audit_logs').insert({
-    action:'client.export_delivered',target_type:'client',target_id:clientId,
-    client_id:clientId,actor_internal_user_id:session.internalUser.id,
-    reason:note || null,source:'7service',
-  });
-  if(error) throw error;
+  const { error } = await createAdminClient()
+    .from('audit_logs')
+    .insert({
+      action: 'client.export_delivered',
+      target_type: 'client',
+      target_id: clientId,
+      client_id: clientId,
+      actor_internal_user_id: session.internalUser.id,
+      reason: note || null,
+      source: '7service',
+    });
+  if (error) throw error;
   revalidatePath(`/clientes/${clientId}`);
 }

@@ -4,7 +4,7 @@ import { RoleEditor } from '@/features/internal-users/components/role-editor';
 import { NewInternalUserForm } from '@/features/internal-users/components/new-internal-user-form';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
-import type { InternalRole,InternalUser,InternalRoleCode } from '@/types/domain';
+import type { InternalRole, InternalUser, InternalRoleCode } from '@/types/domain';
 
 import {
   blockInternalUserAction,
@@ -19,19 +19,34 @@ export const metadata = {
 export default async function InternalOperatorsPage() {
   await requirePermission('internal_users.manage');
   const db = createAdminClient();
-  const [userQuery,roleQuery] = await Promise.all([
-    db.from('internal_users').select('id,auth_user_id,first_name,last_name,email,status,created_at,updated_at,internal_user_roles!internal_user_roles_internal_user_id_fkey(internal_roles(code))').order('first_name'),
+  const [userQuery, roleQuery] = await Promise.all([
+    db
+      .from('internal_users')
+      .select(
+        'id,auth_user_id,first_name,last_name,email,status,created_at,updated_at,internal_user_roles!internal_user_roles_internal_user_id_fkey(internal_roles(code))',
+      )
+      .order('first_name'),
     db.from('internal_roles').select('id,code,name,description').order('name'),
   ]);
-  if(userQuery.error || roleQuery.error) throw new Error('Falha ao carregar operadores');
-  const roles: InternalRole[] = (roleQuery.data??[]).map(x=>({
-    id:x.id,code:x.code as InternalRoleCode,name:x.name,description:x.description
+  if (userQuery.error || roleQuery.error) throw new Error('Falha ao carregar operadores');
+  const roles: InternalRole[] = (roleQuery.data ?? []).map((x) => ({
+    id: x.id,
+    code: x.code as InternalRoleCode,
+    name: x.name,
+    description: x.description,
   }));
-  const users: InternalUser[] = (userQuery.data??[]).map(x=>({
-    id:x.id,authUserId:x.auth_user_id,firstName:x.first_name,lastName:x.last_name,
-    email:x.email,status:x.status as InternalUser['status'],
-    createdAt:x.created_at,updatedAt:x.updated_at,
-    roleCodes:x.internal_user_roles.map(y=>y.internal_roles?.code as InternalRoleCode).filter(Boolean)
+  const users: InternalUser[] = (userQuery.data ?? []).map((x) => ({
+    id: x.id,
+    authUserId: x.auth_user_id,
+    firstName: x.first_name,
+    lastName: x.last_name,
+    email: x.email,
+    status: x.status as InternalUser['status'],
+    createdAt: x.created_at,
+    updatedAt: x.updated_at,
+    roleCodes: x.internal_user_roles
+      .map((y) => y.internal_roles?.code as InternalRoleCode)
+      .filter(Boolean),
   }));
 
   return (
@@ -46,7 +61,10 @@ export default async function InternalOperatorsPage() {
 
       <section className="rounded-lg border p-6">
         <h2 className="mb-3 font-semibold">Convidar operador</h2>
-        <p className="mb-3 text-sm text-muted">O usuario recebera um convite do Supabase Auth. A autorizacao so existe com perfil ativo registrado.</p>
+        <p className="text-muted mb-3 text-sm">
+          O usuario recebera um convite do Supabase Auth. A autorizacao so existe com perfil ativo
+          registrado.
+        </p>
         <NewInternalUserForm roles={roles} />
       </section>
 

@@ -71,10 +71,17 @@ export async function requirePermission(permissionCode: string): Promise<Current
   const { data: assigned, error: assignedError } = await supabase
     .from('internal_role_permissions')
     .select('internal_permissions(code)')
-    .in('role_id', roles.map((role) => role.id));
-  if (assignedError || !assigned?.some((row) => {
-    const permission = row.internal_permissions as unknown as { code: string } | null;
-    return permission?.code === permissionCode;
-  })) throw new AppError('FORBIDDEN', 'Permissão negada: ' + permissionCode);
+    .in(
+      'role_id',
+      roles.map((role) => role.id),
+    );
+  if (
+    assignedError ||
+    !assigned?.some((row) => {
+      const permission = row.internal_permissions as unknown as { code: string } | null;
+      return permission?.code === permissionCode;
+    })
+  )
+    throw new AppError('FORBIDDEN', 'Permissão negada: ' + permissionCode);
   return session;
 }
