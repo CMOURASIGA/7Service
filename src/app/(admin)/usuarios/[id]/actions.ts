@@ -1,69 +1,93 @@
 'use server';
-
 import { revalidatePath } from 'next/cache';
+import { requirePermission } from '@/lib/auth/session';
+import { createAdminClient } from '@/lib/supabase/admin';
 
-import { getCurrentSession } from '@/lib/auth/session';
-import { grantAccess, setAccessStatus } from '@/services/access';
-import { initiateRecovery } from '@/services/recovery';
-
-export interface GrantAccessFormState {
-  error: string | null;
-}
-
-export async function grantAccessAction(
-  identityId: string,
-  _prevState: GrantAccessFormState,
-  formData: FormData,
-): Promise<GrantAccessFormState> {
-  const session = await getCurrentSession();
-
+export interface GrantAccessFormState { error: string | null; }
+export async function grantAccessAction(identityId:string,_previous:GrantAccessFormState,form:FormData):Promise<GrantAccessFormState> {
+  const {internalUser}=await requirePermission('users.access.manage');
   try {
-    grantAccess(
-      {
-        identityId,
-        subscriptionId: String(formData.get('subscriptionId') ?? ''),
-        productRoleId: String(formData.get('productRoleId') ?? ''),
-      },
-      session.internalUser,
-    );
-    revalidatePath(`/usuarios/${identityId}`);
-    return { error: null };
-  } catch (error) {
-    if (error instanceof Error) return { error: error.message };
-    throw error;
+    const subscriptionId=String(form.get('subscriptionId')??'');
+    const roleId=String(form.get('productRoleId')??'');
+    const db=createAdminClient();
+    const [sub,identity,role]=await Promise.all([
+      db.from('subscriptions').select('id,client_id,product_id,status,start_date,end_date,grace_days,license_limit').eq('id',subscriptionId).single(),
+      db.from('identities').select('id,status').eq('id',identityId).single(),
+      db.from('product_roles').select('id,product_id,status').eq('id',roleId).single(),
+    ]);
+    if(sub.error||identity.error||role.error||!sub.data||!identity.data||!role.data)
+      return {error:'Identidade, assinatura ou perfil nao encontrado.'};
+    if(identity.data.status!=='ACTIVE' && identity.data.status!=='PENDING_INVITE')
+      return {error:'Identidade bloqueada.'};
+    if(role.data.product_id!==sub.data.product_id || role.data.status!=='ACTIVE')
+      return {error:'Perfil nao corresponde ao produto da assinatura.'};
+    const {data:membership,error:membershipError}=await db.from('client_memberships')
+      .select('id,status').eq('identity_id',identityId).eq('client_id',sub.data.client_id).eq('status','ACTIVE').maybeSingle();
+    if(membershipError||!membership) return {error:'Usuario nao possui vinculo ativo com esta empresa.'};
+    const today=new Date().toISOString().slice(0,10);
+    if(sub.data.status!=='ACTIVE'||sub.data.start_date>today||
+      (sub.data.end_date && Date.parse(today+'T00:00:00Z')>Date.parse(sub.data.end_date+'T00:00:00Z')+sub.data.grace_days*86400000))
+      return {error:'Assinatura sem vigencia que permita acesso.'};
+    const {data:accesses,error:readError}=await db.from('user_product_access')
+      .select('id,status').eq('subscription_id',subscriptionId);
+    const {data:overrides,error:overrideError}=await db.from('license_overrides')
+      .select('extra_licenses').eq('subscription_id',subscriptionId);
+    if(readError||overrideError) throw new Error('Falha ao apurar licencas.');
+    const used=(accesses??[]).filter(a=>['PENDING','ACTIVE'].includes(a.status)).length;
+    const limit=sub.data.license_limit+(overrides??[]).reduce((sum,x)=>sum+x.extra_licenses,0);
+    if(used>=limit) return {error:'Limite de licencas atingido.'};
+    const {data:created,error:insertError}=await db.from('user_product_access').insert({
+      identity_id:identityId,subscription_id:subscriptionId,product_role_id:roleId,
+      membership_id:membership.id,client_id:sub.data.client_id,status:'PENDING',
+    }).select('id').single();
+    if(insertError||!created) throw insertError??new Error('Nao foi possivel conceder acesso.');
+    const {error:auditError}=await db.from('audit_logs').insert({
+      actor_internal_user_id:internalUser.id,action:'access.granted',
+      target_type:'user_product_access',target_id:created.id,
+      client_id:sub.data.client_id,product_id:sub.data.product_id,source:'7service',
+    });
+    if(auditError) throw new Error('Acesso cadastrado; auditoria pendente de conciliacao.');
+    revalidatePath('/usuarios/'+identityId);
+    return {error:null};
+  }catch(e){return {error:e instanceof Error?e.message:'Falha ao conceder acesso.'};}
+}
+async function changeStatus(accessId:string,identityId:string,status:'ACTIVE'|'SUSPENDED'|'REVOKED',reason:string|null) {
+  const {internalUser}=await requirePermission('users.access.manage');
+  const db=createAdminClient();
+  const {data:old,error:readError}=await db.from('user_product_access')
+    .select('id,identity_id,client_id,status,subscription_id').eq('id',accessId).eq('identity_id',identityId).single();
+  if(readError||!old) throw new Error('Acesso nao encontrado.');
+  if(status==='ACTIVE'){
+    const {data:sub,error:subError}=await db.from('subscriptions')
+      .select('status,start_date,end_date,grace_days').eq('id',old.subscription_id).single();
+    const today=new Date().toISOString().slice(0,10);
+    if(subError||!sub||sub.status!=='ACTIVE'||sub.start_date>today||
+      (sub.end_date && Date.parse(today+'T00:00:00Z')>Date.parse(sub.end_date+'T00:00:00Z')+sub.grace_days*86400000))
+      throw new Error('Assinatura nao esta vigente.');
   }
+  const {data:updated,error}=await db.from('user_product_access').update({
+    status,suspended_reason:status==='SUSPENDED'?reason:null,
+    suspended_at:status==='SUSPENDED'?new Date().toISOString():null,
+  }).eq('id',accessId).eq('identity_id',identityId).select('id').single();
+  if(error||!updated) throw new Error('Alteracao de acesso nao confirmada.');
+  const {error:auditError}=await db.from('audit_logs').insert({
+    actor_internal_user_id:internalUser.id,action:'access.'+status.toLowerCase(),
+    target_type:'user_product_access',target_id:accessId,client_id:old.client_id,
+    reason,source:'7service',before_json:{status:old.status},after_json:{status},
+  });
+  if(auditError) throw new Error('Acesso atualizado; falha ao registrar auditoria.');
+  revalidatePath('/usuarios/'+identityId);
 }
-
-export async function suspendAccessAction(
-  accessId: string,
-  identityId: string,
-  formData: FormData,
-) {
-  const session = await getCurrentSession();
-  const reason = formData.get('reason')?.toString().trim();
-  setAccessStatus(accessId, 'SUSPENDED', session.internalUser, reason || undefined);
-  revalidatePath(`/usuarios/${identityId}`);
+export async function suspendAccessAction(accessId:string,identityId:string,form:FormData){
+  return changeStatus(accessId,identityId,'SUSPENDED',String(form.get('reason')??'').trim()||null);
 }
-
-export async function reactivateAccessAction(
-  accessId: string,
-  identityId: string,
-  _formData: FormData,
-) {
-  const session = await getCurrentSession();
-  setAccessStatus(accessId, 'ACTIVE', session.internalUser);
-  revalidatePath(`/usuarios/${identityId}`);
+export async function reactivateAccessAction(accessId:string,identityId:string,_form:FormData){
+  return changeStatus(accessId,identityId,'ACTIVE',null);
 }
-
-export async function revokeAccessAction(accessId: string, identityId: string, formData: FormData) {
-  const session = await getCurrentSession();
-  const reason = formData.get('reason')?.toString().trim();
-  setAccessStatus(accessId, 'REVOKED', session.internalUser, reason || undefined);
-  revalidatePath(`/usuarios/${identityId}`);
+export async function revokeAccessAction(accessId:string,identityId:string,form:FormData){
+  return changeStatus(accessId,identityId,'REVOKED',String(form.get('reason')??'').trim()||null);
 }
-
-export async function initiateRecoveryAction(identityId: string, _formData: FormData) {
-  const session = await getCurrentSession();
-  initiateRecovery(identityId, session.internalUser);
-  revalidatePath(`/usuarios/${identityId}`);
+export async function initiateRecoveryAction(_identityId:string,_form:FormData){
+  await requirePermission('recovery.initiate');
+  throw new Error('Recuperacao indisponivel ate integrar fluxo seguro Supabase Auth.');
 }
