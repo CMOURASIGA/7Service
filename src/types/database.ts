@@ -1814,6 +1814,14 @@ export type Database = {
         Args: { p_actor: string; p_client: string; p_reason: string };
         Returns: string;
       };
+      create_client_atomic: {
+        Args: {
+          p_actor: string; p_person_type: string; p_document: string; p_legal_name: string;
+          p_trade_name: string | null; p_phone: string | null; p_email: string | null;
+          p_contact_name: string | null; p_notes: string | null; p_address: Json | null;
+        };
+        Returns: string;
+      };
       create_subscription_atomic: {
         Args: {
           p_actor: string;
