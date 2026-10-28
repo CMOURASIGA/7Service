@@ -41,7 +41,11 @@ export async function createClientAction(
     const personType = String(formData.get('personType') ?? '');
     const document = String(formData.get('document') ?? '').replace(/\D/g, '');
     const legalName = String(formData.get('legalName') ?? '').trim();
-    if (!['PF', 'PJ'].includes(personType) || document.length !== (personType === 'PF' ? 11 : 14) || !legalName) {
+    if (
+      !['PF', 'PJ'].includes(personType) ||
+      document.length !== (personType === 'PF' ? 11 : 14) ||
+      !legalName
+    ) {
       return { error: 'Informe tipo, documento e nome válidos.' };
     }
     const address = readAddress(formData);
@@ -55,13 +59,23 @@ export async function createClientAction(
       p_email: formData.get('email')?.toString().trim() || null,
       p_contact_name: formData.get('contactName')?.toString().trim() || null,
       p_notes: formData.get('notes')?.toString().trim() || null,
-      p_address: address ? {
-        postalCode: address.postalCode, street: address.street, number: address.number,
-        complement: address.complement, district: address.district,
-        city: address.city, state: address.state, country: address.country,
-      } : null,
+      p_address: address
+        ? {
+            postalCode: address.postalCode,
+            street: address.street,
+            number: address.number,
+            complement: address.complement,
+            district: address.district,
+            city: address.city,
+            state: address.state,
+            country: address.country,
+          }
+        : null,
     });
-    if (error || !clientId) return { error: 'Não foi possível cadastrar o cliente; verifique os dados e possíveis duplicidades.' };
+    if (error || !clientId)
+      return {
+        error: 'Não foi possível cadastrar o cliente; verifique os dados e possíveis duplicidades.',
+      };
     revalidatePath('/clientes');
     return { error: null, createdId: clientId };
   } catch (error) {
