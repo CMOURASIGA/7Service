@@ -1797,6 +1797,15 @@ export type Database = {
         };
         Returns: string;
       };
+      verify_vercel_deployment_evidence: {
+        Args: {
+          p_actor: string;
+          p_evidence: string;
+          p_sha: string;
+          p_deployment_id: string;
+        };
+        Returns: string;
+      };
       verify_github_deployment_evidence: {
         Args: {
           p_actor: string;
