@@ -97,63 +97,30 @@ export async function updateClientAction(
   const session = await requirePermission('clients.manage');
 
   try {
-    const db = await createDbClient();
-    const { data: current, error: readError } = await db
-      .from('clients')
-      .select('id,legal_name')
-      .eq('id', clientId)
-      .single();
-    if (readError || !current) throw new Error('Cliente nao encontrado');
-    const { error: writeError } = await db
-      .from('clients')
-      .update({
-        legal_name: String(formData.get('legalName') ?? '').trim(),
-        trade_name: formData.get('tradeName')?.toString().trim() || null,
-        phone: formData.get('phone')?.toString().trim() || null,
-        email: formData.get('email')?.toString().trim() || null,
-        contact_name: formData.get('contactName')?.toString().trim() || null,
-        notes: formData.get('notes')?.toString().trim() || null,
-      })
-      .eq('id', clientId);
-    if (writeError) throw writeError;
     const address = readAddress(formData);
-    if (address) {
-      const addressRow = {
-        postal_code: address.postalCode,
-        street: address.street,
-        number: address.number,
-        complement: address.complement,
-        district: address.district,
-        city: address.city,
-        state: address.state,
-        country: address.country,
-      };
-      const { data: foundAddress, error: addrReadError } = await db
-        .from('client_addresses')
-        .select('id')
-        .eq('client_id', clientId)
-        .order('created_at')
-        .limit(1)
-        .maybeSingle();
-      if (addrReadError) throw addrReadError;
-      const result = foundAddress
-        ? await db.from('client_addresses').update(addressRow).eq('id', foundAddress.id)
-        : await db.from('client_addresses').insert({ client_id: clientId, ...addressRow });
-      if (result.error) throw result.error;
-    }
-    const { error: auditError } = await createAdminClient()
-      .from('audit_logs')
-      .insert({
-        action: 'client.updated',
-        target_type: 'client',
-        target_id: clientId,
-        client_id: clientId,
-        actor_internal_user_id: session.internalUser.id,
-        source: '7service',
-        before_json: { legal_name: current.legal_name },
-        after_json: { legal_name: String(formData.get('legalName') ?? '').trim() },
-      });
-    if (auditError) throw auditError;
+    const { error } = await createAdminClient().rpc('update_client_atomic', {
+      p_actor: session.internalUser.id,
+      p_client: clientId,
+      p_legal_name: String(formData.get('legalName') ?? '').trim(),
+      p_trade_name: formData.get('tradeName')?.toString().trim() || null,
+      p_phone: formData.get('phone')?.toString().trim() || null,
+      p_email: formData.get('email')?.toString().trim() || null,
+      p_contact_name: formData.get('contactName')?.toString().trim() || null,
+      p_notes: formData.get('notes')?.toString().trim() || null,
+      p_address: address
+        ? {
+            postalCode: address.postalCode,
+            street: address.street,
+            number: address.number,
+            complement: address.complement,
+            district: address.district,
+            city: address.city,
+            state: address.state,
+            country: address.country,
+          }
+        : null,
+    });
+    if (error) throw new Error('Não foi possível atualizar o cliente e registrar a auditoria.');
     revalidatePath(`/clientes/${clientId}`);
     revalidatePath('/clientes');
     return { error: null };
