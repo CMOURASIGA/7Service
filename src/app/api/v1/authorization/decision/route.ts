@@ -14,7 +14,7 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /**
  * Customer-side identity is authenticated using the real Supabase Auth JWT.
  * Admin service role is exclusively used server-side AFTER token verification.
- * Only the fixed "product.access" operation is supported: arbitrary permissions
+ * Only product.access and feature.access are supported: arbitrary permissions
  * are deliberately denied until a product permissions contract is implemented.
  * No caching: administrative revocation takes effect on the next request.
  */
@@ -27,9 +27,11 @@ export async function GET(request:Request) {
   const productCode=url.searchParams.get('productCode')??'';
   const action=url.searchParams.get('action')??'product.access';
   const environmentId=url.searchParams.get('environmentId');
+  const featureCode=url.searchParams.get('featureCode');
   if(!uuid.test(clientId)||!/^[A-Za-z0-9_-]{2,100}$/.test(productCode)||
      (environmentId!==null&&!uuid.test(environmentId))) return deny('INVALID_REQUEST',400);
-  if(action!=='product.access') return deny('UNSUPPORTED_ACTION',400);
+  if(!['product.access','feature.access'].includes(action)) return deny('UNSUPPORTED_ACTION',400);
+  if(action==='feature.access' && (!featureCode || !/^[A-Za-z0-9_-]{2,100}$/.test(featureCode))) return deny('INVALID_FEATURE',400);
   try {
     const env=getPublicEnv();
     const auth=createSupabaseClient(env.NEXT_PUBLIC_SUPABASE_URL,env.NEXT_PUBLIC_SUPABASE_ANON_KEY,{
@@ -73,6 +75,16 @@ export async function GET(request:Request) {
       (!a.valid_until||a.valid_until>=today)
     );
     if(!authorizedAccesses.length) return deny('ACCESS_NOT_GRANTED');
+    if(action==='feature.access') {
+      const {data:feature,error:featureError}=await db.from('product_features')
+        .select('id,status').eq('product_id',product.data.id).eq('code',featureCode!).maybeSingle();
+      if(featureError) return deny('BACKEND_ERROR',503);
+      if(!feature || feature.status!=='ACTIVE') return deny('FEATURE_UNAVAILABLE');
+      const {data:flag,error:flagError}=await db.from('client_feature_flags')
+        .select('enabled').eq('client_id',clientId).eq('feature_id',feature.id).maybeSingle();
+      if(flagError) return deny('BACKEND_ERROR',503);
+      if(flag?.enabled!==true) return deny('FEATURE_NOT_ENABLED');
+    }
     if(environmentId) {
       const {data:envRow,error:envError}=await db.from('product_environments')
         .select('id,status,deployment_id,product_deployments(product_id)')
@@ -94,7 +106,7 @@ export async function GET(request:Request) {
     }
     return NextResponse.json({
       version:'1',allowed:true,reasonCode:'ACCESS_GRANTED',clientId,
-      productCode,identityId:identity.id,
+      productCode,featureCode:action==='feature.access'?featureCode:null,identityId:identity.id,
       roleCodes:[...new Set(authorizedAccesses.map(a=>a.product_roles?.code).filter(Boolean))],
       expiresInSeconds:0,
     },{status:200,headers:noStore});
