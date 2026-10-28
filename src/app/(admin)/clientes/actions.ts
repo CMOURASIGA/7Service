@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isAppError } from '@/lib/errors';
+import { isIsoCalendarDate } from '@/lib/validation/iso-date';
 import type { ClientAddress, PersonType } from '@/types/domain';
 
 export interface ClientFormState {
@@ -185,7 +186,7 @@ export async function createContractAction(
   try {
     const reference = String(formData.get('reference') ?? '').trim();
     const startDate = String(formData.get('startDate') ?? '');
-    if (!reference || !/^\d{4}-\d{2}-\d{2}$/.test(startDate))
+    if (!reference || !isIsoCalendarDate(startDate))
       return { error: 'Informe referencia e data de inicio validas.' };
     const { error } = await createAdminClient().rpc('create_contract_atomic', {
       p_actor: session.internalUser.id,
