@@ -17,10 +17,16 @@ export async function GET() {
     const db = createAdminClient();
     const { error } = await db.from('clients').select('id', { head: true, count: 'exact' });
     if (error) {
-      return NextResponse.json({ status: 'unavailable', checks: { database: 'failed' } }, { status: 503, headers });
+      return NextResponse.json(
+        { status: 'unavailable', checks: { database: 'failed' } },
+        { status: 503, headers },
+      );
     }
     return NextResponse.json({ status: 'ready', checks: { database: 'ok' } }, { headers });
   } catch {
-    return NextResponse.json({ status: 'unavailable', checks: { database: 'failed' } }, { status: 503, headers });
+    return NextResponse.json(
+      { status: 'unavailable', checks: { database: 'failed' } },
+      { status: 503, headers },
+    );
   }
 }
