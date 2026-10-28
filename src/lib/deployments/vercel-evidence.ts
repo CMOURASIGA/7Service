@@ -20,7 +20,8 @@ export function matchesVercelDeployment(input: {
   const { deployment: d, deploymentId, projectId, commitSha, environment, entryUrl } = input;
   if (d.id !== deploymentId || d.projectId !== projectId || d.readyState !== 'READY') return false;
   if (d.meta?.githubCommitSha?.toLowerCase() !== commitSha.toLowerCase()) return false;
-  if (environment === 'PRODUCTION' ? d.target !== 'production' : d.target === 'production') return false;
+  if (environment === 'PRODUCTION' ? d.target !== 'production' : d.target === 'production')
+    return false;
   let host: string;
   try {
     const url = new URL(entryUrl);
@@ -29,7 +30,8 @@ export function matchesVercelDeployment(input: {
   } catch {
     return false;
   }
-  const hosts = [d.url, ...(d.alias ?? [])].filter((x): x is string => typeof x === 'string')
+  const hosts = [d.url, ...(d.alias ?? [])]
+    .filter((x): x is string => typeof x === 'string')
     .map((x) => x.toLowerCase());
   return hosts.includes(host);
 }

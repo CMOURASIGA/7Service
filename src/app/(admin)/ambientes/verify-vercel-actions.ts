@@ -3,7 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { matchesVercelDeployment, type VercelDeploymentProof } from '@/lib/deployments/vercel-evidence';
+import {
+  matchesVercelDeployment,
+  type VercelDeploymentProof,
+} from '@/lib/deployments/vercel-evidence';
 
 type VerificationState = { error: string | null; success?: string };
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
@@ -53,11 +56,17 @@ export async function verifyVercelEvidence(
     );
     if (!response.ok) return { error: `Consulta Vercel não concluída (${response.status}).` };
     const deployment = (await response.json()) as VercelDeploymentProof;
-    if (!matchesVercelDeployment({
-      deployment, deploymentId, projectId,
-      commitSha: evidence.commit_sha, environment: environment.environment,
-      entryUrl: environment.entry_url,
-    })) return { error: 'Deployment não corresponde ao projeto, SHA, ambiente ou URL cadastrados.' };
+    if (
+      !matchesVercelDeployment({
+        deployment,
+        deploymentId,
+        projectId,
+        commitSha: evidence.commit_sha,
+        environment: environment.environment,
+        entryUrl: environment.entry_url,
+      })
+    )
+      return { error: 'Deployment não corresponde ao projeto, SHA, ambiente ou URL cadastrados.' };
     const { error: verificationError } = await db.rpc('verify_vercel_deployment_evidence', {
       p_actor: internalUser.id,
       p_evidence: evidenceId,
