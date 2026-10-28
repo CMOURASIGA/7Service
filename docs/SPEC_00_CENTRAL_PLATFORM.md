@@ -93,3 +93,7 @@ Endpoint/servico de decisao recebe identity autenticada, client_id, product_code
 - plano de migracao sem perda de acesso e com rollback;
 - permissoes exatas dos operadores e acoes que exigem dupla confirmacao.
 Esses pontos exigem desenho tecnico e testes, mas nao invalidam as decisoes de produto acima.
+
+
+## Adendo — decisao de infraestrutura e UX, 28/10/2026
+A fase inicial adota banco de dados operacional DEDICADO por cliente, mantendo banco administrativo central separado para o 7Service. Modelo compartilhado permanece possibilidade FUTURA, nao requisito da implantacao inicial. Devem ser tratados separadamente cliente, produto, banco, deployment, URL, ambiente e permissao. Funcionalidades globais pertencem ao produto-base; personalizacoes podem ser habilitadas apenas para cliente autorizado. A estrutura de nove modulos do frontend e a ficha de cliente como centro operacional constam em `docs/SPEC_07_ENVIRONMENTS_AND_FRONTEND.md`. Nenhuma publicacao ou migracao foi autorizada.
