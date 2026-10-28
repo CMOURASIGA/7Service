@@ -100,7 +100,7 @@ export default async function ClientsPage({
               {clients.map((client) => {
                 const productsCount = new Set((subscriptions ?? []).filter(s => s.client_id === client.id && s.status === 'ACTIVE').map(s => s.product_id)).size;
                 const usersCount = (memberships ?? []).filter(m => m.client_id === client.id && m.status === 'ACTIVE').length;
-                const statusInfo = CLIENT_STATUS_LABEL[client.status];
+                const statusInfo = CLIENT_STATUS_LABEL[client.status as keyof typeof CLIENT_STATUS_LABEL];
 
                 return (
                   <tr
