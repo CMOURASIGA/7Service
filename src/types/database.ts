@@ -1806,6 +1806,17 @@ export type Database = {
         };
         Returns: string;
       };
+      create_contract_atomic: {
+        Args: {
+          p_actor: string;
+          p_client: string;
+          p_reference: string;
+          p_start: string;
+          p_end: string | null;
+          p_notes: string | null;
+        };
+        Returns: string;
+      };
       change_client_status_atomic: {
         Args: {
           p_actor: string;
