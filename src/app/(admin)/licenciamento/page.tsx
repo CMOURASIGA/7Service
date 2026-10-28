@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getCurrentTimeMs } from '@/lib/time/current';
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -14,7 +15,7 @@ export default async function LicensingPage() {
     db.from('license_overrides').select('subscription_id,extra_licenses'),
   ]);
   if ([subscriptions, accesses, overrides].some(x => x.error)) throw new Error('Falha ao consultar licenciamento');
-  const now = Date.now();
+  const now = getCurrentTimeMs();
   const entries = (subscriptions.data ?? []).map(s => {
     const used = (accesses.data ?? []).filter(a => a.subscription_id === s.id && ['ACTIVE','PENDING'].includes(a.status)).length;
     const extra = (overrides.data ?? []).filter(o => o.subscription_id === s.id).reduce((n,o) => n + o.extra_licenses,0);
