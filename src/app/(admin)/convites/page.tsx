@@ -19,6 +19,7 @@ export default async function InvitationsPage() {
     .order('created_at', { ascending: false });
   if (error) throw new Error('Falha ao consultar convites');
 
+  const now = new Date().getTime();
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -41,10 +42,11 @@ export default async function InvitationsPage() {
           <tbody>
             {(invitations ?? []).map((inv) => {
               const identity = inv.identities;
+              const effectiveStatus = ['PENDING', 'SENT'].includes(inv.status) && new Date(inv.expires_at).getTime() <= now ? 'EXPIRED' : inv.status;
               const statusInfo =
-                INVITATION_STATUS_LABEL[inv.status as keyof typeof INVITATION_STATUS_LABEL];
+                INVITATION_STATUS_LABEL[effectiveStatus as keyof typeof INVITATION_STATUS_LABEL];
               const cancel = cancelInvitationAction.bind(null, inv.id);
-              const isActionable = inv.status === 'SENT' || inv.status === 'PENDING';
+              const isActionable = (inv.status === 'SENT' || inv.status === 'PENDING') && effectiveStatus !== 'EXPIRED';
 
               return (
                 <tr key={inv.id} className="border-border border-b last:border-0 hover:bg-slate-50">
