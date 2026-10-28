@@ -1,8 +1,7 @@
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { IncidentForm } from '@/features/support/components/incident-form';
-import { ConfirmAction } from '@/components/ui/confirm-action';
-import { updateIncidentStatusAction } from './actions';
+import { IncidentActions } from '@/features/support/components/incident-actions';
 
 export const dynamic='force-dynamic';
 export default async function SupportPage(){
@@ -33,6 +32,7 @@ export default async function SupportPage(){
           <p className="text-muted text-sm">Cliente: {i.client_id}</p>
           <p className="text-muted text-sm">Status: {i.status} · Severidade: {i.severity}</p>
           <p className="text-muted text-xs">{new Date(i.created_at).toLocaleString('pt-BR')}</p>
+          {canManage?<IncidentActions id={i.id} status={i.status}/>:null}
         </li>)}</ul>}
     </section>
   </main>;
