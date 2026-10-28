@@ -1,7 +1,7 @@
 import { ConfirmAction } from '@/components/ui/confirm-action';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { requirePermission } from '@/lib/auth/session';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { INVITATION_STATUS_LABEL } from '@/lib/status-labels';
 
 import { cancelInvitationAction } from './actions';
@@ -12,7 +12,7 @@ export const metadata = {
 
 export default async function InvitationsPage() {
   await requirePermission('invitations.manage');
-  const db = await createClient();
+  const db = createAdminClient();
   const { data: invitations, error } = await db.from('invitations').select('id,status,expires_at,identity_id,identities(first_name,last_name)').order('created_at',{ascending:false});
   if (error) throw new Error('Falha ao consultar convites');
 
