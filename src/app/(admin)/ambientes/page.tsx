@@ -1,6 +1,5 @@
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
-import { EnvironmentRegistry } from './registry';
 
 export const dynamic = 'force-dynamic';
 export default async function AmbientesPage() {
@@ -18,7 +17,7 @@ export default async function AmbientesPage() {
     <div><h1 className="text-xl font-semibold">Ambientes</h1>
       <p className="text-sm text-muted">Banco por cliente, implantações e URLs. Um cadastro planejado não representa provisionamento.</p>
     </div>
-    <EnvironmentRegistry clients={clientsResult.data ?? []} products={productsResult.data ?? []} deployments={deploymentsResult.data ?? []}/>
+    <p className="text-sm text-muted">Cadastros disponiveis: {clientsResult.data?.length ?? 0} clientes, {productsResult.data?.length ?? 0} produtos e {deploymentsResult.data?.length ?? 0} implantacoes.</p>
     <section className="flex flex-col gap-3">
       <h2 className="font-semibold">Ambientes registrados</h2>
       {environmentsResult.data?.length ? <ul className="flex flex-col gap-3">{environmentsResult.data.map(x =>
