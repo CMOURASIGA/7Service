@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
 import { Geist, Geist_Mono } from 'next/font/google';
 
 import './globals.css';
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
   description: 'Painel administrativo interno da Consult Services',
 };
 
-export default function RootLayout({ children }: LayoutProps<'/'>) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
       <body className="bg-background text-foreground flex min-h-full flex-col antialiased">
