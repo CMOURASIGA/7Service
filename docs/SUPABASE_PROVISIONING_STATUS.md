@@ -17,3 +17,13 @@ Projeto Supabase: `mwsqzumudqoqlhwlwquf` (7Service), regiao `sa-east-1`.
 7. Reconciliar a numeracao/estado das migrations para reproducao idempotente no ambiente local/CI e nas futuras bases.
 8. Verificar testes, typecheck, lint, build, E2E e homologacao humana; sem deploy de producao.
 Status: FUNDAÇÃO DO BANCO PROVISIONADA; APLICAÇÃO E SEGURANÇA INTEGRADA NÃO HOMOLOGADAS.
+
+## Atualizacao de desenvolvimento (28/10/2026)
+- `src/lib/auth/session.ts`: substituido fallback administrativo mock por busca de usuario autenticado e operador ACTIVE vinculado a internal_roles; permissao validada por relacionamento real.
+- `src/proxy.ts`: quando ambiente nao configura Supabase, nao mais concede acesso administrativo demonstrativo (HTTP 503).
+- `src/app/(admin)/clientes/actions.ts`: chamadas administrativas passaram a executar `requirePermission` em vez de confiar somente na sessao.
+- Migration `20261028162000_grant_internal_operator_session_reads.sql`: leitura de tabelas RBAC a usuarios autenticados condicionada a RLS.
+- Bloqueios: sem testes de build/typecheck/lint executados neste checkpoint, sem E2E, sem bootstrap de operador, sem implementacao de repositorios reais dos dominios, sem convites/email, sem integracao 7Commander.
+- Security Advisors apontam WARN nas funcoes internas `is_internal_operator` e `has_internal_permission`, invocaveis por usuarios autenticados e necessarias aos predicados RLS atuais; exigem reestruturação para schema nao exposto ou revisao formal de privilegios antes de liberar clientes.
+- A base atual nao tem usuario interno provisionado. Nao inventar usuario nem senha.
+**Estado:** desenvolvimento PARCIAL, gate de deploy BLOQUEADO.
