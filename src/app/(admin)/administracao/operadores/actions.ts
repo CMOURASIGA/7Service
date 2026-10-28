@@ -1,63 +1,61 @@
 'use server';
-
 import { revalidatePath } from 'next/cache';
-
-import { getCurrentSession } from '@/lib/auth/session';
-import {
-  createInternalUser,
-  setInternalUserStatus,
-  updateInternalUserRoles,
-} from '@/services/internal-users';
+import { requirePermission } from '@/lib/auth/session';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { InternalRoleCode } from '@/types/domain';
 
-export interface InternalUserFormState {
-  error: string | null;
-}
+const validRoles: InternalRoleCode[] = ['SUPER_ADMIN','OPERATIONS_ADMIN','SUPPORT','COMMERCIAL','FINANCE','AUDITOR'];
+export interface InternalUserFormState { error: string | null; }
 
-export async function createInternalUserAction(
-  _prevState: InternalUserFormState,
-  formData: FormData,
-): Promise<InternalUserFormState> {
-  const session = await getCurrentSession();
-
-  const roleCodes = formData.getAll('roleCodes') as InternalRoleCode[];
-  if (roleCodes.length === 0) {
-    return { error: 'Selecione ao menos um perfil' };
-  }
-
-  try {
-    createInternalUser(
-      {
-        firstName: String(formData.get('firstName') ?? ''),
-        lastName: String(formData.get('lastName') ?? ''),
-        email: String(formData.get('email') ?? ''),
-        roleCodes,
-      },
-      session.internalUser,
-    );
-    revalidatePath('/administracao/operadores');
-    return { error: null };
-  } catch (error) {
-    if (error instanceof Error) return { error: error.message };
-    throw error;
+async function assertLastAdminSafe(userId: string, roles?: InternalRoleCode[], block = false) {
+  const db = createAdminClient();
+  const { data: rows, error } = await db.from('internal_user_roles')
+    .select('internal_user_id,internal_roles!inner(code),internal_users!inner(status)')
+    .eq('internal_roles.code','SUPER_ADMIN').eq('internal_users.status','ACTIVE');
+  if (error) throw error;
+  const activeAdmins = new Set((rows ?? []).map(x => x.internal_user_id));
+  if (activeAdmins.has(userId) && activeAdmins.size <= 1 && (block || !roles?.includes('SUPER_ADMIN'))) {
+    throw new Error('Nao e permitido remover o ultimo superadministrador ativo.');
   }
 }
-
-export async function updateInternalUserRolesAction(userId: string, formData: FormData) {
-  const session = await getCurrentSession();
-  const roleCodes = formData.getAll('roleCodes') as InternalRoleCode[];
-  updateInternalUserRoles(userId, roleCodes, session.internalUser);
+async function recordAudit(actorId:string, action:string, targetId:string) {
+  const { error } = await createAdminClient().from('audit_logs').insert({
+    actor_internal_user_id:actorId,action,target_type:'internal_user',target_id:targetId,source:'7service'
+  });
+  if (error) throw error;
+}
+export async function createInternalUserAction(_previous:InternalUserFormState, _form:FormData):Promise<InternalUserFormState> {
+  await requirePermission('internal_users.manage');
+  return { error:'Provisionamento de operador requer convite seguro e vinculo Auth; cadastro direto desabilitado.' };
+}
+export async function updateInternalUserRolesAction(userId:string, formData:FormData) {
+  const {internalUser} = await requirePermission('internal_users.manage');
+  const roles = formData.getAll('roleCodes').filter((x):x is string => typeof x === 'string');
+  if (!roles.length || roles.some(x => !validRoles.includes(x as InternalRoleCode))) throw new Error('Perfis invalidos');
+  await assertLastAdminSafe(userId,roles as InternalRoleCode[]);
+  const db = createAdminClient();
+  const {data: roleRows,error:roleError} = await db.from('internal_roles').select('id,code').in('code',roles);
+  if(roleError || roleRows?.length !== new Set(roles).size) throw new Error('Perfis nao encontrados');
+  const {error:deleteError} = await db.from('internal_user_roles').delete().eq('internal_user_id',userId);
+  if(deleteError) throw deleteError;
+  const {error:insertError} = await db.from('internal_user_roles').insert((roleRows??[]).map(x=>({internal_user_id:userId,role_id:x.id,assigned_by:internalUser.id})));
+  if(insertError) throw insertError;
+  await recordAudit(internalUser.id,'internal_user.roles_updated',userId);
   revalidatePath('/administracao/operadores');
 }
-
-export async function blockInternalUserAction(userId: string, _formData: FormData) {
-  const session = await getCurrentSession();
-  setInternalUserStatus(userId, 'BLOCKED', session.internalUser);
+export async function blockInternalUserAction(userId:string,_form:FormData) {
+  const {internalUser} = await requirePermission('internal_users.manage');
+  if(userId===internalUser.id) throw new Error('Nao e permitido bloquear a propria conta.');
+  await assertLastAdminSafe(userId,undefined,true);
+  const {data,error} = await createAdminClient().from('internal_users').update({status:'BLOCKED'}).eq('id',userId).select('id').single();
+  if(error||!data) throw new Error('Operador nao encontrado');
+  await recordAudit(internalUser.id,'internal_user.blocked',userId);
   revalidatePath('/administracao/operadores');
 }
-
-export async function reactivateInternalUserAction(userId: string, _formData: FormData) {
-  const session = await getCurrentSession();
-  setInternalUserStatus(userId, 'ACTIVE', session.internalUser);
+export async function reactivateInternalUserAction(userId:string,_form:FormData) {
+  const {internalUser} = await requirePermission('internal_users.manage');
+  const {data,error} = await createAdminClient().from('internal_users').update({status:'ACTIVE'}).eq('id',userId).select('id').single();
+  if(error||!data) throw new Error('Operador nao encontrado');
+  await recordAudit(internalUser.id,'internal_user.reactivated',userId);
   revalidatePath('/administracao/operadores');
 }
