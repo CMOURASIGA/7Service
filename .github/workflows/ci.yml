@@ -18,9 +18,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run format:check
+        continue-on-error: true # diagnostico; gate obrigatorio repetido ao final
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: npm run format:check # gate obrigatorio
 
   integration:
     name: Integration tests (RLS/multi-tenant/IDOR)
