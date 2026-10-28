@@ -95,15 +95,13 @@ export async function createInternalUserAction(
     return {
       error: 'Convite enviado, mas vinculo de operador nao foi gravado. Requer conciliacao.',
     };
-  const { error: assignedError } = await db
-    .from('internal_user_roles')
-    .insert(
-      roleRows.map((r) => ({
-        internal_user_id: created.id,
-        role_id: r.id,
-        assigned_by: internalUser.id,
-      })),
-    );
+  const { error: assignedError } = await db.from('internal_user_roles').insert(
+    roleRows.map((r) => ({
+      internal_user_id: created.id,
+      role_id: r.id,
+      assigned_by: internalUser.id,
+    })),
+  );
   if (assignedError) {
     await db.from('internal_users').update({ status: 'BLOCKED' }).eq('id', created.id);
     return {

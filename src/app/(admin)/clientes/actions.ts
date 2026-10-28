@@ -308,39 +308,55 @@ export async function uploadContractDocumentAction(
     throw new Error('Selecione um PDF de até 10 MB.');
   }
   const raw = new Uint8Array(await file.arrayBuffer());
-  const pdfHeader = String.fromCharCode(...raw.slice(0,5));
+  const pdfHeader = String.fromCharCode(...raw.slice(0, 5));
   if (file.type !== 'application/pdf' || pdfHeader !== '%PDF-') {
     throw new Error('Somente arquivos PDF válidos são aceitos.');
   }
   const db = createAdminClient();
-  const {data:contract,error:contractError} = await db.from('contracts')
-    .select('id').eq('id',contractId).eq('client_id',clientId).maybeSingle();
+  const { data: contract, error: contractError } = await db
+    .from('contracts')
+    .select('id')
+    .eq('id', contractId)
+    .eq('client_id', clientId)
+    .maybeSingle();
   if (contractError || !contract) throw new Error('Contrato não pertence ao cliente.');
-  const storagePath=clientId+'/'+contractId+'/'+crypto.randomUUID()+'.pdf';
-  const {error:uploadError}=await db.storage.from('contract-documents').upload(
-    storagePath,raw,{contentType:'application/pdf',upsert:false,cacheControl:'0'}
-  );
-  if(uploadError) throw new Error('Falha ao armazenar o PDF no bucket privado.');
-  const {data:document,error:metadataError}=await db.from('contract_documents').insert({
-    contract_id:contractId,storage_path:storagePath,original_name:file.name.slice(0,255),
-    mime_type:'application/pdf',size_bytes:file.size,signed_document:true,
-    uploaded_by:internalUser.id,
-  }).select('id').single();
-  if(metadataError||!document){
+  const storagePath = clientId + '/' + contractId + '/' + crypto.randomUUID() + '.pdf';
+  const { error: uploadError } = await db.storage
+    .from('contract-documents')
+    .upload(storagePath, raw, { contentType: 'application/pdf', upsert: false, cacheControl: '0' });
+  if (uploadError) throw new Error('Falha ao armazenar o PDF no bucket privado.');
+  const { data: document, error: metadataError } = await db
+    .from('contract_documents')
+    .insert({
+      contract_id: contractId,
+      storage_path: storagePath,
+      original_name: file.name.slice(0, 255),
+      mime_type: 'application/pdf',
+      size_bytes: file.size,
+      signed_document: true,
+      uploaded_by: internalUser.id,
+    })
+    .select('id')
+    .single();
+  if (metadataError || !document) {
     await db.storage.from('contract-documents').remove([storagePath]);
     throw new Error('Falha ao registrar metadados do documento.');
   }
-  const {error:auditError}=await db.from('audit_logs').insert({
-    actor_internal_user_id:internalUser.id,action:'contract.document_uploaded',
-    target_type:'contract_document',target_id:document.id,client_id:clientId,
-    reason:'Documento PDF do contrato '+contractId,source:'7service',
+  const { error: auditError } = await db.from('audit_logs').insert({
+    actor_internal_user_id: internalUser.id,
+    action: 'contract.document_uploaded',
+    target_type: 'contract_document',
+    target_id: document.id,
+    client_id: clientId,
+    reason: 'Documento PDF do contrato ' + contractId,
+    source: '7service',
   });
-  if(auditError){
-    await db.from('contract_documents').delete().eq('id',document.id);
+  if (auditError) {
+    await db.from('contract_documents').delete().eq('id', document.id);
     await db.storage.from('contract-documents').remove([storagePath]);
     throw new Error('Upload desfeito porque a auditoria não foi registrada.');
   }
-  revalidatePath('/clientes/'+clientId);
+  revalidatePath('/clientes/' + clientId);
 }
 
 export interface SubscriptionFormState {

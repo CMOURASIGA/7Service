@@ -31,8 +31,12 @@ export default async function IdentitiesPage({
     );
   }
   const { data: identities, error } = await query;
-  const {data:clients,error:clientsError} = await db.from('clients').select('id,legal_name,trade_name').eq('status','ACTIVE').order('legal_name');
-  if(clientsError) throw new Error('Falha ao consultar empresas');
+  const { data: clients, error: clientsError } = await db
+    .from('clients')
+    .select('id,legal_name,trade_name')
+    .eq('status', 'ACTIVE')
+    .order('legal_name');
+  if (clientsError) throw new Error('Falha ao consultar empresas');
   if (error) throw new Error('Falha ao consultar identidades');
 
   return (

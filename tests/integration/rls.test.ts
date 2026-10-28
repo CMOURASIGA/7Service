@@ -171,73 +171,95 @@ describe('service_role e anon', () => {
 
 describe('invariantes multiempresa e licenciamento atômico', () => {
   it('uma identidade global pode possuir acesso a dois clientes sem misturar contratos', async () => {
-    const db=await connectAs('service_role');
+    const db = await connectAs('service_role');
     await db.query('begin');
     try {
-      const membership=await db.query(
+      const membership = await db.query(
         'insert into public.client_memberships(identity_id,client_id,status) values ($1,$2,$3) returning id',
-        ['ea000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-00000000000b','ACTIVE']
+        ['ea000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-00000000000b', 'ACTIVE'],
       );
       await db.query(
         `insert into public.user_product_access
           (identity_id,subscription_id,product_role_id,membership_id,client_id,status)
           values($1,$2,$3,$4,$5,'ACTIVE')`,
-        ['ea000000-0000-0000-0000-000000000001',SUBSCRIPTION_B,
-          'c0000000-0000-0000-0000-000000000002',membership.rows[0].id,
-          'b0000000-0000-0000-0000-00000000000b']
+        [
+          'ea000000-0000-0000-0000-000000000001',
+          SUBSCRIPTION_B,
+          'c0000000-0000-0000-0000-000000000002',
+          membership.rows[0].id,
+          'b0000000-0000-0000-0000-00000000000b',
+        ],
       );
-      const access=await db.query(
+      const access = await db.query(
         'select distinct client_id from public.user_product_access where identity_id=$1',
-        ['ea000000-0000-0000-0000-000000000001']
+        ['ea000000-0000-0000-0000-000000000001'],
       );
       expect(access.rowCount).toBe(2);
-    } finally {await db.query('rollback'); await close(db);}
+    } finally {
+      await db.query('rollback');
+      await close(db);
+    }
   });
 
   it('o banco rejeita excesso de licenças mesmo quando serviço tenta inserir diretamente', async () => {
-    const db=await connectAs('service_role');
+    const db = await connectAs('service_role');
     await db.query('begin');
     try {
-      const identityId='ec000000-0000-0000-0000-000000000001';
+      const identityId = 'ec000000-0000-0000-0000-000000000001';
       await db.query(
         `insert into public.identities(id,client_id,first_name,last_name,email,status)
           values($1,$2,'QA','Licença','qa-license@example.invalid','ACTIVE')`,
-        [identityId,CLIENT_A]
+        [identityId, CLIENT_A],
       );
-      const membership=await db.query(
+      const membership = await db.query(
         'insert into public.client_memberships(identity_id,client_id,status) values ($1,$2,$3) returning id',
-        [identityId,CLIENT_A,'ACTIVE']
+        [identityId, CLIENT_A, 'ACTIVE'],
       );
-      await expect(db.query(
-        `insert into public.user_product_access
+      await expect(
+        db.query(
+          `insert into public.user_product_access
           (identity_id,subscription_id,product_role_id,membership_id,client_id,status)
           values($1,$2,$3,$4,$5,'ACTIVE')`,
-        [identityId,'da000000-0000-0000-0000-000000000001',
-          'c0000000-0000-0000-0000-000000000002',membership.rows[0].id,CLIENT_A]
-      )).rejects.toThrow();
-    } finally {await db.query('rollback'); await close(db);}
+          [
+            identityId,
+            'da000000-0000-0000-0000-000000000001',
+            'c0000000-0000-0000-0000-000000000002',
+            membership.rows[0].id,
+            CLIENT_A,
+          ],
+        ),
+      ).rejects.toThrow();
+    } finally {
+      await db.query('rollback');
+      await close(db);
+    }
   });
 
   it('a implantação dedicada não pode ser associada a duas empresas', async () => {
-    const db=await connectAs('service_role');
+    const db = await connectAs('service_role');
     await db.query('begin');
     try {
-      const deployment=await db.query(
+      const deployment = await db.query(
         `insert into public.product_deployments(product_id,name,model)
-          values('c0000000-0000-0000-0000-000000000001','QA Dedicado','DEDICATED') returning id`
+          values('c0000000-0000-0000-0000-000000000001','QA Dedicado','DEDICATED') returning id`,
       );
-      const deploymentId=deployment.rows[0].id;
+      const deploymentId = deployment.rows[0].id;
       await db.query(
         `insert into public.client_deployments(client_id,product_id,deployment_id)
           values($1,'c0000000-0000-0000-0000-000000000001',$2)`,
-        [CLIENT_A,deploymentId]
+        [CLIENT_A, deploymentId],
       );
-      await expect(db.query(
-        `insert into public.client_deployments(client_id,product_id,deployment_id)
+      await expect(
+        db.query(
+          `insert into public.client_deployments(client_id,product_id,deployment_id)
           values($1,'c0000000-0000-0000-0000-000000000001',$2)`,
-        ['b0000000-0000-0000-0000-00000000000b',deploymentId]
-      )).rejects.toThrow();
-    } finally {await db.query('rollback');await close(db);}
+          ['b0000000-0000-0000-0000-00000000000b', deploymentId],
+        ),
+      ).rejects.toThrow();
+    } finally {
+      await db.query('rollback');
+      await close(db);
+    }
   });
 });
 

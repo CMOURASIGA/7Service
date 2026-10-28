@@ -10,7 +10,12 @@ export const dynamic = 'force-dynamic';
 export default async function LicensingPage() {
   await requirePermission('clients.view');
   let canOverride = false;
-  try { await requirePermission('licenses.override'); canOverride = true; } catch { canOverride = false; }
+  try {
+    await requirePermission('licenses.override');
+    canOverride = true;
+  } catch {
+    canOverride = false;
+  }
   const db = await createClient();
   const [subscriptions, accesses, overrides] = await Promise.all([
     db
@@ -65,7 +70,7 @@ export default async function LicensingPage() {
               <th className="p-3">Limite</th>
               <th className="p-3">Utilizadas</th>
               <th className="p-3">Disponiveis</th>
-              {canOverride?<th className="p-3">Exceções autorizadas</th>:null}
+              {canOverride ? <th className="p-3">Exceções autorizadas</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -86,7 +91,11 @@ export default async function LicensingPage() {
                 </td>
                 <td className="p-3">{used}</td>
                 <td className="p-3">{s.license_limit + extra - used}</td>
-                {canOverride?<td className="p-3"><OverrideForm subscriptionId={s.id}/></td>:null}
+                {canOverride ? (
+                  <td className="p-3">
+                    <OverrideForm subscriptionId={s.id} />
+                  </td>
+                ) : null}
               </tr>
             ))}
           </tbody>

@@ -31,7 +31,11 @@ export default async function ProductsPage() {
         {(products ?? []).map((product) => (
           <div key={product.id} className="border-border bg-background rounded-lg border p-4">
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-foreground font-medium"><Link className="text-brand-700 underline" href={`/produtos/${product.id}`}>{product.name}</Link></h2>
+              <h2 className="text-foreground font-medium">
+                <Link className="text-brand-700 underline" href={`/produtos/${product.id}`}>
+                  {product.name}
+                </Link>
+              </h2>
               <StatusBadge
                 label={product.status === 'ACTIVE' ? 'Ativo' : 'Inativo'}
                 tone={product.status === 'ACTIVE' ? 'success' : 'neutral'}
