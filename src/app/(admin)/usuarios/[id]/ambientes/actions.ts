@@ -15,7 +15,7 @@ export async function grantEnvironmentAction(identityId:string,_prev:Environment
   const db=createAdminClient();
   const [access,env]=await Promise.all([
     db.from('user_product_access')
-      .select('id,identity_id,client_id,membership_id,status,subscriptions(product_id)')
+      .select('id,identity_id,client_id,membership_id,status,subscriptions!user_product_access_subscription_id_fkey(product_id)')
       .eq('id',accessId).eq('identity_id',identityId).maybeSingle(),
     db.from('product_environments')
       .select('id,deployment_id,status,product_deployments(product_id)')
