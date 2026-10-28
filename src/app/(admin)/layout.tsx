@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+export const dynamic = 'force-dynamic';
 
 import { AppShell } from '@/components/layout/app-shell';
 import { getCurrentSession } from '@/lib/auth/session';
