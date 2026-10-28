@@ -85,8 +85,9 @@ export default async function AmbientesPage() {
             {ev.provider === 'GITHUB_ACTIONS' && ev.verification_state === 'UNVERIFIED' ? (
               <GithubEvidenceReview evidenceId={ev.id} />
             ) : null}
-            {ev.provider === 'VERCEL' && ev.verification_state === 'UNVERIFIED'
-              ? <VercelEvidenceReview evidenceId={ev.id} /> : null}
+            {ev.provider === 'VERCEL' && ev.verification_state === 'UNVERIFIED' ? (
+              <VercelEvidenceReview evidenceId={ev.id} />
+            ) : null}
           </div>
         ))}
       </section>
