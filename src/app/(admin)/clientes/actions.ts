@@ -185,7 +185,7 @@ export async function createContractAction(
   try {
     const reference = String(formData.get('reference') ?? '').trim();
     const startDate = String(formData.get('startDate') ?? '');
-    if (!reference || !/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate))
+    if (!reference || !/^\d{4}-\d{2}-\d{2}$/.test(startDate))
       return { error: 'Informe referencia e data de inicio validas.' };
     const { error } = await createAdminClient().rpc('create_contract_atomic', {
       p_actor: session.internalUser.id,
@@ -283,7 +283,7 @@ export async function createSubscriptionAction(
     const startDate = String(formData.get('startDate') ?? '');
     const licenseLimit = Number(formData.get('licenseLimit'));
     if (
-      !/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate) ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(startDate) ||
       !Number.isInteger(licenseLimit) ||
       licenseLimit < 0
     )
