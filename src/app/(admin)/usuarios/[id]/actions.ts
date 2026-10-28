@@ -99,56 +99,14 @@ async function changeStatus(
   reason: string | null,
 ) {
   const { internalUser } = await requirePermission('users.access.manage');
-  const db = createAdminClient();
-  const { data: old, error: readError } = await db
-    .from('user_product_access')
-    .select('id,identity_id,client_id,status,subscription_id')
-    .eq('id', accessId)
-    .eq('identity_id', identityId)
-    .single();
-  if (readError || !old) throw new Error('Acesso nao encontrado.');
-  if (status === 'ACTIVE') {
-    const { data: sub, error: subError } = await db
-      .from('subscriptions')
-      .select('status,start_date,end_date,grace_days')
-      .eq('id', old.subscription_id)
-      .single();
-    const today = new Date().toISOString().slice(0, 10);
-    if (
-      subError ||
-      !sub ||
-      sub.status !== 'ACTIVE' ||
-      sub.start_date > today ||
-      (sub.end_date &&
-        Date.parse(today + 'T00:00:00Z') >
-          Date.parse(sub.end_date + 'T00:00:00Z') + sub.grace_days * 86400000)
-    )
-      throw new Error('Assinatura nao esta vigente.');
-  }
-  const { data: updated, error } = await db
-    .from('user_product_access')
-    .update({
-      status,
-      suspended_reason: status === 'SUSPENDED' ? reason : null,
-      suspended_at: status === 'SUSPENDED' ? new Date().toISOString() : null,
-    })
-    .eq('id', accessId)
-    .eq('identity_id', identityId)
-    .select('id')
-    .single();
-  if (error || !updated) throw new Error('Alteracao de acesso nao confirmada.');
-  const { error: auditError } = await db.from('audit_logs').insert({
-    actor_internal_user_id: internalUser.id,
-    action: 'access.' + status.toLowerCase(),
-    target_type: 'user_product_access',
-    target_id: accessId,
-    client_id: old.client_id,
-    reason,
-    source: '7service',
-    before_json: { status: old.status },
-    after_json: { status },
+  const { error } = await createAdminClient().rpc('change_product_access_status_atomic', {
+    p_actor: internalUser.id,
+    p_access: accessId,
+    p_identity: identityId,
+    p_status: status,
+    p_reason: reason,
   });
-  if (auditError) throw new Error('Acesso atualizado; falha ao registrar auditoria.');
+  if (error) throw new Error('Não foi possível alterar o acesso e registrar a auditoria.');
   revalidatePath('/usuarios/' + identityId);
 }
 export async function suspendAccessAction(accessId: string, identityId: string, form: FormData) {
