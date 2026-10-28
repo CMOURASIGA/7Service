@@ -54,7 +54,12 @@ export default async function AmbientesPage() {
           label: `${e.product_deployments?.name ?? 'Implantação'} / ${e.environment}`,
         }))}
       />
-      <EvidenceForm environments={(environmentsResult.data ?? []).map((e) => ({ id: e.id, label: `${e.product_deployments?.name ?? 'Implantação'} / ${e.environment}` }))} />
+      <EvidenceForm
+        environments={(environmentsResult.data ?? []).map((e) => ({
+          id: e.id,
+          label: `${e.product_deployments?.name ?? 'Implantação'} / ${e.environment}`,
+        }))}
+      />
       <section className="flex flex-col gap-3">
         <h2 className="font-semibold">Ambientes registrados</h2>
         {environmentsResult.data?.length ? (
