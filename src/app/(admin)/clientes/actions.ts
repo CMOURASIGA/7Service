@@ -243,28 +243,15 @@ export async function createContractAction(
     const startDate = String(formData.get('startDate') ?? '');
     if (!reference || !/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate))
       return { error: 'Informe referencia e data de inicio validas.' };
-    const db = await createDbClient();
-    const { data: contract, error } = await db
-      .from('contracts')
-      .insert({
-        client_id: clientId,
-        reference,
-        start_date: startDate,
-        end_date: formData.get('endDate')?.toString() || null,
-        notes: formData.get('notes')?.toString() || null,
-      })
-      .select('id')
-      .single();
-    if (error || !contract) throw error ?? new Error('Falha ao registrar contrato');
-    const { error: auditError } = await createAdminClient().from('audit_logs').insert({
-      action: 'contract.created',
-      target_type: 'contract',
-      target_id: contract.id,
-      client_id: clientId,
-      actor_internal_user_id: session.internalUser.id,
-      source: '7service',
+    const { error } = await createAdminClient().rpc('create_contract_atomic', {
+      p_actor: session.internalUser.id,
+      p_client: clientId,
+      p_reference: reference,
+      p_start: startDate,
+      p_end: formData.get('endDate')?.toString() || null,
+      p_notes: formData.get('notes')?.toString() || null,
     });
-    if (auditError) throw auditError;
+    if (error) throw new Error('Falha ao cadastrar contrato e registrar sua auditoria.');
     revalidatePath(`/clientes/${clientId}`);
     return { error: null };
   } catch (error) {
