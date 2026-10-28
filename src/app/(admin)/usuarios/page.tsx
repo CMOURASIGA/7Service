@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { StatusBadge } from '@/components/ui/status-badge';
+import { NewIdentityForm } from '@/features/identities/components/new-identity-form';
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { IDENTITY_STATUS_LABEL } from '@/lib/status-labels';
@@ -30,6 +31,8 @@ export default async function IdentitiesPage({
     );
   }
   const { data: identities, error } = await query;
+  const {data:clients,error:clientsError} = await db.from('clients').select('id,legal_name,trade_name').eq('status','ACTIVE').order('legal_name');
+  if(clientsError) throw new Error('Falha ao consultar empresas');
   if (error) throw new Error('Falha ao consultar identidades');
 
   return (
@@ -41,6 +44,7 @@ export default async function IdentitiesPage({
         </p>
       </div>
 
+      <NewIdentityForm clients={clients ?? []} />
       <form className="flex gap-2" action="/usuarios">
         <input
           type="search"
