@@ -1,18 +1,20 @@
 import { ConfirmAction } from '@/components/ui/confirm-action';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { getMockStore } from '@/lib/mock/store';
+import { requirePermission } from '@/lib/auth/session';
+import { createClient } from '@/lib/supabase/server';
 import { INVITATION_STATUS_LABEL } from '@/lib/status-labels';
-import { listInvitations } from '@/services/invitations';
 
-import { cancelInvitationAction, resendInvitationAction } from './actions';
+import { cancelInvitationAction } from './actions';
 
 export const metadata = {
   title: 'Convites - 7Service',
 };
 
-export default function InvitationsPage() {
-  const invitations = listInvitations();
-  const store = getMockStore();
+export default async function InvitationsPage() {
+  await requirePermission('invitations.manage');
+  const db = await createClient();
+  const { data: invitations, error } = await db.from('invitations').select('id,status,expires_at,identity_id,identities(first_name,last_name)').order('created_at',{ascending:false});
+  if (error) throw new Error('Falha ao consultar convites');
 
   return (
     <div className="flex flex-col gap-4">
@@ -34,33 +36,26 @@ export default function InvitationsPage() {
             </tr>
           </thead>
           <tbody>
-            {invitations.map((inv) => {
-              const identity = store.identities.find((i) => i.id === inv.identityId);
-              const statusInfo = INVITATION_STATUS_LABEL[inv.status];
-              const resend = resendInvitationAction.bind(null, inv.id);
+            {(invitations ?? []).map((inv) => {
+              const identity = inv.identities;
+              const statusInfo = INVITATION_STATUS_LABEL[inv.status as keyof typeof INVITATION_STATUS_LABEL];
               const cancel = cancelInvitationAction.bind(null, inv.id);
               const isActionable = inv.status === 'SENT' || inv.status === 'PENDING';
 
               return (
                 <tr key={inv.id} className="border-border border-b last:border-0 hover:bg-slate-50">
                   <td className="text-foreground px-4 py-2 font-medium">
-                    {identity ? `${identity.firstName} ${identity.lastName}` : inv.identityId}
+                    {identity ? `${identity.first_name} ${identity.last_name}` : inv.identity_id}
                   </td>
                   <td className="px-4 py-2">
                     <StatusBadge label={statusInfo.label} tone={statusInfo.tone} />
                   </td>
                   <td className="text-muted px-4 py-2">
-                    {new Date(inv.expiresAt).toLocaleString('pt-BR')}
+                    {new Date(inv.expires_at).toLocaleString('pt-BR')}
                   </td>
                   <td className="px-4 py-2">
                     {isActionable ? (
                       <div className="flex gap-2">
-                        <ConfirmAction
-                          triggerLabel="Reenviar"
-                          impactMessage="Um novo link será gerado e o anterior deixará de funcionar."
-                          action={resend}
-                          confirmLabel="Reenviar"
-                        />
                         <ConfirmAction
                           triggerLabel="Cancelar"
                           impactMessage="O convite será cancelado e o link atual deixará de funcionar."
