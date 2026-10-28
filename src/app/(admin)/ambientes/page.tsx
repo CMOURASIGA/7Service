@@ -9,7 +9,9 @@ export default async function AmbientesPage() {
   const [environmentsResult, deploymentsResult, clientsResult, productsResult] = await Promise.all([
     db
       .from('product_environments')
-      .select('id, environment, status, entry_url, database_resource_ref, version_sha, product_deployments(name,model)')
+      .select(
+        'id, environment, status, entry_url, database_resource_ref, version_sha, product_deployments(name,model)',
+      )
       .order('created_at', { ascending: false }),
     db
       .from('product_deployments')
@@ -53,7 +55,10 @@ export default async function AmbientesPage() {
                 <strong>{x.product_deployments?.name}</strong> - {x.environment} - {x.status}
                 <p>Modelo: {x.product_deployments?.model}</p>
                 <p>Versão: {x.version_sha ?? 'Não informada'}</p>
-                <p>Referência do banco: {x.database_resource_ref ?? 'Não registrada / provisionamento não confirmado'}</p>
+                <p>
+                  Referência do banco:{' '}
+                  {x.database_resource_ref ?? 'Não registrada / provisionamento não confirmado'}
+                </p>
                 <p>URL cadastrada: {x.entry_url ?? 'Não cadastrada'}</p>
               </li>
             ))}
