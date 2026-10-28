@@ -1806,6 +1806,10 @@ export type Database = {
         };
         Returns: string;
       };
+      cancel_invitation_atomic: {
+        Args: { p_actor: string; p_invitation: string };
+        Returns: string;
+      };
       verify_github_deployment_evidence: {
         Args: {
           p_actor: string;
