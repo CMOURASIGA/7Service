@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { matchesGithubDeploymentRun } from '@/lib/deployments/github-evidence';
 
 type VerificationState = { error: string | null; success?: string };
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
@@ -89,8 +90,7 @@ export async function verifyGithubEvidence(
     // A successful workflow on the same commit is not proof that THIS workflow
     // deployed THIS environment. Require the deployment status to link directly
     // to the exact Actions run, otherwise fail closed.
-    const expectedLogUrl = `https://github.com/${repo}/actions/runs/${runId}`;
-    if (statuses[0]?.log_url !== expectedLogUrl)
+    if (!matchesGithubDeploymentRun(repo, runId, statuses[0]?.log_url))
       return { error: 'O status do deployment não comprova vínculo com esta execução GitHub Actions.' };
     // Do not update operational environment state or report deployment in production.
     const { error } = await db.rpc('verify_github_deployment_evidence', {
