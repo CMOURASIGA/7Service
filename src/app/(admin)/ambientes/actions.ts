@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 const deploymentInput = z.object({
   productId: z.string().uuid(),
@@ -22,41 +23,21 @@ export async function createDedicatedDeployment(
   _state: EnvironmentFormState,
   formData: FormData,
 ): Promise<EnvironmentFormState> {
-  await requirePermission('clients.manage');
+  const { internalUser } = await requirePermission('clients.manage');
   const parsed = deploymentInput.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: 'Informe cliente, produto e nome válidos.' };
-
-  const db = await createClient();
   const { clientId, productId, name } = parsed.data;
-  const { data: client } = await db.from('clients').select('id').eq('id', clientId).maybeSingle();
-  const { data: product } = await db
-    .from('products')
-    .select('id')
-    .eq('id', productId)
-    .maybeSingle();
-  if (!client || !product) return { error: 'Cliente ou produto não encontrado.' };
-
-  const { data: deployment, error: deploymentError } = await db
-    .from('product_deployments')
-    .insert({ product_id: productId, model: 'DEDICATED', name, status: 'PLANNED' })
-    .select('id')
-    .single();
-  if (deploymentError || !deployment)
-    return { error: deploymentError?.message ?? 'Falha ao criar implantação.' };
-
-  const { error: associationError } = await db
-    .from('client_deployments')
-    .insert({ client_id: clientId, product_id: productId, deployment_id: deployment.id });
-  if (associationError) {
-    await db.from('product_deployments').delete().eq('id', deployment.id);
-    return { error: associationError.message };
-  }
-
+  const { error } = await createAdminClient().rpc('create_dedicated_deployment_atomic', {
+    p_actor_id: internalUser.id,
+    p_client_id: clientId,
+    p_product_id: productId,
+    p_name: name,
+  });
+  if (error) return { error: error.message };
   revalidatePath('/ambientes');
   return {
     error: null,
-    success:
-      'Implantação dedicada cadastrada como planejada. Nenhum banco foi provisionado automaticamente.',
+    success: 'Implantação dedicada cadastrada e auditada de forma atômica como planejada. Nenhum banco foi provisionado.',
   };
 }
 
