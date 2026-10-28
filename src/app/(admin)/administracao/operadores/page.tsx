@@ -20,7 +20,7 @@ export default async function InternalOperatorsPage() {
   await requirePermission('internal_users.manage');
   const db = createAdminClient();
   const [userQuery,roleQuery] = await Promise.all([
-    db.from('internal_users').select('id,auth_user_id,first_name,last_name,email,status,created_at,updated_at,internal_user_roles(internal_roles(code))').order('first_name'),
+    db.from('internal_users').select('id,auth_user_id,first_name,last_name,email,status,created_at,updated_at,internal_user_roles!internal_user_roles_internal_user_id_fkey(internal_roles(code))').order('first_name'),
     db.from('internal_roles').select('id,code,name,description').order('name'),
   ]);
   if(userQuery.error || roleQuery.error) throw new Error('Falha ao carregar operadores');
