@@ -15,7 +15,7 @@ export default async function IdentityDetailPage({params}:{params:Promise<{id:st
   const [identity,memberships,accesses] = await Promise.all([
     db.from('identities').select('id,first_name,last_name,email,status').eq('id',id).maybeSingle(),
     db.from('client_memberships').select('id,client_id,status,clients(legal_name,trade_name)').eq('identity_id',id),
-    db.from('user_product_access').select('id,client_id,status,subscription_id,subscriptions(products(name))').eq('identity_id',id),
+    db.from('user_product_access').select('id,client_id,status,subscription_id,subscriptions!user_product_access_subscription_id_fkey(products(name))').eq('identity_id',id),
   ]);
   if(identity.error||memberships.error||accesses.error) throw new Error('Falha ao carregar identidade.');
   if(!identity.data) notFound();
