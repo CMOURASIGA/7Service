@@ -1,0 +1,10 @@
+DROP POLICY IF EXISTS internal_manage_client_deployments ON public.client_deployments;
+DROP POLICY IF EXISTS internal_manage_product_deployments ON public.product_deployments;
+DROP POLICY IF EXISTS internal_manage_product_environments ON public.product_environments;
+CREATE POLICY internal_read_client_deployments ON public.client_deployments FOR SELECT TO authenticated USING (public.has_internal_permission('clients.view'));
+CREATE POLICY internal_write_client_deployments ON public.client_deployments FOR ALL TO authenticated USING (public.has_internal_permission('clients.manage')) WITH CHECK (public.has_internal_permission('clients.manage'));
+CREATE POLICY internal_read_product_deployments ON public.product_deployments FOR SELECT TO authenticated USING (public.has_internal_permission('clients.view'));
+CREATE POLICY internal_write_product_deployments ON public.product_deployments FOR ALL TO authenticated USING (public.has_internal_permission('clients.manage')) WITH CHECK (public.has_internal_permission('clients.manage'));
+CREATE POLICY internal_read_product_environments ON public.product_environments FOR SELECT TO authenticated USING (public.has_internal_permission('clients.view'));
+CREATE POLICY internal_write_product_environments ON public.product_environments FOR ALL TO authenticated USING (public.has_internal_permission('clients.manage')) WITH CHECK (public.has_internal_permission('clients.manage'));
+GRANT SELECT ON public.client_deployments, public.product_deployments, public.product_environments TO authenticated;
