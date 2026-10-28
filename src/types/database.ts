@@ -1806,6 +1806,15 @@ export type Database = {
         };
         Returns: string;
       };
+      change_client_status_atomic: {
+        Args: {
+          p_actor: string;
+          p_client: string;
+          p_status: string;
+          p_reason: string | null;
+        };
+        Returns: string;
+      };
       cancel_invitation_atomic: {
         Args: { p_actor: string; p_invitation: string };
         Returns: string;
