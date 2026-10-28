@@ -226,3 +226,7 @@ A Fase 1 somente pode ser considerada concluída quando:
 A autorização acima vale exclusivamente para a construção da fundação do 7Service conforme as specs atuais. Ela não autoriza automaticamente 7HUB, SSO completo ou migração dos produtos existentes.
 
 Após a Fase 1 passar pelos critérios de aceite, deve ser aberto um novo gate para `WAVE 01 - 7Commander + CRM Flow`.
+
+
+## Adendo de arquitetura — 28/10/2026
+**Decisao de produto:** 7Service e painel exclusivo da Consult Services; identidade global multiempresa, com memberships e acessos por empresa/produto; APIs padronizadas para os produtos e IA administrativa apenas futura. A especificacao vinculante e `docs/SPEC_00_CENTRAL_PLATFORM.md`. Esta decisao substitui a antiga restricao identidade 1:1 por cliente nas specs historicas. **Gate de implementacao/homologacao permanece aberto**: nenhuma etapa passa automaticamente para APPROVED em execucao, nem autoriza merge/deploy.
