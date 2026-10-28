@@ -3,11 +3,14 @@ import { getCurrentTimeMs } from '@/lib/time/current';
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { OverrideForm } from '@/features/licensing/components/override-form';
 import { SUBSCRIPTION_EFFECTIVE_STATUS_LABEL } from '@/lib/status-labels';
 
 export const dynamic = 'force-dynamic';
 export default async function LicensingPage() {
   await requirePermission('clients.view');
+  let canOverride = false;
+  try { await requirePermission('licenses.override'); canOverride = true; } catch { canOverride = false; }
   const db = await createClient();
   const [subscriptions, accesses, overrides] = await Promise.all([
     db
@@ -62,6 +65,7 @@ export default async function LicensingPage() {
               <th className="p-3">Limite</th>
               <th className="p-3">Utilizadas</th>
               <th className="p-3">Disponiveis</th>
+              {canOverride?<th className="p-3">Exceções autorizadas</th>:null}
             </tr>
           </thead>
           <tbody>
@@ -82,6 +86,7 @@ export default async function LicensingPage() {
                 </td>
                 <td className="p-3">{used}</td>
                 <td className="p-3">{s.license_limit + extra - used}</td>
+                {canOverride?<td className="p-3"><OverrideForm subscriptionId={s.id}/></td>:null}
               </tr>
             ))}
           </tbody>
