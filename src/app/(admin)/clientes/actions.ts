@@ -53,7 +53,7 @@ export async function createClientAction(
     if (existingError) throw existingError;
     if (existing?.length) return { error: 'Ja existe um cliente ativo com este documento.' };
     const { data: client, error: createError } = await db.from('clients').insert({
-      person_type: personType,
+      person_type: personType as PersonType,
       document,
       legal_name: legalName,
       trade_name: formData.get('tradeName')?.toString().trim() || null,
