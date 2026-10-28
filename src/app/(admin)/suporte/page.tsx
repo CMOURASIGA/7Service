@@ -1,6 +1,8 @@
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { IncidentForm } from '@/features/support/components/incident-form';
+import { ConfirmAction } from '@/components/ui/confirm-action';
+import { updateIncidentStatusAction } from './actions';
 
 export const dynamic='force-dynamic';
 export default async function SupportPage(){
