@@ -26,5 +26,7 @@ jobs:
           git add src scripts tests docs .github
           if ! git diff --cached --quiet; then
             git commit -m "style: align batch with Prettier [skip ci]"
+            git fetch origin develop
+            git rebase origin/develop
             git push origin HEAD:develop
           fi
