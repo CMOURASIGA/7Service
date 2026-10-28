@@ -1,0 +1,32 @@
+name: Format environment files once
+on:
+  push:
+    branches: [develop]
+    paths: ['.github/workflows/format-environment-once.yml']
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prettier --write 'src/app/(admin)/ambientes/actions.ts'
+      - name: Commit formatted source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 'src/app/(admin)/ambientes/actions.ts'
+          if ! git diff --cached --quiet; then
+            git commit -m "style: format environment actions"
+            git restore .github/workflows/format-environment-once.yml
+            git fetch origin develop
+            git rebase origin/develop
+            git push origin HEAD:develop
+          fi
