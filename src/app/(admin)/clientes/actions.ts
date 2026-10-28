@@ -193,39 +193,15 @@ async function changeClientStatus(
   actorId: string,
   reason: string | null,
 ) {
-  const db = await createDbClient();
-  const { data: before, error: readError } = await db
-    .from('clients')
-    .select('id,status')
-    .eq('id', clientId)
-    .single();
-  if (readError || !before) throw new Error('Cliente nao encontrado');
-  const { data: changed, error } = await db
-    .from('clients')
-    .update({ status })
-    .eq('id', clientId)
-    .select('id')
-    .single();
-  if (error || !changed) throw error ?? new Error('Alteracao nao confirmada');
-  const { error: auditError } = await createAdminClient()
-    .from('audit_logs')
-    .insert({
-      action:
-        status === 'ACTIVE'
-          ? 'client.reactivated'
-          : status === 'CLOSED'
-            ? 'client.closed'
-            : 'client.suspended',
-      target_type: 'client',
-      target_id: clientId,
-      client_id: clientId,
-      actor_internal_user_id: actorId,
-      before_json: { status: before.status },
-      after_json: { status },
-      reason,
-      source: '7service',
-    });
-  if (auditError) throw auditError;
+  if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(clientId))
+    throw new Error('Identificador de cliente inválido');
+  const { error } = await createAdminClient().rpc('change_client_status_atomic', {
+    p_actor: actorId,
+    p_client: clientId,
+    p_status: status,
+    p_reason: reason,
+  });
+  if (error) throw new Error('Não foi possível atualizar o cliente e confirmar sua auditoria.');
 }
 
 export async function suspendClientAction(clientId: string, formData: FormData) {
