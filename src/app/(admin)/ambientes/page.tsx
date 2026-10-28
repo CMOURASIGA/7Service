@@ -4,6 +4,7 @@ import { EnvironmentRegistry } from './registry';
 import { VersionHistoryForm } from '@/features/environments/components/version-history-form';
 import { EvidenceForm } from '@/features/environments/components/evidence-form';
 import { GithubEvidenceReview } from '@/features/environments/components/github-evidence-review';
+import { VercelEvidenceReview } from '@/features/environments/components/vercel-evidence-review';
 
 export const dynamic = 'force-dynamic';
 export default async function AmbientesPage() {
@@ -84,6 +85,8 @@ export default async function AmbientesPage() {
             {ev.provider === 'GITHUB_ACTIONS' && ev.verification_state === 'UNVERIFIED' ? (
               <GithubEvidenceReview evidenceId={ev.id} />
             ) : null}
+            {ev.provider === 'VERCEL' && ev.verification_state === 'UNVERIFIED'
+              ? <VercelEvidenceReview evidenceId={ev.id} /> : null}
           </div>
         ))}
       </section>
