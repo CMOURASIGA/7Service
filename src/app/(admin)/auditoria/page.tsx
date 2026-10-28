@@ -1,5 +1,6 @@
-import { getMockStore } from '@/lib/mock/store';
-import { listAuditLogs } from '@/services/audit';
+import { requirePermission } from '@/lib/auth/session';
+import { createClient } from '@/lib/supabase/server';
+
 
 export const metadata = {
   title: 'Auditoria - 7Service',
@@ -11,9 +12,15 @@ export default async function AuditPage({
   searchParams: Promise<{ action?: string }>;
 }) {
   const params = await searchParams;
-  const logs = listAuditLogs({ action: params.action || undefined });
-  const store = getMockStore();
-  const actions = Array.from(new Set(store.auditLogs.map((l) => l.action))).sort();
+  await requirePermission('audit.view');
+  const db = await createClient();
+  let query = db.from('audit_logs')
+    .select('id,occurred_at,action,target_type,target_id,reason,actor_internal_user_id,internal_users(first_name,last_name)')
+    .order('occurred_at', { ascending: false }).limit(250);
+  if (params.action?.trim()) query = query.eq('action', params.action.trim());
+  const { data: logs, error } = await query;
+  if (error) throw new Error('Falha ao consultar auditoria');
+  const actions = Array.from(new Set((logs ?? []).map(l => l.action))).sort();
 
   return (
     <div className="flex flex-col gap-4">
@@ -46,7 +53,7 @@ export default async function AuditPage({
         </button>
       </form>
 
-      {logs.length === 0 ? (
+      {!logs?.length ? (
         <div className="border-border text-muted rounded-lg border border-dashed p-10 text-center text-sm">
           Nenhum evento encontrado.
         </div>
@@ -63,17 +70,17 @@ export default async function AuditPage({
               </tr>
             </thead>
             <tbody>
-              {logs.map((log) => (
+              {(logs ?? []).map((log) => (
                 <tr key={log.id} className="border-border border-b last:border-0">
                   <td className="text-muted px-4 py-2">
-                    {new Date(log.occurredAt).toLocaleString('pt-BR')}
+                    {new Date(log.occurred_at).toLocaleString('pt-BR')}
                   </td>
                   <td className="text-foreground px-4 py-2 font-medium">{log.action}</td>
                   <td className="text-muted px-4 py-2">
-                    {log.targetType}
-                    {log.targetId ? ` · ${log.targetId.slice(0, 8)}` : ''}
+                    {log.target_type}
+                    {log.target_id ? ` · ${log.targetId.slice(0, 8)}` : ''}
                   </td>
-                  <td className="text-muted px-4 py-2">{log.actorLabel}</td>
+                  <td className="text-muted px-4 py-2">{[log.internal_users?.first_name, log.internal_users?.last_name].filter(Boolean).join(' ') || 'Sistema'}</td>
                   <td className="text-muted px-4 py-2">{log.reason ?? '—'}</td>
                 </tr>
               ))}
