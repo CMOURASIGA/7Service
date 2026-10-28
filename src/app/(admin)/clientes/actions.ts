@@ -43,7 +43,7 @@ export async function createClientAction(
   try {
     const db = await createDbClient();
     const personType = String(formData.get('personType') ?? '');
-    const document = String(formData.get('document') ?? '').replace(/\\D/g, '');
+    const document = String(formData.get('document') ?? '').replace(/\D/g, '');
     const legalName = String(formData.get('legalName') ?? '').trim();
     if (!['PF', 'PJ'].includes(personType) || document.length !== (personType === 'PF' ? 11 : 14) || !legalName) {
       return { error: 'Informe tipo, documento e nome validos.' };
