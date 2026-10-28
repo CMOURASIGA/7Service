@@ -38,68 +38,32 @@ export async function createClientAction(
   const session = await requirePermission('clients.manage');
 
   try {
-    const db = await createDbClient();
     const personType = String(formData.get('personType') ?? '');
     const document = String(formData.get('document') ?? '').replace(/\D/g, '');
     const legalName = String(formData.get('legalName') ?? '').trim();
-    if (
-      !['PF', 'PJ'].includes(personType) ||
-      document.length !== (personType === 'PF' ? 11 : 14) ||
-      !legalName
-    ) {
-      return { error: 'Informe tipo, documento e nome validos.' };
+    if (!['PF', 'PJ'].includes(personType) || document.length !== (personType === 'PF' ? 11 : 14) || !legalName) {
+      return { error: 'Informe tipo, documento e nome válidos.' };
     }
-    const { data: existing, error: existingError } = await db
-      .from('clients')
-      .select('id')
-      .eq('document', document)
-      .neq('status', 'CLOSED')
-      .limit(1);
-    if (existingError) throw existingError;
-    if (existing?.length) return { error: 'Ja existe um cliente ativo com este documento.' };
-    const { data: client, error: createError } = await db
-      .from('clients')
-      .insert({
-        person_type: personType as PersonType,
-        document,
-        legal_name: legalName,
-        trade_name: formData.get('tradeName')?.toString().trim() || null,
-        phone: formData.get('phone')?.toString().trim() || null,
-        email: formData.get('email')?.toString().trim() || null,
-        contact_name: formData.get('contactName')?.toString().trim() || null,
-        notes: formData.get('notes')?.toString().trim() || null,
-        relationship_start_date: new Date().toISOString().slice(0, 10),
-      })
-      .select('id')
-      .single();
-    if (createError) throw createError;
     const address = readAddress(formData);
-    if (address) {
-      const { error: addressError } = await db.from('client_addresses').insert({
-        client_id: client.id,
-        postal_code: address.postalCode,
-        street: address.street,
-        number: address.number,
-        complement: address.complement,
-        district: address.district,
-        city: address.city,
-        state: address.state,
-        country: address.country,
-      });
-      if (addressError) throw addressError;
-    }
-    const { error: auditError } = await createAdminClient().from('audit_logs').insert({
-      action: 'client.created',
-      target_type: 'client',
-      target_id: client.id,
-      client_id: client.id,
-      actor_internal_user_id: session.internalUser.id,
-      reason: 'Cadastro administrativo',
-      source: '7service',
+    const { data: clientId, error } = await createAdminClient().rpc('create_client_atomic', {
+      p_actor: session.internalUser.id,
+      p_person_type: personType,
+      p_document: document,
+      p_legal_name: legalName,
+      p_trade_name: formData.get('tradeName')?.toString().trim() || null,
+      p_phone: formData.get('phone')?.toString().trim() || null,
+      p_email: formData.get('email')?.toString().trim() || null,
+      p_contact_name: formData.get('contactName')?.toString().trim() || null,
+      p_notes: formData.get('notes')?.toString().trim() || null,
+      p_address: address ? {
+        postalCode: address.postalCode, street: address.street, number: address.number,
+        complement: address.complement, district: address.district,
+        city: address.city, state: address.state, country: address.country,
+      } : null,
     });
-    if (auditError) throw auditError;
+    if (error || !clientId) return { error: 'Não foi possível cadastrar o cliente; verifique os dados e possíveis duplicidades.' };
     revalidatePath('/clientes');
-    return { error: null, createdId: client.id };
+    return { error: null, createdId: clientId };
   } catch (error) {
     if (isAppError(error)) {
       return { error: error.message };
