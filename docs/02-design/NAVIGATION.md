@@ -40,3 +40,9 @@ Busca por nome ou e-mail deve localizar rapidamente usuário e contexto de clien
 ## Confirmações
 
 Ações destrutivas ou de segurança devem informar impacto antes da confirmação. Suspensão deve deixar claro se o escopo é global ou de produto.
+
+
+## Revisao de navegacao — 28/10/2026
+A estrutura alvo de menus e: Dashboard; Clientes; Produtos; Usuarios e Acessos; Ambientes; Licenciamento; Suporte; Auditoria; Administracao. Convites e Contratos permanecem como rotinas contextuais, podendo manter rotas tecnicas ja implementadas.
+
+A **Ficha do Cliente** passa a ser a area operacional principal, com abas Visao geral, Contratos, Produtos, Usuarios, Ambientes e Historico. Acoes sempre condicionadas ao operador autorizado. Referencia normativa: `docs/SPEC_07_ENVIRONMENTS_AND_FRONTEND.md`.
