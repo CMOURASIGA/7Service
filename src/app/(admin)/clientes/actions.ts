@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache';
 
 import { requirePermission } from '@/lib/auth/session';
-import { createClient as createDbClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isAppError } from '@/lib/errors';
 import type { ClientAddress, PersonType } from '@/types/domain';
