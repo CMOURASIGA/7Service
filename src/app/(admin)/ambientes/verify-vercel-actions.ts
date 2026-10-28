@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { matchesVercelDeployment, type VercelDeploymentProof } from '@/lib/deployments/vercel-evidence';
 
 type VerificationState = { error: string | null; success?: string };
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
@@ -42,7 +43,6 @@ export async function verifyVercelEvidence(
   if (envError || !environment?.entry_url)
     return { error: 'O ambiente precisa ter URL HTTPS registrada para verificar o deployment.' };
   try {
-    const expectedHost = new URL(environment.entry_url).hostname.toLowerCase();
     const response = await fetch(
       `https://api.vercel.com/v13/deployments/${encodeURIComponent(deploymentId)}`,
       {
@@ -52,31 +52,12 @@ export async function verifyVercelEvidence(
       },
     );
     if (!response.ok) return { error: `Consulta Vercel não concluída (${response.status}).` };
-    const deployment = (await response.json()) as {
-      id?: string;
-      projectId?: string;
-      readyState?: string;
-      target?: string | null;
-      url?: string;
-      alias?: string[];
-      meta?: { githubCommitSha?: string };
-    };
-    if (
-      deployment.id !== deploymentId ||
-      deployment.projectId !== projectId ||
-      deployment.readyState !== 'READY' ||
-      deployment.meta?.githubCommitSha?.toLowerCase() !== evidence.commit_sha
-    )
-      return { error: 'Deployment, projeto, estado ou SHA não correspondem à evidência.' };
-    if (environment.environment === 'PRODUCTION' && deployment.target !== 'production')
-      return { error: 'Deployment não corresponde ao alvo de produção.' };
-    if (environment.environment !== 'PRODUCTION' && deployment.target === 'production')
-      return { error: 'Um deployment de produção não comprova ambiente não produtivo.' };
-    const knownHosts = [deployment.url, ...(deployment.alias ?? [])]
-      .filter(Boolean)
-      .map((x) => String(x).toLowerCase());
-    if (!knownHosts.includes(expectedHost))
-      return { error: 'URL do deployment não corresponde à URL cadastrada para o ambiente.' };
+    const deployment = (await response.json()) as VercelDeploymentProof;
+    if (!matchesVercelDeployment({
+      deployment, deploymentId, projectId,
+      commitSha: evidence.commit_sha, environment: environment.environment,
+      entryUrl: environment.entry_url,
+    })) return { error: 'Deployment não corresponde ao projeto, SHA, ambiente ou URL cadastrados.' };
     const { error: verificationError } = await db.rpc('verify_vercel_deployment_evidence', {
       p_actor: internalUser.id,
       p_evidence: evidenceId,
