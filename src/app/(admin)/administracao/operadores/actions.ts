@@ -24,9 +24,39 @@ async function recordAudit(actorId:string, action:string, targetId:string) {
   });
   if (error) throw error;
 }
-export async function createInternalUserAction(_previous:InternalUserFormState, _form:FormData):Promise<InternalUserFormState> {
-  await requirePermission('internal_users.manage');
-  return { error:'Provisionamento de operador requer convite seguro e vinculo Auth; cadastro direto desabilitado.' };
+export async function createInternalUserAction(_previous:InternalUserFormState, form:FormData):Promise<InternalUserFormState> {
+  const {internalUser} = await requirePermission('internal_users.manage');
+  const email = String(form.get('email') ?? '').trim().toLowerCase();
+  const firstName = String(form.get('firstName') ?? '').trim();
+  const lastName = String(form.get('lastName') ?? '').trim();
+  const roles = form.getAll('roleCodes').filter((x):x is string => typeof x === 'string');
+  if (!email.includes('@') || !firstName || !lastName || !roles.length ||
+      roles.some(x => !validRoles.includes(x as InternalRoleCode))) {
+    return {error:'Informe os dados e ao menos um perfil valido.'};
+  }
+  const db = createAdminClient();
+  const {data:existing,error:existingError} = await db.from('internal_users')
+    .select('id').ilike('email',email).maybeSingle();
+  if(existingError) return {error:'Falha ao verificar operador existente.'};
+  if(existing) return {error:'Ja existe operador com este e-mail.'};
+  const {data:roleRows,error:roleError} = await db.from('internal_roles').select('id,code').in('code',roles);
+  if(roleError || roleRows?.length !== new Set(roles).size) return {error:'Perfil nao reconhecido.'};
+  const {data:invitation,error:inviteError} = await db.auth.admin.inviteUserByEmail(email);
+  if(inviteError || !invitation.user) return {error:'Nao foi possivel enviar convite administrativo.'};
+  const {data:created,error:createError} = await db.from('internal_users').insert({
+    auth_user_id:invitation.user.id, first_name:firstName, last_name:lastName,email,status:'ACTIVE',
+  }).select('id').single();
+  if(createError || !created) return {error:'Convite enviado, mas vinculo de operador nao foi gravado. Requer conciliacao.'};
+  const {error:assignedError} = await db.from('internal_user_roles').insert(
+    roleRows.map(r=>({internal_user_id:created.id,role_id:r.id,assigned_by:internalUser.id}))
+  );
+  if(assignedError) {
+    await db.from('internal_users').update({status:'BLOCKED'}).eq('id',created.id);
+    return {error:'Convite enviado, mas atribuicao de perfis falhou. Operador bloqueado para conciliacao.'};
+  }
+  await recordAudit(internalUser.id,'internal_user.invited',created.id);
+  revalidatePath('/administracao/operadores');
+  return {error:null};
 }
 export async function updateInternalUserRolesAction(userId:string, formData:FormData) {
   const {internalUser} = await requirePermission('internal_users.manage');
