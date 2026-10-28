@@ -1853,6 +1853,10 @@ export type Database = {
         };
         Returns: string;
       };
+      grant_product_access_atomic: {
+        Args: { p_actor: string; p_identity: string; p_subscription: string; p_role: string };
+        Returns: string;
+      };
       create_subscription_atomic: {
         Args: {
           p_actor: string;
