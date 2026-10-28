@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 
 import { requirePermission } from '@/lib/auth/session';
 import { createClient as createDbClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { isAppError } from '@/lib/errors';
 import { addContractDocument, createContract } from '@/services/contracts';
 import { createClient, setClientStatus, updateClient } from '@/services/clients';
@@ -79,7 +80,7 @@ export async function createClientAction(
       });
       if (addressError) throw addressError;
     }
-    const { error: auditError } = await db.from('audit_logs').insert({
+    const { error: auditError } = await createAdminClient().from('audit_logs').insert({
       action: 'client.created', target_type: 'client', target_id: client.id,
       client_id: client.id, actor_internal_user_id: session.internalUser.id,
       reason: 'Cadastro administrativo', source: '7service',
