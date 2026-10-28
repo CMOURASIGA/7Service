@@ -230,3 +230,8 @@ Após a Fase 1 passar pelos critérios de aceite, deve ser aberto um novo gate p
 
 ## Adendo de arquitetura — 28/10/2026
 **Decisao de produto:** 7Service e painel exclusivo da Consult Services; identidade global multiempresa, com memberships e acessos por empresa/produto; APIs padronizadas para os produtos e IA administrativa apenas futura. A especificacao vinculante e `docs/SPEC_00_CENTRAL_PLATFORM.md`. Esta decisao substitui a antiga restricao identidade 1:1 por cliente nas specs historicas. **Gate de implementacao/homologacao permanece aberto**: nenhuma etapa passa automaticamente para APPROVED em execucao, nem autoriza merge/deploy.
+
+
+## Atualizacao de escopo — Ambientes e frontend (28/10/2026)
+**Definido para planejamento:** um banco operacional dedicado por cliente na implantacao inicial; 7Service com banco central administrativo independente; suporte futuro a banco compartilhado sem entrega antecipada; ambientes PROD/HML/DEV separados e autorizados; URLs gerenciadas sem conferir acesso; ficha do cliente como centro operacional; nove modulos de navegacao; features exclusivas por cliente. Ver `docs/SPEC_07_ENVIRONMENTS_AND_FRONTEND.md`.
+**Pendente:** desenho de migrations, implementacao, validacao real, CI, homologacao e autorizacao para producao. A aprovacao de requisitos nao significa funcionalidade implantada.
