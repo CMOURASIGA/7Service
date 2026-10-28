@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { trackAuthInvitation } from '@/lib/invitations/track';
 
 export interface IdentityFormState {
   error: string | null;
@@ -112,6 +113,8 @@ export async function createIdentityMembershipAction(
       .eq('id', identity.id);
     if (bindError)
       return { error: 'Convite enviado, mas a identidade Auth precisa ser conciliada.' };
+    try { await trackAuthInvitation({identityId:identity.id,operatorId:internalUser.id}); }
+    catch { return {error:'Convite enviado, mas o registro de acompanhamento falhou. Requer conciliação.'}; }
   }
 
   const { error: auditError } = await db.from('audit_logs').insert({
