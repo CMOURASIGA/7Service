@@ -24,7 +24,7 @@ export default async function InvitationsPage() {
       <div>
         <h1 className="text-foreground text-xl font-semibold">Convites</h1>
         <p className="text-muted text-sm">
-          Validade de 24 horas. Reenviar gera um novo token e invalida o anterior.
+          O prazo exibido é do acompanhamento administrativo. A validade e a revogação do link de autenticação são controladas pelo Supabase Auth.
         </p>
       </div>
 
@@ -62,7 +62,7 @@ export default async function InvitationsPage() {
                       <div className="flex gap-2">
                         <ConfirmAction
                           triggerLabel="Cancelar"
-                          impactMessage="O convite será cancelado e o link atual deixará de funcionar."
+                          impactMessage="Cancela apenas o acompanhamento administrativo do convite. Esta ação NÃO revoga automaticamente o link enviado pelo Supabase Auth."
                           action={cancel}
                           tone="danger"
                           confirmLabel="Cancelar convite"
