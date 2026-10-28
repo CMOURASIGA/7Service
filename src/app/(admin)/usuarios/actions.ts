@@ -113,8 +113,13 @@ export async function createIdentityMembershipAction(
       .eq('id', identity.id);
     if (bindError)
       return { error: 'Convite enviado, mas a identidade Auth precisa ser conciliada.' };
-    try { await trackAuthInvitation({identityId:identity.id,operatorId:internalUser.id}); }
-    catch { return {error:'Convite enviado, mas o registro de acompanhamento falhou. Requer conciliação.'}; }
+    try {
+      await trackAuthInvitation({ identityId: identity.id, operatorId: internalUser.id });
+    } catch {
+      return {
+        error: 'Convite enviado, mas o registro de acompanhamento falhou. Requer conciliação.',
+      };
+    }
   }
 
   const { error: auditError } = await db.from('audit_logs').insert({
