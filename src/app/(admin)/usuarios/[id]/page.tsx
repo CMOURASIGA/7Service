@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { ConfirmAction } from '@/components/ui/confirm-action';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { IDENTITY_STATUS_LABEL, ACCESS_STATUS_LABEL } from '@/lib/status-labels';
-import { suspendAccessAction,reactivateAccessAction,revokeAccessAction } from './actions';
+import { suspendAccessAction,reactivateAccessAction,revokeAccessAction,initiateRecoveryAction } from './actions';
 
 export const dynamic='force-dynamic';
 export default async function IdentityDetailPage({params}:{params:Promise<{id:string}>}){
@@ -24,7 +24,11 @@ export default async function IdentityDetailPage({params}:{params:Promise<{id:st
   return <main className="flex flex-col gap-5">
     <div><Link href="/usuarios" className="text-brand-700 text-sm underline">Usuarios</Link>
       <h1 className="text-xl font-semibold">{user.first_name} {user.last_name}</h1>
-      <p className="text-muted text-sm">{user.email}</p><StatusBadge label={badge.label} tone={badge.tone}/></div>
+      <p className="text-muted text-sm">{user.email}</p><StatusBadge label={badge.label} tone={badge.tone}/>
+      <div className="mt-3"><ConfirmAction triggerLabel="Solicitar recuperacao de acesso"
+        action={initiateRecoveryAction.bind(null,id)}
+        impactMessage="Envia um e-mail de recuperacao pelo Supabase Auth ao usuario cadastrado."
+        confirmLabel="Enviar recuperacao"/></div></div>
     <section className="rounded-lg border p-5"><h2 className="mb-3 font-semibold">Empresas vinculadas</h2>
       {memberships.data?.length ? <ul>{memberships.data.map(m=><li key={m.id} className="border-b p-2">
         <Link className="text-brand-700 underline" href={`/clientes/${m.client_id}`}>{m.clients?.trade_name||m.clients?.legal_name||m.client_id}</Link>
