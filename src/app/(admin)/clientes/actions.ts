@@ -338,7 +338,11 @@ export async function createSubscriptionAction(
     const productId = String(formData.get('productId') ?? '');
     const startDate = String(formData.get('startDate') ?? '');
     const licenseLimit = Number(formData.get('licenseLimit'));
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate) || !Number.isInteger(licenseLimit) || licenseLimit < 0)
+    if (
+      !/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate) ||
+      !Number.isInteger(licenseLimit) ||
+      licenseLimit < 0
+    )
       return { error: 'Informe data e licencas validas.' };
     const { error } = await createAdminClient().rpc('create_subscription_atomic', {
       p_actor: session.internalUser.id,

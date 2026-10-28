@@ -1808,9 +1808,16 @@ export type Database = {
       };
       create_subscription_atomic: {
         Args: {
-          p_actor: string; p_client: string; p_contract: string; p_product: string;
-          p_start: string; p_end: string | null; p_grace: number; p_limit: number;
-          p_monthly: number | null; p_implementation: number | null;
+          p_actor: string;
+          p_client: string;
+          p_contract: string;
+          p_product: string;
+          p_start: string;
+          p_end: string | null;
+          p_grace: number;
+          p_limit: number;
+          p_monthly: number | null;
+          p_implementation: number | null;
         };
         Returns: string;
       };
