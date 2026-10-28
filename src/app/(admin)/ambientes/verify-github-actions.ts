@@ -80,12 +80,18 @@ export async function verifyGithubEvidence(
         d.environment.toUpperCase() === env.environment,
     );
     if (!target) return { error: 'Não há deployment GitHub correspondente ao ambiente e ao SHA.' };
-    const statuses = await githubJson<Array<{ state: string }>>(
+    const statuses = await githubJson<Array<{ state: string; log_url: string | null }>>(
       `${base}/deployments/${target.id}/statuses?per_page=1`,
       token,
     );
     if (statuses[0]?.state !== 'success')
       return { error: 'O deployment não possui status final de sucesso confirmado pelo GitHub.' };
+    // A successful workflow on the same commit is not proof that THIS workflow
+    // deployed THIS environment. Require the deployment status to link directly
+    // to the exact Actions run, otherwise fail closed.
+    const expectedLogUrl = `https://github.com/${repo}/actions/runs/${runId}`;
+    if (statuses[0]?.log_url?.replace(/\\/$/, '') !== expectedLogUrl)
+      return { error: 'O status do deployment não comprova vínculo com esta execução GitHub Actions.' };
     // Do not update operational environment state or report deployment in production.
     const { error } = await db.rpc('verify_github_deployment_evidence', {
       p_actor: internalUser.id,
