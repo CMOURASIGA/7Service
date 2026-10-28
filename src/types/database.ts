@@ -1797,6 +1797,15 @@ export type Database = {
         };
         Returns: string;
       };
+      verify_github_deployment_evidence: {
+        Args: {
+          p_actor: string;
+          p_evidence: string;
+          p_expected_sha: string;
+          p_run_id: string;
+        };
+        Returns: string;
+      };
       record_deployment_version_atomic: {
         Args: {
           p_actor_id: string;
