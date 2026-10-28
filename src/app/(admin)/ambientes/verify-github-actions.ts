@@ -90,7 +90,7 @@ export async function verifyGithubEvidence(
     // deployed THIS environment. Require the deployment status to link directly
     // to the exact Actions run, otherwise fail closed.
     const expectedLogUrl = `https://github.com/${repo}/actions/runs/${runId}`;
-    if (statuses[0]?.log_url?.replace(/\\/$/, '') !== expectedLogUrl)
+    if (statuses[0]?.log_url !== expectedLogUrl)
       return { error: 'O status do deployment não comprova vínculo com esta execução GitHub Actions.' };
     // Do not update operational environment state or report deployment in production.
     const { error } = await db.rpc('verify_github_deployment_evidence', {
