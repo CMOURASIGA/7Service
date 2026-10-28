@@ -5,6 +5,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { ConfirmAction } from '@/components/ui/confirm-action';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { GrantAccessForm, type GrantableSubscription } from '@/features/access/components/grant-access-form';
+import { EnvironmentGrantForm } from '@/features/access/components/environment-grant-form';
+import { revokeEnvironmentAction } from './ambientes/actions';
 import type { Product, Subscription, ProductRole } from '@/types/domain';
 import { IDENTITY_STATUS_LABEL, ACCESS_STATUS_LABEL } from '@/lib/status-labels';
 import {
@@ -29,7 +31,7 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
     db
       .from('user_product_access')
       .select(
-        'id,client_id,status,subscription_id,subscriptions!user_product_access_subscription_id_fkey(products(name))',
+        'id,client_id,status,subscription_id,subscriptions!user_product_access_subscription_id_fkey(product_id,products(name))',
       )
       .eq('identity_id', id),
   ]);
@@ -79,6 +81,33 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
       };
       return {product,subscription};
     });
+  const eligibleAccesses=(accesses.data??[]).filter(a=>a.status==='ACTIVE')
+    .map(a=>({
+      id:a.id,clientId:a.client_id,
+      productId:a.subscriptions?.product_id??'',
+      label:(a.subscriptions?.products?.name??'Produto')+' / '+a.client_id.slice(0,8),
+    }));
+  const links=clientIds.length ? await db.from('client_deployments')
+    .select('deployment_id,client_id,product_id').in('client_id',clientIds)
+    : {data:[],error:null};
+  if(links.error) throw new Error('Falha ao consultar implantacoes');
+  const deploymentIds=[...new Set((links.data??[]).map(l=>l.deployment_id))];
+  const environmentsResult=deploymentIds.length ? await db.from('product_environments')
+    .select('id,deployment_id,environment,status').in('deployment_id',deploymentIds).eq('status','ACTIVE')
+    : {data:[],error:null};
+  if(environmentsResult.error) throw new Error('Falha ao consultar ambientes');
+  const environmentOptions=(environmentsResult.data??[]).flatMap(e=>
+    (links.data??[]).filter(l=>l.deployment_id===e.deployment_id).map(l=>({
+      id:e.id,clientId:l.client_id,productId:l.product_id,
+      label:e.environment+' / '+l.client_id.slice(0,8),
+    }))
+  );
+  const accessIds=(accesses.data??[]).map(a=>a.id);
+  const environmentGrants=accessIds.length ? await db.from('environment_access')
+    .select('id,access_id,environment_id,status,valid_until')
+    .in('access_id',accessIds).eq('status','ACTIVE')
+    : {data:[],error:null};
+  if(environmentGrants.error) throw new Error('Falha ao consultar autorizacoes de ambiente');
   const user = identity.data;
   const badge = IDENTITY_STATUS_LABEL[user.status as keyof typeof IDENTITY_STATUS_LABEL];
   return (
@@ -168,6 +197,18 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
         ) : (
           <p>Nenhum acesso registrado.</p>
         )}
+      </section>
+      <section className="rounded-lg border p-5">
+        <h2 className="mb-3 font-semibold">Acessos por ambiente</h2>
+        <EnvironmentGrantForm identityId={id} accesses={eligibleAccesses} environments={environmentOptions} />
+        {(environmentGrants.data??[]).length ? <ul className="mt-4 space-y-2">
+          {(environmentGrants.data??[]).map(g=><li key={g.id} className="flex flex-wrap items-center justify-between gap-2 rounded border p-3 text-sm">
+            <span>{environmentOptions.find(e=>e.id===g.environment_id)?.label??g.environment_id} / {g.valid_until?'Até '+new Date(g.valid_until).toLocaleDateString('pt-BR'):'Sem término cadastrado'}</span>
+            <ConfirmAction triggerLabel="Revogar ambiente"
+              impactMessage="Revoga o acesso exclusivo a este ambiente."
+              action={revokeEnvironmentAction.bind(null,id,g.id)} tone="danger" confirmLabel="Revogar" />
+          </li>)}
+        </ul> : <p className="mt-3 text-sm text-muted">Nenhuma autorização de ambiente ativa.</p>}
       </section>
     </main>
   );
