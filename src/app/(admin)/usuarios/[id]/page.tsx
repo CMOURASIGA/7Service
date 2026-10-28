@@ -187,9 +187,9 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                         confirmLabel="Suspender"
                       />
                     ) : null}
-                    {a.status === 'SUSPENDED' ? (
+                    {(a.status === 'SUSPENDED' || (a.status === 'PENDING' && user.status === 'ACTIVE')) ? (
                       <ConfirmAction
-                        triggerLabel="Reativar"
+                        triggerLabel={a.status === 'PENDING' ? 'Ativar acesso' : 'Reativar'}
                         action={reactivateAccessAction.bind(null, a.id, id)}
                         impactMessage="Reativa acesso, sujeito a vigencia da assinatura."
                         confirmLabel="Reativar"
