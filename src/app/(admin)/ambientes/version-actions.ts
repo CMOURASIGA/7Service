@@ -28,7 +28,14 @@ export async function recordDeploymentVersion(
       error: 'Informe ambiente, SHA completo de 40 caracteres, status e observações válidas.',
     };
   const { environmentId, commitSha, status, notes } = input.data;
-  // Human-reported versions never activate infrastructure or update its verified SHA.
+  // Manual reports never activate infrastructure; production success requires verified integration.
+  if (status === 'SUCCESS') {
+    const db = createAdminClient();
+    const { data: target, error: readError } = await db.from('product_environments')
+      .select('environment').eq('id', environmentId).maybeSingle();
+    if (readError || !target) return { error: 'Ambiente não encontrado.' };
+    if (target.environment === 'PRODUCTION') return { error: 'Sucesso em produção exige comprovação da integração de deploy, não relato manual.' };
+  }
   const { error } = await createAdminClient().rpc('record_deployment_version_atomic', {
     p_actor_id: internalUser.id,
     p_environment_id: environmentId,
