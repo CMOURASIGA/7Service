@@ -36,7 +36,8 @@ export async function createDedicatedDeployment(
   revalidatePath('/ambientes');
   return {
     error: null,
-    success: 'Implantação dedicada cadastrada e auditada de forma atômica como planejada. Nenhum banco foi provisionado.',
+    success:
+      'Implantação dedicada cadastrada e auditada de forma atômica como planejada. Nenhum banco foi provisionado.',
   };
 }
 
