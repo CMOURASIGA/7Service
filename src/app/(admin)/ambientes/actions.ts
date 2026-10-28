@@ -49,34 +49,14 @@ export async function registerEnvironment(
   const parsed = environmentInput.safeParse(Object.fromEntries(formData));
   if (!parsed.success)
     return { error: 'Dados inválidos: use um endereço HTTPS ou deixe a URL vazia.' };
-  const db = createAdminClient();
   const { deploymentId, environment, entryUrl } = parsed.data;
-  const { data: deployment, error: deploymentError } = await db
-    .from('product_deployments')
-    .select('id,model,product_id,status')
-    .eq('id', deploymentId)
-    .maybeSingle();
-  if (deploymentError || !deployment || deployment.status === 'RETIRED')
-    return { error: 'Implantação inexistente ou retirada.' };
-  const { data: entry, error } = await db.from('product_environments').insert({
-    deployment_id: deploymentId,
-    environment,
-    entry_url: entryUrl || null,
-    status: 'PLANNED',
-  }).select('id').single();
-  if (error || !entry) return { error: error?.message ?? 'Falha ao cadastrar ambiente.' };
-  const { error: auditError } = await db.from('audit_logs').insert({
-    actor_internal_user_id: internalUser.id,
-    action: 'environment.planned',
-    target_type: 'product_environment',
-    target_id: entry.id,
-    product_id: deployment.product_id,
-    source: '7service',
+  const { error } = await createAdminClient().rpc('register_product_environment_atomic', {
+    p_actor_id: internalUser.id,
+    p_deployment_id: deploymentId,
+    p_environment: environment,
+    p_entry_url: entryUrl || null,
   });
-  if (auditError) {
-    await db.from('product_environments').delete().eq('id', entry.id);
-    return { error: 'Ambiente cadastrado, mas auditoria indisponível. Verifique conciliação.' };
-  }
+  if (error) return { error: error.message };
   revalidatePath('/ambientes');
   return {
     error: null,
