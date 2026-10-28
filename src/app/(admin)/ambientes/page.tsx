@@ -23,7 +23,11 @@ export default async function AmbientesPage() {
     db.from('clients').select('id,legal_name').eq('status', 'ACTIVE').order('legal_name'),
     db.from('products').select('id,name').eq('status', 'ACTIVE').order('name'),
   ]);
-  const evidenceResult = await db.from('deployment_evidence').select('id,provider,run_reference,commit_sha,verification_state,environment_id').order('recorded_at', {ascending: false}).limit(50);
+  const evidenceResult = await db
+    .from('deployment_evidence')
+    .select('id,provider,run_reference,commit_sha,verification_state,environment_id')
+    .order('recorded_at', { ascending: false })
+    .limit(50);
   const errors = [
     environmentsResult.error,
     deploymentsResult.error,
@@ -65,13 +69,21 @@ export default async function AmbientesPage() {
       />
       <section className="flex flex-col gap-3">
         <h2 className="font-semibold">Evidências registradas</h2>
-        <p className="text-muted text-xs">A verificação compara SHA, resultado de execução e deployment GitHub; não altera a situação do ambiente.</p>
+        <p className="text-muted text-xs">
+          A verificação compara SHA, resultado de execução e deployment GitHub; não altera a
+          situação do ambiente.
+        </p>
         {(evidenceResult.data ?? []).map((ev) => (
           <div key={ev.id} className="rounded-lg border p-3 text-sm">
-            <p>{ev.provider} · {ev.verification_state} · Execução {ev.run_reference}</p>
-            <p className="text-muted text-xs">SHA: {ev.commit_sha} / Ambiente: {ev.environment_id}</p>
-            {ev.provider === 'GITHUB_ACTIONS' && ev.verification_state === 'UNVERIFIED'
-              ? <GithubEvidenceReview evidenceId={ev.id} /> : null}
+            <p>
+              {ev.provider} · {ev.verification_state} · Execução {ev.run_reference}
+            </p>
+            <p className="text-muted text-xs">
+              SHA: {ev.commit_sha} / Ambiente: {ev.environment_id}
+            </p>
+            {ev.provider === 'GITHUB_ACTIONS' && ev.verification_state === 'UNVERIFIED' ? (
+              <GithubEvidenceReview evidenceId={ev.id} />
+            ) : null}
           </div>
         ))}
       </section>
