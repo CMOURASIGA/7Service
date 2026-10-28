@@ -1716,6 +1716,16 @@ export type Database = {
         };
         Returns: string;
       };
+      record_deployment_version_atomic: {
+        Args: {
+          p_actor_id: string;
+          p_environment_id: string;
+          p_sha: string;
+          p_status: string;
+          p_notes: string;
+        };
+        Returns: string;
+      };
       current_identity_client_id: { Args: never; Returns: string };
       has_internal_permission: {
         Args: { permission_code: string };
