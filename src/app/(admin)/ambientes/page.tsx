@@ -39,11 +39,7 @@ export default async function AmbientesPage() {
           provisionamento.
         </p>
       </div>
-      <p className="text-muted text-sm">
-        Cadastros disponiveis: {clientsResult.data?.length ?? 0} clientes,{' '}
-        {productsResult.data?.length ?? 0} produtos e {deploymentsResult.data?.length ?? 0}{' '}
-        implantacoes.
-      </p>
+      <EnvironmentRegistry clients={clientsResult.data ?? []} products={productsResult.data ?? []} deployments={deploymentsResult.data ?? []} />
       <section className="flex flex-col gap-3">
         <h2 className="font-semibold">Ambientes registrados</h2>
         {environmentsResult.data?.length ? (
