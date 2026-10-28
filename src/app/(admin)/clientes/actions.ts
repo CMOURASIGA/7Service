@@ -7,7 +7,6 @@ import { createClient as createDbClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isAppError } from '@/lib/errors';
 import { addContractDocument, createContract } from '@/services/contracts';
-import { createClient, setClientStatus, updateClient } from '@/services/clients';
 import { recordExportDelivery } from '@/services/export';
 import { createSubscription } from '@/services/subscriptions';
 import type { ClientAddress, PersonType } from '@/types/domain';
@@ -107,20 +106,41 @@ export async function updateClientAction(
   const session = await requirePermission('clients.manage');
 
   try {
-    updateClient(
-      clientId,
-      {
-        legalName: String(formData.get('legalName') ?? ''),
-        tradeName: formData.get('tradeName')?.toString() || null,
-        phone: formData.get('phone')?.toString() || null,
-        email: formData.get('email')?.toString() || null,
-        contactName: formData.get('contactName')?.toString() || null,
-        notes: formData.get('notes')?.toString() || null,
-        address: readAddress(formData),
-      },
-      session.internalUser,
-    );
-
+    const db = await createDbClient();
+    const { data: current, error: readError } = await db.from('clients')
+      .select('id,legal_name').eq('id', clientId).single();
+    if (readError || !current) throw new Error('Cliente nao encontrado');
+    const { error: writeError } = await db.from('clients').update({
+      legal_name: String(formData.get('legalName') ?? '').trim(),
+      trade_name: formData.get('tradeName')?.toString().trim() || null,
+      phone: formData.get('phone')?.toString().trim() || null,
+      email: formData.get('email')?.toString().trim() || null,
+      contact_name: formData.get('contactName')?.toString().trim() || null,
+      notes: formData.get('notes')?.toString().trim() || null,
+    }).eq('id', clientId);
+    if (writeError) throw writeError;
+    const address = readAddress(formData);
+    if (address) {
+      const addressRow = {
+        postal_code: address.postalCode, street: address.street,
+        number: address.number, complement: address.complement,
+        district: address.district, city: address.city,
+        state: address.state, country: address.country,
+      };
+      const { data: foundAddress, error: addrReadError } = await db.from('client_addresses')
+        .select('id').eq('client_id', clientId).order('created_at').limit(1).maybeSingle();
+      if (addrReadError) throw addrReadError;
+      const result = foundAddress
+        ? await db.from('client_addresses').update(addressRow).eq('id', foundAddress.id)
+        : await db.from('client_addresses').insert({ client_id: clientId, ...addressRow });
+      if (result.error) throw result.error;
+    }
+    const { error: auditError } = await createAdminClient().from('audit_logs').insert({
+      action:'client.updated',target_type:'client',target_id:clientId,client_id:clientId,
+      actor_internal_user_id:session.internalUser.id, source:'7service',
+      before_json:{ legal_name: current.legal_name }, after_json:{ legal_name:String(formData.get('legalName') ?? '').trim() },
+    });
+    if (auditError) throw auditError;
     revalidatePath(`/clientes/${clientId}`);
     revalidatePath('/clientes');
     return { error: null };
@@ -132,17 +152,34 @@ export async function updateClientAction(
   }
 }
 
+async function changeClientStatus(clientId: string, status: 'ACTIVE' | 'SUSPENDED' | 'CLOSED', actorId: string, reason: string | null) {
+  const db = await createDbClient();
+  const { data: before, error: readError } = await db.from('clients')
+    .select('id,status').eq('id', clientId).single();
+  if (readError || !before) throw new Error('Cliente nao encontrado');
+  const { data: changed, error } = await db.from('clients').update({ status })
+    .eq('id', clientId).select('id').single();
+  if (error || !changed) throw error ?? new Error('Alteracao nao confirmada');
+  const { error: auditError } = await createAdminClient().from('audit_logs').insert({
+    action: status === 'ACTIVE' ? 'client.reactivated' : status === 'CLOSED' ? 'client.closed' : 'client.suspended',
+    target_type: 'client', target_id: clientId, client_id: clientId,
+    actor_internal_user_id: actorId, before_json:{status:before.status},
+    after_json:{status},reason,source:'7service',
+  });
+  if (auditError) throw auditError;
+}
+
 export async function suspendClientAction(clientId: string, formData: FormData) {
   const session = await requirePermission('clients.manage');
   const reason = formData.get('reason')?.toString().trim();
-  setClientStatus(clientId, 'SUSPENDED', session.internalUser, reason || undefined);
+  await changeClientStatus(clientId, 'SUSPENDED', session.internalUser.id, reason || null);
   revalidatePath(`/clientes/${clientId}`);
   revalidatePath('/clientes');
 }
 
 export async function reactivateClientAction(clientId: string, _formData: FormData) {
   const session = await requirePermission('clients.manage');
-  setClientStatus(clientId, 'ACTIVE', session.internalUser);
+  await changeClientStatus(clientId, 'ACTIVE', session.internalUser.id, null);
   revalidatePath(`/clientes/${clientId}`);
   revalidatePath('/clientes');
 }
@@ -150,7 +187,7 @@ export async function reactivateClientAction(clientId: string, _formData: FormDa
 export async function closeClientAction(clientId: string, formData: FormData) {
   const session = await requirePermission('clients.manage');
   const reason = formData.get('reason')?.toString().trim();
-  setClientStatus(clientId, 'CLOSED', session.internalUser, reason || undefined);
+  await changeClientStatus(clientId, 'CLOSED', session.internalUser.id, reason || null);
   revalidatePath(`/clientes/${clientId}`);
   revalidatePath('/clientes');
 }
