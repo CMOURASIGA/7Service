@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { section: 'Dados', href: '/usuarios', label: 'Usuários', icon: 'users' as const },
   { section: 'Dados', href: '/produtos', label: 'Produtos', icon: 'products' as const },
   { section: 'Dados', href: '/licenciamento', label: 'Licenciamento', icon: 'license' as const },
+  { section: 'Dados', href: '/ambientes', label: 'Ambientes', icon: 'license' as const },
   { section: 'Dados', href: '/convites', label: 'Convites', icon: 'invite' as const },
   { section: 'Sistema', href: '/auditoria', label: 'Auditoria', icon: 'audit' as const },
   {
