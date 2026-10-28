@@ -1,12 +1,18 @@
 import { StatusBadge } from '@/components/ui/status-badge';
-import { getMockStore } from '@/lib/mock/store';
+import { requirePermission } from '@/lib/auth/session';
+import { createClient } from '@/lib/supabase/server';
 
 export const metadata = {
   title: 'Produtos - 7Service',
 };
 
-export default function ProductsPage() {
-  const products = getMockStore().products;
+export default async function ProductsPage() {
+  await requirePermission('clients.view');
+  const db = await createClient();
+  const { data: products, error } = await db.from('products')
+    .select('id,name,status,description,entry_url,product_roles(id,name)')
+    .order('name');
+  if (error) throw new Error('Falha ao consultar catalogo de produtos');
 
   return (
     <div className="flex flex-col gap-4">
@@ -18,7 +24,7 @@ export default function ProductsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {products.map((product) => (
+        {(products ?? []).map((product) => (
           <div key={product.id} className="border-border bg-background rounded-lg border p-4">
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-foreground font-medium">{product.name}</h2>
@@ -32,10 +38,10 @@ export default function ProductsPage() {
             </p>
             <div className="text-foreground mb-2 text-xs font-medium">Perfis</div>
             <div className="flex flex-wrap gap-1">
-              {product.roles.length === 0 ? (
+              {product.product_roles.length === 0 ? (
                 <span className="text-muted text-xs">Nenhum perfil cadastrado</span>
               ) : (
-                product.roles.map((role) => (
+                product.product_roles.map((role) => (
                   <span
                     key={role.id}
                     className="text-foreground rounded-full bg-slate-100 px-2 py-0.5 text-xs"
@@ -45,7 +51,7 @@ export default function ProductsPage() {
                 ))
               )}
             </div>
-            {product.entryUrl ? (
+            {product.entry_url ? (
               <p className="text-muted mt-3 text-xs">
                 Entrada: <span className="text-brand-700">{product.entryUrl}</span>
               </p>
