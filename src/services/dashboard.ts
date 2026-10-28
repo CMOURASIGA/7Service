@@ -1,53 +1,51 @@
 import 'server-only';
 
-import { getSubscriptionEffectiveStatus } from '@/lib/domain-rules';
-import { getMockStore } from '@/lib/mock/store';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 /**
- * KPIs do dashboard (Etapa 13). Derivados diretamente dos domínios reais
- * (mock hoje, Supabase amanhã) — nunca números fixos no frontend
- * (docs/DEV_IMPLEMENTATION_PLAN.md - Etapa 13, "sem dados mockados como
- * implementação final"; aqui o mock É a fundação temporária declarada ao
- * usuário via banner, não um número inventado na tela).
+ * Real administrative KPIs. Caller MUST authorize the operator first.
+ * Limited datasets until pagination/aggregation endpoints are introduced.
  */
-export function getDashboardKpis() {
-  const store = getMockStore();
-
-  const activeClients = store.clients.filter((c) => c.status === 'ACTIVE').length;
-  const suspendedClients = store.clients.filter((c) => c.status === 'SUSPENDED').length;
-  const activeIdentities = store.identities.filter((i) => i.status === 'ACTIVE').length;
-  const pendingInvitations = store.invitations.filter(
-    (i) => i.status === 'SENT' || i.status === 'PENDING',
-  ).length;
-  const expiredInvitations = store.invitations.filter((i) => i.status === 'EXPIRED').length;
-
-  const licenseLimitTotal = store.subscriptions.reduce((sum, s) => sum + s.licenseLimit, 0);
-  const licenseUsedTotal = store.userProductAccess.filter((a) =>
-    ['PENDING', 'ACTIVE'].includes(a.status),
-  ).length;
-
-  const graceCount = store.subscriptions.filter(
-    (s) => getSubscriptionEffectiveStatus(s) === 'GRACE_PERIOD',
-  ).length;
-  const blockedCount = store.subscriptions.filter(
-    (s) => getSubscriptionEffectiveStatus(s) === 'BLOCKED',
-  ).length;
-
-  const byProduct = store.products.map((product) => ({
-    product,
-    subscriptions: store.subscriptions.filter((s) => s.productId === product.id).length,
-  }));
-
+export async function getDashboardKpis() {
+  const db = createAdminClient();
+  const [clients, identities, invitations, subscriptions, accesses, products] = await Promise.all([
+    db.from('clients').select('id,status'),
+    db.from('identities').select('id,status'),
+    db.from('invitations').select('id,status,expires_at'),
+    db.from('subscriptions').select('id,product_id,status,license_limit,end_date,grace_days'),
+    db.from('user_product_access').select('id,status'),
+    db.from('products').select('id,name,code,status,entry_url,login_url,logo_path,description,created_at'),
+  ]);
+  for (const result of [clients, identities, invitations, subscriptions, accesses, products]) {
+    if (result.error) throw new Error('Erro ao consultar indicadores administrativos.');
+  }
+  const c = clients.data ?? [];
+  const ids = identities.data ?? [];
+  const invitationsData = invitations.data ?? [];
+  const subs = subscriptions.data ?? [];
+  const users = accesses.data ?? [];
+  const now = Date.now();
+  const day = 86400000;
+  const effective = (s: (typeof subs)[number]) => {
+    if (s.status !== 'ACTIVE') return s.status;
+    if (!s.end_date) return 'ACTIVE';
+    const end = Date.parse(s.end_date + 'T23:59:59Z');
+    if (now <= end) return 'ACTIVE';
+    return now <= end + (s.grace_days ?? 0) * day ? 'GRACE_PERIOD' : 'BLOCKED';
+  };
   return {
-    activeClients,
-    suspendedClients,
-    activeIdentities,
-    pendingInvitations,
-    expiredInvitations,
-    licenseLimitTotal,
-    licenseUsedTotal,
-    graceCount,
-    blockedCount,
-    byProduct,
+    activeClients: c.filter(x => x.status === 'ACTIVE').length,
+    suspendedClients: c.filter(x => x.status === 'SUSPENDED').length,
+    activeIdentities: ids.filter(x => x.status === 'ACTIVE').length,
+    pendingInvitations: invitationsData.filter(x => ['PENDING','SENT'].includes(x.status) && Date.parse(x.expires_at) > now).length,
+    expiredInvitations: invitationsData.filter(x => x.status === 'EXPIRED' || (['PENDING','SENT'].includes(x.status) && Date.parse(x.expires_at) <= now)).length,
+    licenseLimitTotal: subs.reduce((total, x) => total + x.license_limit, 0),
+    licenseUsedTotal: users.filter(x => ['ACTIVE','PENDING'].includes(x.status)).length,
+    graceCount: subs.filter(x => effective(x) === 'GRACE_PERIOD').length,
+    blockedCount: subs.filter(x => effective(x) === 'BLOCKED').length,
+    byProduct: (products.data ?? []).map(p => ({
+      product: p,
+      subscriptions: subs.filter(s => s.product_id === p.id).length,
+    })),
   };
 }
