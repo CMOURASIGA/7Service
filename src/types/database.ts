@@ -1728,6 +1728,15 @@ export type Database = {
         Returns: boolean
       }
       is_internal_operator: { Args: never; Returns: boolean }
+      register_product_environment_atomic: {
+        Args: {
+          p_actor_id: string
+          p_deployment_id: string
+          p_entry_url: string
+          p_environment: string
+        }
+        Returns: string
+      }
       replace_internal_operator_roles: {
         Args: {
           p_actor_id: string
