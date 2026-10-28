@@ -4,6 +4,7 @@ import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { ClientForm } from '@/features/clients/components/client-form';
 import { ContractForm } from '@/features/contracts/components/contract-form';
+import { UploadDocumentForm } from '@/features/contracts/components/upload-document-form';
 import { SubscriptionForm } from '@/features/subscriptions/components/subscription-form';
 import { CLIENT_STATUS_LABEL } from '@/lib/status-labels';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -15,6 +16,7 @@ import {
   closeClientAction,
   createContractAction,
   createSubscriptionAction,
+  uploadContractDocumentAction,
 } from '../actions';
 import type { Client, ClientAddress, ClientStatus, Contract, Product } from '@/types/domain';
 
@@ -76,6 +78,13 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+  const contractIds=(contracts.data??[]).map(c=>c.id);
+  const docsResult=contractIds.length
+    ? await db.from('contract_documents')
+        .select('id,contract_id,original_name,size_bytes,uploaded_at')
+        .in('contract_id',contractIds).order('uploaded_at',{ascending:false})
+    : {data:[],error:null};
+  if(docsResult.error) throw new Error('Falha ao carregar documentos de contratos');
   const contractOptions: Contract[] = (contracts.data ?? []).map((x) => ({
     id: x.id,
     clientId: id,
@@ -166,11 +175,17 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           ) : (
             <ul>
               {contracts.data.map((c) => (
-                <li key={c.id} className="border-b py-2 text-sm">
-                  {c.reference} · {c.status}
+                <li key={c.id} className="border-b py-3 text-sm">
+                  <div className="font-medium">{c.reference} · {c.status}</div>
+                  <UploadDocumentForm action={uploadContractDocumentAction.bind(null,id,c.id)} />
+                  {(docsResult.data??[]).filter(d=>d.contract_id===c.id).length ? <ul className="mt-2 space-y-1">
+                    {(docsResult.data??[]).filter(d=>d.contract_id===c.id).map(d=><li key={d.id}>
+                      <a className="text-brand-700 underline" target="_blank" rel="noopener noreferrer"
+                        href={`/api/contracts/${c.id}/documents/${d.id}`}>{d.original_name} ({Math.ceil(d.size_bytes/1024)} KB)</a>
+                    </li>)}
+                  </ul> : <p className="text-xs text-muted">Nenhum PDF anexado.</p>}
                 </li>
-              ))}
-            </ul>
+              ))}           </ul>
           )}
         </div>
         <div className="rounded-lg border p-5">
