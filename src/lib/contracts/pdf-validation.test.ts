@@ -10,7 +10,7 @@ describe('validateContractPdfMetadata', () => {
     expect(() => validateContractPdfMetadata({ ...valid, originalName: 'CONTRATO.PDF' })).not.toThrow();
   });
 
-  it.each(['contrato.txt', '../contrato.pdf', 'folder/contrato.pdf', 'folder\\contrato.pdf', 'contrato.pdf\n'])(
+  it.each(['contrato.txt', '../contrato.pdf', 'folder/contrato.pdf', 'folder\\contrato.pdf', 'contrato\n.pdf'])(
     'rejects unsafe filename %s',
     (originalName) => {
       expect(() => validateContractPdfMetadata({ ...valid, originalName })).toThrow();
