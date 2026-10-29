@@ -2,6 +2,7 @@ import 'server-only';
 
 import { generateId, getMockStore, nowIso } from '@/lib/mock/store';
 import { AppError } from '@/lib/errors';
+import { validateContractPdfMetadata } from '@/lib/contracts/pdf-validation';
 import type { Contract, ContractStatus, Id, InternalUser } from '@/types/domain';
 
 import { writeAudit } from './audit';
@@ -99,6 +100,7 @@ export interface AddContractDocumentInput {
 }
 
 export function addContractDocument(input: AddContractDocumentInput, actor: InternalUser) {
+  validateContractPdfMetadata(input);
   const contract = getContract(input.contractId);
   if (!contract) {
     throw new AppError('NOT_FOUND', 'Contrato não encontrado');
