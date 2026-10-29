@@ -19,6 +19,10 @@ describe('product authorization', () => {
     expect(canUseProductAccess({ ...active, identityStatus: 'SUSPENDED' })).toBe(false));
   it('denies cancelled subscriptions', () =>
     expect(canUseProductAccess({ ...active, subscriptionStatus: 'CANCELLED' })).toBe(false));
+  it('denies access before the start of validity', () =>
+    expect(canUseProductAccess({ ...active, validFrom: '2026-10-30T00:00:00Z' })).toBe(false));
+  it('permits access starting at the validity boundary', () =>
+    expect(canUseProductAccess({ ...active, validFrom: active.at })).toBe(true));
   it('denies access at the expiration boundary', () =>
     expect(canUseProductAccess({ ...active, validUntil: active.at })).toBe(false));
   it('rejects invalid timestamps instead of allowing access', () =>
