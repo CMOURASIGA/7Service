@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateProductEnvironment } from './validation';
+import { assertUniqueEnvironment, validateProductEnvironment } from './validation';
 
 describe('environment validation', () => {
   it('normalizes a valid HTTPS URL', () => {
@@ -12,6 +12,15 @@ describe('environment validation', () => {
   });
   it('rejects invalid SHAs', () => {
     expect(() => validateProductEnvironment({environment:'development',versionSha:'invalid-sha'})).toThrow();
+  });
+  it('prevents duplicate deployment environment entries', () => {
+    const existing = [{ deploymentId: 'deployment-1', environment: 'production' as const }];
+    expect(() => assertUniqueEnvironment(existing, 'deployment-1', 'production')).toThrow();
+    expect(() => assertUniqueEnvironment(existing, 'deployment-1', 'homologation')).not.toThrow();
+    expect(() => assertUniqueEnvironment(existing, 'deployment-2', 'production')).not.toThrow();
+  });
+  it('rejects URLs with credentials', () => {
+    expect(() => validateProductEnvironment({environment:'production',entryUrl:'https://user:pass@example.com'})).toThrow();
   });
   it('rejects invalid resource names', () => {
     expect(() => validateProductEnvironment({environment:'development',databaseResourceRef:'unsafe\nref'})).toThrow();
