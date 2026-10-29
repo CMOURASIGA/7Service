@@ -22,6 +22,12 @@ describe('environment validation', () => {
   it('rejects URLs with credentials', () => {
     expect(() => validateProductEnvironment({environment:'production',entryUrl:'https://user:pass@example.com'})).toThrow();
   });
+  it('rejects fragment-bearing URLs', () => {
+    expect(() => validateProductEnvironment({environment:'homologation',entryUrl:'https://example.com/#token'})).toThrow();
+  });
+  it('rejects unsupported environment kinds at runtime', () => {
+    expect(() => validateProductEnvironment({environment:'staging' as never})).toThrow();
+  });
   it('rejects invalid resource names', () => {
     expect(() => validateProductEnvironment({environment:'development',databaseResourceRef:'unsafe\nref'})).toThrow();
   });
