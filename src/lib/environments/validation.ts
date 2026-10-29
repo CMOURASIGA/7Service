@@ -10,9 +10,10 @@ export interface ProductEnvironmentInput {
 }
 
 const shaPattern = /^[a-f0-9]{7,40}$/i;
+const allowedEnvironments: EnvironmentKind[] = ['development', 'homologation', 'production'];
 
 export function validateProductEnvironment(input: ProductEnvironmentInput): ProductEnvironmentInput {
-  if (!['development', 'homologation', 'production'].includes(input.environment)) {
+  if (!allowedEnvironments.includes(input.environment)) {
     throw new AppError('VALIDATION_ERROR', 'Ambiente inválido');
   }
 
@@ -20,7 +21,7 @@ export function validateProductEnvironment(input: ProductEnvironmentInput): Prod
   if (entryUrl) {
     try {
       const url = new URL(entryUrl);
-      if (url.protocol !== 'https:' || url.username || url.password) {
+      if (url.protocol !== 'https:' || url.username || url.password || url.hash || !url.hostname.includes('.')) {
         throw new Error('unsafe url');
       }
     } catch {
@@ -39,4 +40,15 @@ export function validateProductEnvironment(input: ProductEnvironmentInput): Prod
   }
 
   return { environment: input.environment, entryUrl, databaseResourceRef, versionSha };
+}
+
+/** Rejects duplicate environment registration for the same deployment. */
+export function assertUniqueEnvironment(
+  existing: Array<{ deploymentId: string; environment: EnvironmentKind }>,
+  deploymentId: string,
+  environment: EnvironmentKind,
+): void {
+  if (existing.some((item) => item.deploymentId === deploymentId && item.environment === environment)) {
+    throw new AppError('CONFLICT', 'Este ambiente já está cadastrado para a implantação');
+  }
 }
