@@ -107,6 +107,12 @@ export function changeAccessRole(
   if (access.status === 'REVOKED' || access.status === 'EXPIRED') {
     throw new AppError('CONFLICT', 'Não é permitido alterar o perfil de um acesso encerrado');
   }
+  const store = getMockStore();
+  const subscription = store.subscriptions.find((item) => item.id === access.subscriptionId);
+  const product = store.products.find((item) => item.id === subscription?.productId);
+  if (!product?.roles.some((role) => role.id === productRoleId && role.status === 'ACTIVE')) {
+    throw new AppError('VALIDATION_ERROR', 'Perfil incompatível com o produto');
+  }
   access.productRoleId = productRoleId;
   access.updatedAt = nowIso();
 
