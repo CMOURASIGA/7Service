@@ -290,7 +290,8 @@ export async function createSubscriptionAction(
       !Number.isInteger(licenseLimit) ||
       licenseLimit < 0 ||
       !Number.isSafeInteger(graceDays) ||
-      graceDays < 0 || graceDays > 30 ||
+      graceDays < 0 ||
+      graceDays > 30 ||
       (endDate !== '' && (!isIsoCalendarDate(endDate) || endDate < startDate))
     )
       return { error: 'Informe data e licencas validas.' };
