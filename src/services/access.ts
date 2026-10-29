@@ -3,7 +3,7 @@ import 'server-only';
 import { getLicenseUsage, getSubscriptionEffectiveStatus } from '@/lib/domain-rules';
 import { generateId, getMockStore, nowIso, todayIso } from '@/lib/mock/store';
 import { AppError } from '@/lib/errors';
-import { revokeAccess } from '@/lib/access/revocation';
+import { assertAccessTransition, assertAccessReason } from '@/lib/access/transitions';
 import type { AccessStatus, Id, InternalUser, UserProductAccess } from '@/types/domain';
 
 import { writeAudit } from './audit';
@@ -91,7 +91,7 @@ export function grantAccess(input: GrantAccessInput, actor: InternalUser): UserP
     action: 'user_access.granted',
     targetType: 'user_product_access',
     targetId: access.id,
-    clientId: null,
+    clientId: subscription.clientId,
     productId: subscription.productId,
   });
 
@@ -133,13 +133,8 @@ export function setAccessStatus(
   reason?: string,
 ): UserProductAccess {
   const access = findAccess(accessId);
-  if (access.status === 'REVOKED' && status !== 'REVOKED') {
-    throw new AppError('CONFLICT', 'Acesso revogado não pode ser reativado');
-  }
-  if (access.status === 'EXPIRED' && status !== 'EXPIRED') {
-    throw new AppError('CONFLICT', 'Acesso expirado exige nova concessão');
-  }
-  if (status === 'REVOKED') revokeAccess(access.status);
+  assertAccessTransition(access.status, status);
+  if (access.status !== status) assertAccessReason(status, reason);
   access.status = status;
   access.updatedAt = nowIso();
   if (status === 'SUSPENDED') {
