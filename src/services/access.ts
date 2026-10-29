@@ -3,6 +3,7 @@ import 'server-only';
 import { getLicenseUsage, getSubscriptionEffectiveStatus } from '@/lib/domain-rules';
 import { generateId, getMockStore, nowIso, todayIso } from '@/lib/mock/store';
 import { AppError } from '@/lib/errors';
+import { revokeAccess } from '@/lib/access/revocation';
 import type { AccessStatus, Id, InternalUser, UserProductAccess } from '@/types/domain';
 
 import { writeAudit } from './audit';
@@ -90,6 +91,9 @@ export function changeAccessRole(
   actor: InternalUser,
 ): UserProductAccess {
   const access = findAccess(accessId);
+  if (access.status === 'REVOKED' || access.status === 'EXPIRED') {
+    throw new AppError('CONFLICT', 'Não é permitido alterar o perfil de um acesso encerrado');
+  }
   access.productRoleId = productRoleId;
   access.updatedAt = nowIso();
 
@@ -110,6 +114,13 @@ export function setAccessStatus(
   reason?: string,
 ): UserProductAccess {
   const access = findAccess(accessId);
+  if (access.status === 'REVOKED' && status !== 'REVOKED') {
+    throw new AppError('CONFLICT', 'Acesso revogado não pode ser reativado');
+  }
+  if (access.status === 'EXPIRED' && status !== 'EXPIRED') {
+    throw new AppError('CONFLICT', 'Acesso expirado exige nova concessão');
+  }
+  if (status === 'REVOKED') revokeAccess(access.status);
   access.status = status;
   access.updatedAt = nowIso();
   if (status === 'SUSPENDED') {
