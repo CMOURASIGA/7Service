@@ -10,6 +10,7 @@ export function canUseProductAccess(input: {
   accessStatus: AccessStatus;
   subscriptionStatus: 'ACTIVE' | 'DRAFT' | 'SUSPENDED' | 'EXPIRED' | 'CANCELLED';
   clientStatus: 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
+  validFrom?: string | null;
   validUntil?: string | null;
   at: string;
 }): boolean {
@@ -22,6 +23,11 @@ export function canUseProductAccess(input: {
 
   const at = Date.parse(input.at);
   if (!Number.isFinite(at)) throw new AppError('VALIDATION_ERROR', 'Data de verificação inválida');
+  if (input.validFrom !== null && input.validFrom !== undefined) {
+    const startsAt = Date.parse(input.validFrom);
+    if (!Number.isFinite(startsAt)) throw new AppError('VALIDATION_ERROR', 'Início de acesso inválido');
+    if (at < startsAt) return false;
+  }
   if (input.validUntil !== null && input.validUntil !== undefined) {
     const expiresAt = Date.parse(input.validUntil);
     if (!Number.isFinite(expiresAt)) throw new AppError('VALIDATION_ERROR', 'Validade de acesso inválida');
