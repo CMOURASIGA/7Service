@@ -283,10 +283,15 @@ export async function createSubscriptionAction(
     const productId = String(formData.get('productId') ?? '');
     const startDate = String(formData.get('startDate') ?? '');
     const licenseLimit = Number(formData.get('licenseLimit'));
+    const endDate = String(formData.get('endDate') ?? '');
+    const graceDays = Number(formData.get('graceDays') ?? 5);
     if (
-      !/^\d{4}-\d{2}-\d{2}$/.test(startDate) ||
+      !isIsoCalendarDate(startDate) ||
       !Number.isInteger(licenseLimit) ||
-      licenseLimit < 0
+      licenseLimit < 0 ||
+      !Number.isSafeInteger(graceDays) ||
+      graceDays < 0 || graceDays > 30 ||
+      (endDate !== '' && (!isIsoCalendarDate(endDate) || endDate < startDate))
     )
       return { error: 'Informe data e licencas validas.' };
     const { error } = await createAdminClient().rpc('create_subscription_atomic', {
@@ -295,8 +300,8 @@ export async function createSubscriptionAction(
       p_contract: contractId,
       p_product: productId,
       p_start: startDate,
-      p_end: formData.get('endDate')?.toString() || null,
-      p_grace: Number(formData.get('graceDays') ?? 5),
+      p_end: endDate || null,
+      p_grace: graceDays,
       p_limit: licenseLimit,
       p_monthly: formData.get('monthlyValue') ? Number(formData.get('monthlyValue')) : null,
       p_implementation: formData.get('implementationValue')
