@@ -43,6 +43,19 @@ export function grantAccess(input: GrantAccessInput, actor: InternalUser): UserP
     );
   }
 
+  const identity = store.identities.find((item) => item.id === input.identityId);
+  if (!identity || identity.clientId !== subscription.clientId || identity.status !== 'ACTIVE') {
+    throw new AppError('FORBIDDEN', 'Identidade não autorizada para este cliente');
+  }
+  const client = store.clients.find((item) => item.id === subscription.clientId);
+  if (!client || client.status !== 'ACTIVE') {
+    throw new AppError('FORBIDDEN', 'Cliente não está ativo');
+  }
+  const product = store.products.find((item) => item.id === subscription.productId);
+  if (!product || product.status !== 'ACTIVE' || !product.roles.some((role) => role.id === input.productRoleId && role.status === 'ACTIVE')) {
+    throw new AppError('VALIDATION_ERROR', 'Perfil não pertence ao produto ativo');
+  }
+
   const usage = getLicenseUsage(subscription, store.userProductAccess, store.licenseOverrides);
   if (usage.available <= 0) {
     throw new AppError(
