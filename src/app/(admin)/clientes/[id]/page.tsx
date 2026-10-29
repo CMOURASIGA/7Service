@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requirePermission } from '@/lib/auth/session';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { ClientForm } from '@/features/clients/components/client-form';
 import { ClientFeaturesPanel } from '@/features/clients/components/client-features-panel';
 import { ContractForm } from '@/features/contracts/components/contract-form';
@@ -25,7 +25,7 @@ export const dynamic = 'force-dynamic';
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   await requirePermission('clients.view');
   const { id } = await params;
-  const db = await createClient();
+  const db = createAdminClient();
   const { data: row, error } = await db.from('clients').select('*').eq('id', id).maybeSingle();
   if (error) throw new Error('Falha ao consultar cliente');
   if (!row) notFound();
@@ -33,12 +33,9 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     db.from('client_addresses').select('*').eq('client_id', id).order('created_at').limit(1),
     db
       .from('subscriptions')
-      .select('id,product_id,status,license_limit,end_date,products(name)')
+      .select('id,product_id,status,license_limit,end_date')
       .eq('client_id', id),
-    db
-      .from('client_memberships')
-      .select('id,status,identities(first_name,last_name,email)')
-      .eq('client_id', id),
+    db.from('client_memberships').select('id,status,identity_id').eq('client_id', id),
     db
       .from('contracts')
       .select('id,reference,status,start_date,end_date,notes,created_at')
@@ -50,6 +47,31 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   ]);
   if ([addresses, subscriptions, memberships, contracts, products].some((r) => r.error))
     throw new Error('Falha ao consultar dados vinculados ao cliente');
+  const productIds = [
+    ...new Set((subscriptions.data ?? []).map((subscription) => subscription.product_id)),
+  ];
+  const identityIds = [
+    ...new Set((memberships.data ?? []).map((membership) => membership.identity_id)),
+  ];
+  const [subscriptionProducts, membershipIdentities] = await Promise.all([
+    productIds.length
+      ? db.from('products').select('id,name').in('id', productIds)
+      : Promise.resolve({ data: [], error: null }),
+    identityIds.length
+      ? db.from('identities').select('id,first_name,last_name,email').in('id', identityIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (subscriptionProducts.error || membershipIdentities.error)
+    throw new Error('Falha ao consultar referências vinculadas ao cliente');
+  const subscriptionProductNames = new Map(
+    (subscriptionProducts.data ?? []).map((product) => [product.id, product.name]),
+  );
+  const membershipIdentityNames = new Map(
+    (membershipIdentities.data ?? []).map((identity) => [
+      identity.id,
+      `${identity.first_name} ${identity.last_name}`.trim(),
+    ]),
+  );
   const a = addresses.data?.[0];
   const address: ClientAddress | null = a
     ? {
@@ -222,7 +244,8 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             <ul>
               {subscriptions.data.map((s) => (
                 <li key={s.id} className="border-b py-2 text-sm">
-                  {s.products?.name ?? s.product_id} · {s.status} · {s.license_limit} licencas
+                  {subscriptionProductNames.get(s.product_id) ?? s.product_id} · {s.status} ·{' '}
+                  {s.license_limit} licencas
                 </li>
               ))}
             </ul>
@@ -236,7 +259,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             <ul>
               {memberships.data.map((m) => (
                 <li key={m.id} className="border-b py-2 text-sm">
-                  {m.identities?.first_name} {m.identities?.last_name} · {m.status}
+                  {membershipIdentityNames.get(m.identity_id) ?? m.identity_id} · {m.status}
                 </li>
               ))}
             </ul>

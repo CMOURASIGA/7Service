@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { CreateProductForm } from '@/features/products/components/create-product-form';
 import { requirePermission } from '@/lib/auth/session';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export const metadata = {
   title: 'Produtos - 7Service',
@@ -10,12 +10,23 @@ export const metadata = {
 
 export default async function ProductsPage() {
   await requirePermission('clients.view');
-  const db = await createClient();
-  const { data: products, error } = await db
+  const db = createAdminClient();
+  const { data: products, error: productsError } = await db
     .from('products')
-    .select('id,name,status,description,entry_url,product_roles(id,name)')
+    .select('id,name,status,description,entry_url')
     .order('name');
-  if (error) throw new Error('Falha ao consultar catalogo de produtos');
+  if (productsError) throw new Error('Falha ao consultar catálogo de produtos.');
+  const productIds = (products ?? []).map((product) => product.id);
+  const { data: roles, error: rolesError } = productIds.length
+    ? await db.from('product_roles').select('id,product_id,name').in('product_id', productIds)
+    : { data: [], error: null };
+  if (rolesError) throw new Error('Falha ao consultar perfis de produtos.');
+  const rolesByProduct = new Map<string, { id: string; name: string }[]>();
+  for (const role of roles ?? []) {
+    const current = rolesByProduct.get(role.product_id) ?? [];
+    current.push({ id: role.id, name: role.name });
+    rolesByProduct.set(role.product_id, current);
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -46,10 +57,10 @@ export default async function ProductsPage() {
             </p>
             <div className="text-foreground mb-2 text-xs font-medium">Perfis</div>
             <div className="flex flex-wrap gap-1">
-              {product.product_roles.length === 0 ? (
+              {(rolesByProduct.get(product.id) ?? []).length === 0 ? (
                 <span className="text-muted text-xs">Nenhum perfil cadastrado</span>
               ) : (
-                product.product_roles.map((role) => (
+                (rolesByProduct.get(product.id) ?? []).map((role) => (
                   <span
                     key={role.id}
                     className="text-foreground rounded-full bg-slate-100 px-2 py-0.5 text-xs"
