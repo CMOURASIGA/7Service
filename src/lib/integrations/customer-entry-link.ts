@@ -17,8 +17,13 @@ export type CustomerEnvironment = {
 function isSafeHttpsUrl(value: string): boolean {
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' && !url.username && !url.password &&
-      !url.hash && url.hostname.length > 0;
+    return (
+      url.protocol === 'https:' &&
+      !url.username &&
+      !url.password &&
+      !url.hash &&
+      url.hostname.length > 0
+    );
   } catch {
     return false;
   }
@@ -37,9 +42,12 @@ export function customerProductEntryUrl(
   );
   if (!assignedDeploymentIds.size) return null;
   const matches = environments.filter(
-    (row) => assignedDeploymentIds.has(row.deployment_id) &&
-      row.environment === 'PRODUCTION' && row.status === 'ACTIVE' &&
-      row.entry_url && isSafeHttpsUrl(row.entry_url),
+    (row) =>
+      assignedDeploymentIds.has(row.deployment_id) &&
+      row.environment === 'PRODUCTION' &&
+      row.status === 'ACTIVE' &&
+      row.entry_url &&
+      isSafeHttpsUrl(row.entry_url),
   );
   // Multiple active production links for a single customer/product are ambiguous:
   // fail closed instead of selecting an arbitrary destination.
