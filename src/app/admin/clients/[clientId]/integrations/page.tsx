@@ -43,7 +43,7 @@ export default function ClientIntegrationsPage({
     } finally { setLoading(false); }
   }, [clientId]);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => { void Promise.resolve().then(() => refresh()); }, [refresh]);
 
   return (
     <main className="mx-auto max-w-5xl space-y-6 p-6">
