@@ -58,3 +58,14 @@ export async function createPrivateContractPdfUrl(path: string): Promise<string>
   if (error || !data?.signedUrl) throw new AppError('NOT_FOUND', 'Documento privado indisponível');
   return data.signedUrl;
 }
+
+/** Remove a recently uploaded orphan if its metadata transaction fails. */
+export async function cleanupUnregisteredContractPdf(path: string): Promise<void> {
+  await requireInternalAdmin();
+  const ids = path.match(/^([0-9a-f-]{36})\/([0-9a-f-]{36})\.pdf$/i);
+  if (!ids || contractPdfStoragePath(ids[1], ids[2]) !== path) {
+    throw new AppError('VALIDATION_ERROR', 'Caminho inválido para limpeza');
+  }
+  const { error } = await createAdminClient().storage.from(BUCKET).remove([path]);
+  if (error) throw new AppError('UNEXPECTED_ERROR', 'Falha ao remover arquivo não registrado');
+}
