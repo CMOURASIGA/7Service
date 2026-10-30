@@ -42,6 +42,15 @@ describe('private PDF storage helpers', () => {
     expect(() => contractPdfStoragePath(id, documentId)).toThrow();
   });
 
+  it('permits the exact configured maximum size', () => {
+    expect(() => validateContractPdfMetadata({ ...valid, sizeBytes: 10 * 1024 * 1024 })).not.toThrow();
+  });
+
+  it('rejects IDs that look like paths', () => {
+    expect(() => contractPdfStoragePath('invalid/path', documentId)).toThrow();
+    expect(() => contractPdfStoragePath(contractId, '../other.pdf')).toThrow();
+  });
+
   it('accepts a PDF signature', () => {
     expect(() => assertPdfSignature(new Uint8Array([37, 80, 68, 70, 45, 49]))).not.toThrow();
   });
