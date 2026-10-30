@@ -20,8 +20,8 @@ describe('isMachineEntitlementRoute', () => {
     expect(
       isMachineEntitlementRoute('/api/integrations/7clinic/entitlements/clinic-1/extra', 'GET'),
     ).toBe(false);
-    expect(
-      isMachineEntitlementRoute('/api/integrations/unknown/entitlements/org-1', 'GET'),
-    ).toBe(false);
+    expect(isMachineEntitlementRoute('/api/integrations/unknown/entitlements/org-1', 'GET')).toBe(
+      false,
+    );
   });
 });
