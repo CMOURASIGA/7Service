@@ -4,6 +4,7 @@ create table if not exists public.contract_files (
   id uuid primary key default gen_random_uuid(),
   contract_id uuid not null references public.contracts(id) on delete restrict,
   storage_path text not null unique,
+  constraint contract_files_contract_path_unique unique (contract_id, storage_path),
   original_name text not null,
   mime_type text not null default 'application/pdf',
   size_bytes bigint not null check (size_bytes between 1 and 10485760),
