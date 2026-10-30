@@ -1,6 +1,6 @@
-import { timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { tokenMatches, productFromPath, machineProductSecret } from '@/lib/integrations/machine-auth';
 import {
   readProductEntitlement,
   type IntegratedProduct,
@@ -10,13 +10,6 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 type Context = { params: Promise<{ productCode: string; externalTenantId: string }> };
 
-function tokenMatches(provided: string | null, secret: string | undefined) {
-  if (!provided?.startsWith('Bearer ') || !secret || secret.length < 32) return false;
-  const candidate = Buffer.from(provided.slice(7), 'utf8');
-  const expected = Buffer.from(secret, 'utf8');
-  return candidate.length === expected.length && timingSafeEqual(candidate, expected);
-}
-
 /**
  * Machine-to-machine integration contract. Each product has a distinct token.
  * Never accept a clientId supplied by the caller: resolve it from the
@@ -24,14 +17,11 @@ function tokenMatches(provided: string | null, secret: string | undefined) {
  */
 export async function GET(request: Request, context: Context) {
   const { productCode, externalTenantId } = await context.params;
-  const product = productCode.toUpperCase();
-  if (product !== '7COMMANDER' && product !== '7CLINIC') {
+  const product = productFromPath(productCode);
+  if (!product) {
     return NextResponse.json({ error: 'Unknown product' }, { status: 404 });
   }
-  const secret =
-    product === '7COMMANDER'
-      ? process.env.SERVICE_TOKEN_7COMMANDER
-      : process.env.SERVICE_TOKEN_7CLINIC;
+  const secret = machineProductSecret(product);
   if (!tokenMatches(request.headers.get('authorization'), secret)) {
     return NextResponse.json(
       { error: 'Unauthorized' },
