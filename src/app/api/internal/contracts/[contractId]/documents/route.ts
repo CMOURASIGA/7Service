@@ -37,7 +37,9 @@ export async function POST(request: NextRequest, context: Context) {
   try {
     await requireInternalAdmin();
     const { contractId } = await context.params;
-    const contentLength = Number(request.headers.get('content-length') ?? '0');
+    const declaredLength = request.headers.get('content-length');
+    const contentLength = declaredLength === null ? 0 : Number(declaredLength);
+    if (!Number.isFinite(contentLength) || contentLength < 0) return NextResponse.json({ error: 'Tamanho inválido' }, { status: 400 });
     if (contentLength > 11 * 1024 * 1024) return NextResponse.json({ error: 'Arquivo excede o limite' }, { status: 413 });
     const form = await request.formData();
     const file = form.get('file');
