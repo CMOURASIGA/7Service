@@ -56,7 +56,7 @@ export async function createProductEnvironment(deploymentId: string, input: Prod
 }
 
 export async function updateProductEnvironment(id: string, input: ProductEnvironmentInput) {
-  await requireInternalAdmin();
+  const actorId = await requireInternalAdmin();
   const normalized = validateProductEnvironment(input);
   const db = createAdminClient();
   const { data: current, error: readError } = await db.from('product_environments')
