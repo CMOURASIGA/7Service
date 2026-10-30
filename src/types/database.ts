@@ -1859,6 +1859,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      activate_identity_after_auth_atomic: {
+        Args: { p_auth_user_id: string };
+        Returns: string;
+      };
       manage_product_environment_atomic: {
         Args: {
           p_actor_id: string;
