@@ -1828,6 +1828,17 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      manage_product_environment_atomic: {
+        Args: {
+          p_actor_id: string;
+          p_environment_id: string;
+          p_action: string;
+          p_entry_url?: string | null;
+          p_version_sha?: string | null;
+          p_database_resource_ref?: string | null;
+        };
+        Returns: string;
+      };
       create_dedicated_deployment_atomic: {
         Args: {
           p_actor_id: string;
