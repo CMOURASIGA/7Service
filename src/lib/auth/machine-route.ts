@@ -1,9 +1,13 @@
 /**
- * Narrowly identifies M2M entitlement GET endpoints. The matched handler
- * performs independent product-specific Bearer verification and tenant lookup.
- * This does not authorize any user or bypass application RLS.
+ * Only signed M2M entitlement reads and user-access decisions may bypass
+ * browser cookies. The actual handlers still verify product-specific tokens.
  */
 export function isMachineEntitlementRoute(path: string, method: string): boolean {
-  if (method.toUpperCase() !== 'GET') return false;
-  return /^\/api\/integrations\/(?:7commander|7clinic)\/entitlements\/[^/]+$/i.test(path);
+  if (method.toUpperCase() === 'GET') {
+    return /^\/api\/integrations\/(?:7commander|7clinic)\/entitlements\/[^/]+$/i.test(path);
+  }
+  if (method.toUpperCase() === 'POST') {
+    return /^\/api\/integrations\/(?:7commander|7clinic)\/access\/[^/]+$/i.test(path);
+  }
+  return false;
 }
