@@ -22,7 +22,7 @@ export default function EnvironmentsPage({ params }: { params: Promise<{ deploym
     const data = await response.json() as { environments: Environment[] };
     setRows(data.environments);
   }, [endpoint]);
-  useEffect(() => { refresh().catch((e: unknown) => setError(e instanceof Error ? e.message : 'Erro')); }, [refresh]);
+  useEffect(() => { Promise.resolve().then(() => refresh()).catch((e: unknown) => setError(e instanceof Error ? e.message : 'Erro')); }, [refresh]);
 
   async function create(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError('');
