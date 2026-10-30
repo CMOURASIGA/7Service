@@ -56,19 +56,19 @@ export function grantAccess(input: GrantAccessInput, actor: InternalUser): UserP
     throw new AppError('VALIDATION_ERROR', 'Perfil não pertence ao produto ativo');
   }
 
+  const existing = store.userProductAccess.find(
+    (a) => a.identityId === input.identityId && a.subscriptionId === input.subscriptionId,
+  );
+  if (existing) {
+    throw new AppError('CONFLICT', 'Este usuário já possui acesso a esta assinatura');
+  }
+
   const usage = getLicenseUsage(subscription, store.userProductAccess, store.licenseOverrides);
   if (usage.available <= 0) {
     throw new AppError(
       'LICENSE_LIMIT_REACHED',
       'Limite de licenças atingido para esta assinatura. Uma exceção administrativa autorizada é necessária.',
     );
-  }
-
-  const existing = store.userProductAccess.find(
-    (a) => a.identityId === input.identityId && a.subscriptionId === input.subscriptionId,
-  );
-  if (existing) {
-    throw new AppError('CONFLICT', 'Este usuário já possui acesso a esta assinatura');
   }
 
   const access: UserProductAccess = {
@@ -135,6 +135,7 @@ export function setAccessStatus(
   const access = findAccess(accessId);
   assertAccessTransition(access.status, status);
   if (access.status !== status) assertAccessReason(status, reason);
+  if (access.status === status) return access;
   access.status = status;
   access.updatedAt = nowIso();
   if (status === 'SUSPENDED') {
