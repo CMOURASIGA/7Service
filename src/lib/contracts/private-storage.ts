@@ -29,8 +29,11 @@ export async function uploadPrivateContractPdf(input: {
     throw new AppError('VALIDATION_ERROR', 'PDF excede o limite de 10 MB');
   }
   assertPdfSignature(input.bytes);
-  const path = contractPdfStoragePath(input.contractId, crypto.randomUUID());
   const db = createAdminClient();
+  const { data: contract, error: contractError } = await db.from('contracts')
+    .select('id').eq('id', input.contractId).single();
+  if (contractError || !contract) throw new AppError('NOT_FOUND', 'Contrato não encontrado');
+  const path = contractPdfStoragePath(input.contractId, crypto.randomUUID());
   const { error } = await db.storage.from(BUCKET).upload(path, input.bytes, {
     contentType: 'application/pdf',
     upsert: false,
@@ -47,7 +50,11 @@ export async function createPrivateContractPdfUrl(path: string): Promise<string>
   if (!ids || contractPdfStoragePath(ids[1], ids[2]) !== path) {
     throw new AppError('VALIDATION_ERROR', 'Caminho de contrato inválido');
   }
-  const { data, error } = await createAdminClient().storage.from(BUCKET).createSignedUrl(path, 60);
+  const db = createAdminClient();
+  const { data: contract, error: contractError } = await db.from('contracts')
+    .select('id').eq('id', ids[1]).single();
+  if (contractError || !contract) throw new AppError('NOT_FOUND', 'Contrato não encontrado');
+  const { data, error } = await db.storage.from(BUCKET).createSignedUrl(path, 60);
   if (error || !data?.signedUrl) throw new AppError('NOT_FOUND', 'Documento privado indisponível');
   return data.signedUrl;
 }
