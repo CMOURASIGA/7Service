@@ -52,6 +52,8 @@ export async function createIdentityMembershipAction(
   }
 
   let createdIdentity = false;
+  let createdMembership = false;
+  let resentInvite = false;
   if (!identity) {
     const { data, error } = await db
       .from('identities')
@@ -88,7 +90,9 @@ export async function createIdentityMembershipAction(
         error: 'Já existe um vínculo não ativo. Regularize o status antes de conceder acesso.',
       };
     }
-    if (!createdIdentity) return { error: 'Esta pessoa já está vinculada à empresa.' };
+    // An existing active membership must not block recovery of an Auth invitation.
+    // Still reject duplicate membership requests when Auth is already linked.
+    if (identity.auth_user_id) return { error: 'Esta pessoa já está vinculada à empresa.' };
   } else {
     const { error: membershipError } = await db.from('client_memberships').insert({
       identity_id: identity.id,
@@ -98,20 +102,24 @@ export async function createIdentityMembershipAction(
     });
     if (membershipError)
       return { error: 'Identidade cadastrada, mas o vínculo empresarial não foi concluído.' };
+    createdMembership = true;
   }
 
   if (!identity.auth_user_id) {
+    resentInvite = !createdIdentity && !createdMembership;
     const { data: invited, error: inviteError } = await db.auth.admin.inviteUserByEmail(email);
     if (inviteError || !invited.user) {
       return {
         error: 'Vínculo cadastrado, mas o e-mail de ativação falhou. Requer reenvio seguro.',
       };
     }
-    const { error: bindError } = await db
+    const { data: boundIdentity, error: bindError } = await db
       .from('identities')
       .update({ auth_user_id: invited.user.id })
-      .eq('id', identity.id);
-    if (bindError)
+      .eq('id', identity.id)
+      .is('auth_user_id', null)
+      .select('id');
+    if (bindError || boundIdentity?.length !== 1)
       return { error: 'Convite enviado, mas a identidade Auth precisa ser conciliada.' };
     try {
       await trackAuthInvitation({ identityId: identity.id, operatorId: internalUser.id });
@@ -124,7 +132,11 @@ export async function createIdentityMembershipAction(
 
   const { error: auditError } = await db.from('audit_logs').insert({
     actor_internal_user_id: internalUser.id,
-    action: createdIdentity ? 'identity.invited' : 'identity.membership_added',
+    action: createdIdentity
+      ? 'identity.invited'
+      : resentInvite
+        ? 'identity.invitation_resent'
+        : 'identity.membership_added',
     target_type: 'identity',
     target_id: identity.id,
     client_id: clientId,
@@ -137,6 +149,8 @@ export async function createIdentityMembershipAction(
     error: null,
     success: createdIdentity
       ? 'Identidade criada e convite solicitado.'
-      : 'Vínculo com a empresa cadastrado.',
+      : resentInvite
+        ? 'Novo convite solicitado para identidade existente, mantendo o vínculo empresarial.'
+        : 'Vínculo com a empresa cadastrado.',
   };
 }
