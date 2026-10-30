@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { requireInternalAdmin } from '@/lib/auth/require-admin';
+import { recordAdminEvent } from '@/lib/audit/record-admin-event';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { AppError } from '@/lib/errors';
@@ -32,7 +33,7 @@ export async function uploadPrivateContractPdf(input: {
   assertPdfSignature(input.bytes);
   const db = createAdminClient();
   const { data: contract, error: contractError } = await db.from('contracts')
-    .select('id').eq('id', input.contractId).single();
+    .select('id,client_id').eq('id', input.contractId).single();
   if (contractError || !contract) throw new AppError('NOT_FOUND', 'Contrato não encontrado');
   const path = contractPdfStoragePath(input.contractId, crypto.randomUUID());
   const { error } = await db.storage.from(BUCKET).upload(path, input.bytes, {
@@ -54,6 +55,20 @@ export async function uploadPrivateContractPdf(input: {
     const { error: cleanupError } = await db.storage.from(BUCKET).remove([path]);
     if (cleanupError) throw new AppError('UNEXPECTED_ERROR', 'Falha ao registrar PDF e limpar upload; intervenção necessária');
     throw new AppError('UNEXPECTED_ERROR', 'Falha ao registrar documento contratual');
+  }
+  try {
+    await recordAdminEvent({
+      actorInternalUserId: actorId,
+      action: 'contract.document_uploaded',
+      targetType: 'contract',
+      targetId: input.contractId,
+      clientId: contract.client_id,
+      reason: input.signedDocument ? 'signed_document' : 'document',
+    });
+  } catch {
+    // The PDF is already persisted. Never delete a registered document
+    // to compensate for failed audit; surface the inconsistency for remediation.
+    throw new AppError('UNEXPECTED_ERROR', 'Documento registrado; falha na auditoria, verificar registro');
   }
   return { path, sizeBytes: input.bytes.byteLength };
 }
