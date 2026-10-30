@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { passwordValidationError } from '@/lib/auth/password-rules';
 
 export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
   const router = useRouter();
@@ -48,12 +49,9 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
     event.preventDefault();
     if (saving || !validSession) return;
     setError('');
-    if (password.length < 12) {
-      setError('A senha deve conter pelo menos 12 caracteres.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('As senhas informadas não coincidem.');
+    const passwordError = passwordValidationError(password, confirmPassword);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
     setSaving(true);
