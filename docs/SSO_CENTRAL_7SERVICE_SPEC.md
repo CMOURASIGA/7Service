@@ -43,3 +43,14 @@ O login/identidade não equivalem a permissão de uso. O produto DEVE validar id
 HV-05 e HV-06 já são PASS, preservar. HV-01 e HV-08 dependem de OTP funcional e validação da identidade QA. INT-7COMMANDER e INT-7CLINIC dependem de SSO e autorização do produto, portanto permanecem BLOCKED até teste real.
 
 Publicações somente em `develop` quando CI completo (lint, typecheck, testes, build) estiver PASS e lote mínimo da política Consult for atendido. Produção / `main` exigem autorização explícita.
+
+
+## Implantação do piloto por organização
+
+No 7Commander, manter `SERVICE_7SERVICE_ENFORCE_USER_ACCESS` ausente ou `false` até a homologação E2E. Quando autorizado, configurar **também** `SERVICE_7SERVICE_PILOT_ORG_ID` com UUID exato da organização QA. A flag sozinha não libera o piloto. Para usuários externos dessa organização, exigir sessão Auth local válida, e-mail confirmado, membership ativo, token de serviço do backend e decisão de acesso vigente no 7Service. Suspensão local tem precedência.
+
+Para evitar liberar URL incorreta, a interface 7Service usa exclusivamente uma implantação PRODUCTION + ACTIVE associada ao cliente e produto, com URL HTTPS única. Sem implantação ativa, não deve oferecer um link genérico como substituto.
+
+O licenciamento central aplica agora `grace_days` da assinatura para determinar a janela efetiva. Não interpretar a data nominal de vencimento como bloqueio imediato quando existir carência contratual válida.
+
+As migrations de ativação de identidade e concessão (`20261030205000`, `20261030211000`, `20261030212000`) ainda requerem execução e evidência no ambiente de homologação. A aplicação de migrations não deve ser presumida a partir de commits GitHub.
