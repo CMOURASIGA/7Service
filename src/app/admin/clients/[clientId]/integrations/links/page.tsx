@@ -21,7 +21,7 @@ export default function TenantLinksPage({ params }: { params: Promise<{ clientId
     if (!response.ok) throw new Error(result.error ?? 'Falha ao consultar vínculos');
     setRows(result.links ?? []);
   }, [endpoint]);
-  useEffect(() => { refresh().catch((e: unknown) => setMessage(e instanceof Error ? e.message : 'Erro')); }, [refresh]);
+  useEffect(() => { Promise.resolve().then(() => refresh()).catch((e: unknown) => setMessage(e instanceof Error ? e.message : 'Erro')); }, [refresh]);
 
   function choose(value: Product) {
     setProduct(value);
