@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 
 type Environment = { id: string; environment: string; entry_url: string | null; status: string; version_sha: string | null; database_resource_ref: string | null };
 type Kind = 'development' | 'homologation' | 'production';
@@ -74,6 +75,7 @@ export default function EnvironmentsPage({ params }: { params: Promise<{ deploym
           <div className="text-gray-500">{row.version_sha ?? 'Sem SHA'}</div>
         </div>
         <div className="flex gap-2">
+          {row.status !== 'RETIRED' && <Link className="rounded border px-3 py-2 text-sm" href={`/admin/deployments/${encodeURIComponent(deploymentId)}/environments/${encodeURIComponent(row.id)}`}>Editar</Link>}
           {row.status === 'ACTIVE' && <button type="button" className="rounded border px-3 py-2 text-sm" onClick={() => changeStatus(row, 'SUSPENDED')}>Suspender</button>}
           {row.status === 'SUSPENDED' && <button type="button" className="rounded border px-3 py-2 text-sm" onClick={() => changeStatus(row, 'ACTIVE')}>Reativar</button>}
           {row.status !== 'RETIRED' && <button type="button" className="rounded border px-3 py-2 text-sm" onClick={() => changeStatus(row, 'RETIRED')}>Encerrar</button>}
