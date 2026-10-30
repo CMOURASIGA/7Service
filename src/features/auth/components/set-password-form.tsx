@@ -19,6 +19,15 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
   const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
+    // An expired invitation must not silently reuse a different account's
+    // previously authenticated browser session.
+    const queryError = new URLSearchParams(window.location.search).get('error');
+    const fragmentError = new URLSearchParams(window.location.hash.slice(1)).get('error');
+    if (queryError || fragmentError) {
+      setValidSession(false);
+      setReady(true);
+      return;
+    }
     const supabase = createClient();
     let mounted = true;
     async function validateSession() {
