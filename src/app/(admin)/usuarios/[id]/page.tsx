@@ -35,7 +35,7 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
     db
       .from('user_product_access')
       .select(
-        'id,client_id,status,subscription_id,subscriptions!user_product_access_subscription_id_fkey(product_id,products(name))',
+        'id,client_id,status,subscription_id,subscriptions!user_product_access_subscription_id_fkey(product_id,products(name,login_url,entry_url))',
       )
       .eq('identity_id', id),
   ]);
@@ -240,7 +240,18 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
               return (
                 <li key={a.id} className="rounded border p-3">
                   <div className="mb-2 flex justify-between gap-2">
-                    <span>{a.subscriptions?.products?.name || a.subscription_id}</span>
+                    <div className="space-y-1">
+                      <span>{a.subscriptions?.products?.name || a.subscription_id}</span>
+                      {(() => {
+                        const destination = a.subscriptions?.products?.login_url ??
+                          a.subscriptions?.products?.entry_url;
+                        if (!destination || !/^https:\/\//i.test(destination)) return null;
+                        return <div><a href={destination} target="_blank" rel="noopener noreferrer"
+                          className="text-brand-700 break-all text-sm underline">
+                          Link de acesso ao sistema contratado
+                        </a></div>;
+                      })()}
+                    </div>
                     <StatusBadge label={info.label} tone={info.tone} />
                   </div>
                   <div className="flex flex-wrap gap-2">
