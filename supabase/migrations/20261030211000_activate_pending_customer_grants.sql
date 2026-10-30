@@ -53,14 +53,15 @@ BEGIN
       AND r.status='ACTIVE'
       AND (a.valid_from IS NULL OR a.valid_from<=current_date)
       AND (a.valid_until IS NULL OR a.valid_until>=current_date)
-    RETURNING a.id,a.client_id,s.product_id
+    RETURNING a.id,a.client_id,a.subscription_id
   )
   INSERT INTO public.audit_logs(
     actor_identity_id,action,target_type,target_id,client_id,product_id,source
   )
   SELECT v_id,'access.activated_after_invite','user_product_access',
-    a.id,a.client_id,a.product_id,'7service'
-  FROM activated_grants a;
+    a.id,a.client_id,s.product_id,'7service'
+  FROM activated_grants a
+  JOIN public.subscriptions s ON s.id=a.subscription_id;
 
   RETURN 'ACTIVE';
 END;
