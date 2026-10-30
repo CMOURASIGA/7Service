@@ -102,6 +102,21 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
       setSaving(false);
       return;
     }
+    // Identity activation is separate from authentication and never creates
+    // an internal/admin role. For recovery of an internal operator, absence
+    // of a customer identity is expected and does not block password reset.
+    let activated = false;
+    try {
+      const activation = await fetch('/api/auth/activate', { method: 'POST' });
+      activated = activation.ok;
+    } catch {
+      activated = false;
+    }
+    if (mode === 'invite' && !activated) {
+      setError('Senha definida, mas a ativação da identidade não foi confirmada. Contate a Consult Services.');
+      setSaving(false);
+      return;
+    }
     await supabase.auth.signOut();
     router.replace('/login?password_updated=1');
     router.refresh();
