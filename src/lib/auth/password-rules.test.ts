@@ -6,7 +6,9 @@ describe('passwordValidationError', () => {
     expect(passwordValidationError('12345678901', '12345678901')).toMatch(/12 caracteres/);
   });
   it('rejects different confirmations', () => {
-    expect(passwordValidationError('long-valid-password', 'another-password')).toMatch(/não coincidem/);
+    expect(passwordValidationError('long-valid-password', 'another-password')).toMatch(
+      /não coincidem/,
+    );
   });
   it('allows equal passwords with at least 12 characters', () => {
     expect(passwordValidationError('long-valid-password', 'long-valid-password')).toBeNull();
