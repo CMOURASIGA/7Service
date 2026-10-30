@@ -13,13 +13,22 @@ export function ForgotPasswordForm() {
     setBusy(true);
     setError('');
     const redirectTo = `${window.location.origin}/redefinir-senha`;
-    const { error: resetError } = await createClient().auth.resetPasswordForEmail(email, {
-      redirectTo,
-    });
-    setBusy(false);
-    if (resetError) {
-      setError('Não foi possível solicitar a recuperação. Tente novamente mais tarde.');
+    try {
+      const { error: resetError } = await createClient().auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+        redirectTo,
+      });
+      if (resetError) {
+        const rateLimited = resetError.status === 429 || resetError.code === 'over_email_send_rate_limit';
+        setError(rateLimited
+          ? 'O envio de e-mails atingiu o limite temporário. Aguarde a liberação do provedor antes de solicitar outro código.'
+          : 'Não foi possível solicitar a recuperação. Tente novamente mais tarde.');
+        return;
+      }
+    } catch {
+      setError('Não foi possível conectar ao serviço de recuperação. Verifique a rede e tente mais tarde.');
       return;
+    } finally {
+      setBusy(false);
     }
     // Generic response deliberately does not confirm account existence.
     setSent(true);
