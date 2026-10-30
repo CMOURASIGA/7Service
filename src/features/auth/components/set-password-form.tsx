@@ -24,8 +24,10 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
     const queryError = new URLSearchParams(window.location.search).get('error');
     const fragmentError = new URLSearchParams(window.location.hash.slice(1)).get('error');
     if (queryError || fragmentError) {
-      setValidSession(false);
-      setReady(true);
+      void Promise.resolve().then(() => {
+        setValidSession(false);
+        setReady(true);
+      });
       return;
     }
     const supabase = createClient();
