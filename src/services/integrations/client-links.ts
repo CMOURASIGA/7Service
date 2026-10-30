@@ -5,7 +5,7 @@ import { recordAdminEvent } from '@/lib/audit/record-admin-event';
 import { AppError } from '@/lib/errors';
 import type { IntegratedProduct } from './product-entitlements';
 
-const uuid = /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export async function listClientIntegrationLinks(clientId: string) {
   await requireInternalAdmin();
   if (!uuid.test(clientId)) throw new AppError('VALIDATION_ERROR', 'Cliente inválido');
@@ -32,8 +32,9 @@ export async function upsertClientIntegrationLink(input: {
   }
   const db = createAdminClient();
   const { data: client, error: clientError } = await db.from('clients')
-    .select('id').eq('id', input.clientId).single();
+    .select('id,status').eq('id', input.clientId).single();
   if (clientError || !client) throw new AppError('NOT_FOUND', 'Cliente não encontrado');
+  if (input.status === 'ACTIVE' && client.status !== 'ACTIVE') throw new AppError('CONFLICT', 'Cliente inativo não pode ativar integração');
   const { data, error } = await db.from('client_integration_links').upsert({
     client_id: input.clientId,
     product_code: input.product,
