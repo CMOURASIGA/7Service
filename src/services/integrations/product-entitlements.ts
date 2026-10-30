@@ -56,12 +56,15 @@ export async function readProductEntitlement(
   if (error) throw new AppError('UNEXPECTED_ERROR', 'Erro ao consultar assinatura');
   const today = new Date().toISOString().slice(0, 10);
   const eligible = (subscriptions ?? []).find((item) =>
-    subscriptionInAccessWindow({
-      status: item.status,
-      startDate: item.start_date,
-      endDate: item.end_date,
-      graceDays: item.grace_days,
-    }, today),
+    subscriptionInAccessWindow(
+      {
+        status: item.status,
+        startDate: item.start_date,
+        endDate: item.end_date,
+        graceDays: item.grace_days,
+      },
+      today,
+    ),
   );
   const latest = eligible ?? subscriptions?.[0] ?? null;
   const { data: link, error: linkError } = await db

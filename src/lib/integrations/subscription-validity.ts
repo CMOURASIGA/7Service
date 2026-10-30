@@ -8,12 +8,15 @@ function dayNumber(isoDate: string): number {
   return Number.isFinite(value) ? Math.floor(value / 86400000) : NaN;
 }
 
-export function subscriptionInAccessWindow(input: {
-  status: string;
-  startDate: string;
-  endDate: string | null;
-  graceDays: number | null;
-}, todayIso: string): boolean {
+export function subscriptionInAccessWindow(
+  input: {
+    status: string;
+    startDate: string;
+    endDate: string | null;
+    graceDays: number | null;
+  },
+  todayIso: string,
+): boolean {
   if (input.status !== 'ACTIVE') return false;
   const today = dayNumber(todayIso);
   const start = dayNumber(input.startDate);
