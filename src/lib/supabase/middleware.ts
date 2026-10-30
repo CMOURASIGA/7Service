@@ -42,9 +42,17 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login');
+  const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
   const isPublicAsset =
     request.nextUrl.pathname.startsWith('/_next') ||
     request.nextUrl.pathname.startsWith('/api/health');
+
+  if (!user && isApiRoute && !isPublicAsset) {
+    return NextResponse.json(
+      { error: 'Sessão necessária' },
+      { status: 401, headers: { 'Cache-Control': 'no-store' } },
+    );
+  }
 
   if (!user && !isAuthRoute && !isPublicAsset) {
     const loginUrl = request.nextUrl.clone();
