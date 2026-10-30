@@ -1,0 +1,34 @@
+name: One-time customer access formatting develop
+on:
+  push:
+    branches: [develop]
+    paths:
+      - '.github/workflows/format-access-once.yml'
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Normalize customer access changes
+        run: |
+          npm run format
+          npm run format:check
+      - name: Remove temporary workflow and commit
+        run: |
+          rm .github/workflows/format-access-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "style: normalize customer access changes for CI"
+          git push origin HEAD:develop
