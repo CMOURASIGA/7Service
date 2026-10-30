@@ -44,11 +44,18 @@ export async function getProductEntitlement(
   );
   const latest = eligible ?? subscriptions?.[0] ?? null;
   const active = Boolean(eligible && client.status === 'ACTIVE' && product.status === 'ACTIVE');
+  let extraLicenses = 0;
+  if (active && eligible) {
+    const { data: overrides, error: overrideError } = await db.from('license_overrides')
+      .select('extra_licenses').eq('subscription_id', eligible.id);
+    if (overrideError) throw new AppError('UNEXPECTED_ERROR', 'Erro ao consultar licenças adicionais');
+    extraLicenses = (overrides ?? []).reduce((sum, item) => sum + item.extra_licenses, 0);
+  }
   return {
     clientId, product: productCode,
     subscriptionId: latest?.id ?? null,
     status: active ? 'ACTIVE' : latest?.end_date && latest.end_date < today ? 'EXPIRED' : 'INACTIVE',
-    licenseLimit: active ? eligible!.license_limit : 0,
+    licenseLimit: active && eligible ? Math.max(0, eligible.license_limit + extraLicenses) : 0,
     validUntil: latest?.end_date ?? null,
   };
 }
