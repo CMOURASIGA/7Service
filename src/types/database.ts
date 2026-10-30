@@ -437,6 +437,57 @@ export type Database = {
           },
         ];
       };
+      contract_files: {
+        Row: {
+          id: string;
+          contract_id: string;
+          storage_path: string;
+          original_name: string;
+          mime_type: string;
+          size_bytes: number;
+          signed_document: boolean;
+          uploaded_by: string;
+          uploaded_at: string;
+        };
+        Insert: {
+          id?: string;
+          contract_id: string;
+          storage_path: string;
+          original_name: string;
+          mime_type?: string;
+          size_bytes: number;
+          signed_document?: boolean;
+          uploaded_by: string;
+          uploaded_at?: string;
+        };
+        Update: {
+          id?: string;
+          contract_id?: string;
+          storage_path?: string;
+          original_name?: string;
+          mime_type?: string;
+          size_bytes?: number;
+          signed_document?: boolean;
+          uploaded_by?: string;
+          uploaded_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'contract_files_contract_id_fkey';
+            columns: ['contract_id'];
+            isOneToOne: false;
+            referencedRelation: 'contracts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'contract_files_uploaded_by_fkey';
+            columns: ['uploaded_by'];
+            isOneToOne: false;
+            referencedRelation: 'internal_users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       contracts: {
         Row: {
           client_id: string;
