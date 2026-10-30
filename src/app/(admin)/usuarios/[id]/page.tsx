@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { customerProductEntryUrl } from '@/lib/integrations/customer-entry-link';
 import { notFound } from 'next/navigation';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -137,7 +138,7 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
   const environmentsResult = deploymentIds.length
     ? await db
         .from('product_environments')
-        .select('id,deployment_id,environment,status')
+        .select('id,deployment_id,environment,status,entry_url')
         .in('deployment_id', deploymentIds)
         .eq('status', 'ACTIVE')
     : { data: [], error: null };
@@ -243,10 +244,13 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                     <div className="space-y-1">
                       <span>{a.subscriptions?.products?.name || a.subscription_id}</span>
                       {(() => {
-                        const destination =
-                          a.subscriptions?.products?.login_url ??
-                          a.subscriptions?.products?.entry_url;
-                        if (!destination || !/^https:\/\//i.test(destination)) return null;
+                        const destination = customerProductEntryUrl(
+                          a.client_id,
+                          a.subscriptions?.product_id ?? '',
+                          links.data ?? [],
+                          environmentsResult.data ?? [],
+                        );
+                        if (a.status !== 'ACTIVE' || !destination) return null;
                         return (
                           <div>
                             <a
@@ -260,6 +264,11 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                           </div>
                         );
                       })()}
+                      {a.status === 'ACTIVE' ? null : (
+                        <p className="text-muted text-xs">
+                          Aguardando ativação. Não distribuir credenciais antes de liberar o acesso.
+                        </p>
+                      )}
                     </div>
                     <StatusBadge label={info.label} tone={info.tone} />
                   </div>
