@@ -18,8 +18,9 @@ export async function uploadPrivateContractPdf(input: {
   contractId: string;
   originalName: string;
   bytes: Uint8Array;
+  signedDocument?: boolean;
 }): Promise<{ path: string; sizeBytes: number }> {
-  await requireInternalAdmin();
+  const actorId = await requireInternalAdmin();
   validateContractPdfMetadata({
     originalName: input.originalName,
     mimeType: 'application/pdf',
@@ -40,6 +41,20 @@ export async function uploadPrivateContractPdf(input: {
     cacheControl: 'private, no-store',
   });
   if (error) throw new AppError('UNEXPECTED_ERROR', 'Não foi possível armazenar o PDF');
+  const { error: metadataError } = await db.from('contract_files').insert({
+    contract_id: input.contractId,
+    storage_path: path,
+    original_name: input.originalName,
+    mime_type: 'application/pdf',
+    size_bytes: input.bytes.byteLength,
+    signed_document: input.signedDocument ?? false,
+    uploaded_by: actorId,
+  });
+  if (metadataError) {
+    const { error: cleanupError } = await db.storage.from(BUCKET).remove([path]);
+    if (cleanupError) throw new AppError('UNEXPECTED_ERROR', 'Falha ao registrar PDF e limpar upload; intervenção necessária');
+    throw new AppError('UNEXPECTED_ERROR', 'Falha ao registrar documento contratual');
+  }
   return { path, sizeBytes: input.bytes.byteLength };
 }
 
@@ -54,18 +69,11 @@ export async function createPrivateContractPdfUrl(path: string): Promise<string>
   const { data: contract, error: contractError } = await db.from('contracts')
     .select('id').eq('id', ids[1]).single();
   if (contractError || !contract) throw new AppError('NOT_FOUND', 'Contrato não encontrado');
+  const { data: registered, error: registryError } = await db.from('contract_files')
+    .select('id').eq('contract_id', ids[1]).eq('storage_path', path).limit(1);
+  if (registryError || !registered?.length) throw new AppError('NOT_FOUND', 'PDF não registrado');
   const { data, error } = await db.storage.from(BUCKET).createSignedUrl(path, 60);
   if (error || !data?.signedUrl) throw new AppError('NOT_FOUND', 'Documento privado indisponível');
   return data.signedUrl;
 }
 
-/** Remove a recently uploaded orphan if its metadata transaction fails. */
-export async function cleanupUnregisteredContractPdf(path: string): Promise<void> {
-  await requireInternalAdmin();
-  const ids = path.match(/^([0-9a-f-]{36})\/([0-9a-f-]{36})\.pdf$/i);
-  if (!ids || contractPdfStoragePath(ids[1], ids[2]) !== path) {
-    throw new AppError('VALIDATION_ERROR', 'Caminho inválido para limpeza');
-  }
-  const { error } = await createAdminClient().storage.from(BUCKET).remove([path]);
-  if (error) throw new AppError('UNEXPECTED_ERROR', 'Falha ao remover arquivo não registrado');
-}
