@@ -111,15 +111,16 @@ export async function createIdentityMembershipAction(
     resentInvite = !createdIdentity && !createdMembership;
     // Preview invite links must land on a public password-setup page.
     // Configure the URL under Supabase Auth > URL Configuration redirect allowlist.
-    const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL ??
+    const siteOrigin =
+      process.env.NEXT_PUBLIC_SITE_URL ??
       (process.env.VERCEL_ENV === 'preview'
         ? 'https://7service-git-develop-christians-projects-4954426e.vercel.app'
         : process.env.VERCEL_URL
           ? `https://${process.env.VERCEL_URL}`
-          : (await headers()).get('origin') ?? 'http://localhost:3000');
-    const { data: invited, error: inviteError } = await db.auth.admin.inviteUserByEmail(
-      email, { redirectTo: new URL('/aceitar-convite', siteOrigin).toString() },
-    );
+          : ((await headers()).get('origin') ?? 'http://localhost:3000'));
+    const { data: invited, error: inviteError } = await db.auth.admin.inviteUserByEmail(email, {
+      redirectTo: new URL('/aceitar-convite', siteOrigin).toString(),
+    });
     if (inviteError || !invited.user) {
       return {
         error: 'Vínculo cadastrado, mas o e-mail de ativação falhou. Requer reenvio seguro.',

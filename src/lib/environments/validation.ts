@@ -12,7 +12,9 @@ export interface ProductEnvironmentInput {
 const shaPattern = /^[a-f0-9]{7,40}$/i;
 const allowedEnvironments: EnvironmentKind[] = ['development', 'homologation', 'production'];
 
-export function validateProductEnvironment(input: ProductEnvironmentInput): ProductEnvironmentInput {
+export function validateProductEnvironment(
+  input: ProductEnvironmentInput,
+): ProductEnvironmentInput {
   if (!allowedEnvironments.includes(input.environment)) {
     throw new AppError('VALIDATION_ERROR', 'Ambiente inválido');
   }
@@ -21,7 +23,13 @@ export function validateProductEnvironment(input: ProductEnvironmentInput): Prod
   if (entryUrl) {
     try {
       const url = new URL(entryUrl);
-      if (url.protocol !== 'https:' || url.username || url.password || url.hash || !url.hostname.includes('.')) {
+      if (
+        url.protocol !== 'https:' ||
+        url.username ||
+        url.password ||
+        url.hash ||
+        !url.hostname.includes('.')
+      ) {
         throw new Error('unsafe url');
       }
     } catch {
@@ -30,7 +38,10 @@ export function validateProductEnvironment(input: ProductEnvironmentInput): Prod
   }
 
   const databaseResourceRef = input.databaseResourceRef?.trim() || null;
-  if (databaseResourceRef && (databaseResourceRef.length > 200 || /[\x00-\x1f\x7f]/.test(databaseResourceRef))) {
+  if (
+    databaseResourceRef &&
+    (databaseResourceRef.length > 200 || /[\x00-\x1f\x7f]/.test(databaseResourceRef))
+  ) {
     throw new AppError('VALIDATION_ERROR', 'Referência do banco inválida');
   }
 
@@ -48,7 +59,9 @@ export function assertUniqueEnvironment(
   deploymentId: string,
   environment: EnvironmentKind,
 ): void {
-  if (existing.some((item) => item.deploymentId === deploymentId && item.environment === environment)) {
+  if (
+    existing.some((item) => item.deploymentId === deploymentId && item.environment === environment)
+  ) {
     throw new AppError('CONFLICT', 'Este ambiente já está cadastrado para a implantação');
   }
 }

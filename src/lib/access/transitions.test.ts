@@ -3,14 +3,20 @@ import { assertAccessReason, assertAccessTransition } from './transitions';
 
 describe('access state transitions', () => {
   it.each([
-    ['PENDING', 'ACTIVE'], ['ACTIVE', 'SUSPENDED'], ['SUSPENDED', 'ACTIVE'],
-    ['ACTIVE', 'REVOKED'], ['REVOKED', 'REVOKED'], ['EXPIRED', 'EXPIRED'],
+    ['PENDING', 'ACTIVE'],
+    ['ACTIVE', 'SUSPENDED'],
+    ['SUSPENDED', 'ACTIVE'],
+    ['ACTIVE', 'REVOKED'],
+    ['REVOKED', 'REVOKED'],
+    ['EXPIRED', 'EXPIRED'],
   ] as const)('allows %s to %s', (from, to) => {
     expect(() => assertAccessTransition(from, to)).not.toThrow();
   });
 
   it.each([
-    ['REVOKED', 'ACTIVE'], ['EXPIRED', 'ACTIVE'], ['ACTIVE', 'PENDING'],
+    ['REVOKED', 'ACTIVE'],
+    ['EXPIRED', 'ACTIVE'],
+    ['ACTIVE', 'PENDING'],
     ['REVOKED', 'SUSPENDED'],
   ] as const)('denies %s to %s', (from, to) => {
     expect(() => assertAccessTransition(from, to)).toThrow();

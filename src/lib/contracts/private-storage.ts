@@ -5,7 +5,11 @@ import { recordAdminEvent } from '@/lib/audit/record-admin-event';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { AppError } from '@/lib/errors';
-import { assertPdfSignature, contractPdfStoragePath, validateContractPdfMetadata } from './pdf-validation';
+import {
+  assertPdfSignature,
+  contractPdfStoragePath,
+  validateContractPdfMetadata,
+} from './pdf-validation';
 
 const BUCKET = 'contract-documents';
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -32,8 +36,11 @@ export async function uploadPrivateContractPdf(input: {
   }
   assertPdfSignature(input.bytes);
   const db = createAdminClient();
-  const { data: contract, error: contractError } = await db.from('contracts')
-    .select('id,client_id').eq('id', input.contractId).single();
+  const { data: contract, error: contractError } = await db
+    .from('contracts')
+    .select('id,client_id')
+    .eq('id', input.contractId)
+    .single();
   if (contractError || !contract) throw new AppError('NOT_FOUND', 'Contrato não encontrado');
   const path = contractPdfStoragePath(input.contractId, crypto.randomUUID());
   const { error } = await db.storage.from(BUCKET).upload(path, input.bytes, {
@@ -53,7 +60,11 @@ export async function uploadPrivateContractPdf(input: {
   });
   if (metadataError) {
     const { error: cleanupError } = await db.storage.from(BUCKET).remove([path]);
-    if (cleanupError) throw new AppError('UNEXPECTED_ERROR', 'Falha ao registrar PDF e limpar upload; intervenção necessária');
+    if (cleanupError)
+      throw new AppError(
+        'UNEXPECTED_ERROR',
+        'Falha ao registrar PDF e limpar upload; intervenção necessária',
+      );
     throw new AppError('UNEXPECTED_ERROR', 'Falha ao registrar documento contratual');
   }
   try {
@@ -68,7 +79,10 @@ export async function uploadPrivateContractPdf(input: {
   } catch {
     // The PDF is already persisted. Never delete a registered document
     // to compensate for failed audit; surface the inconsistency for remediation.
-    throw new AppError('UNEXPECTED_ERROR', 'Documento registrado; falha na auditoria, verificar registro');
+    throw new AppError(
+      'UNEXPECTED_ERROR',
+      'Documento registrado; falha na auditoria, verificar registro',
+    );
   }
   return { path, sizeBytes: input.bytes.byteLength };
 }
@@ -81,14 +95,20 @@ export async function createPrivateContractPdfUrl(path: string): Promise<string>
     throw new AppError('VALIDATION_ERROR', 'Caminho de contrato inválido');
   }
   const db = createAdminClient();
-  const { data: contract, error: contractError } = await db.from('contracts')
-    .select('id').eq('id', ids[1]).single();
+  const { data: contract, error: contractError } = await db
+    .from('contracts')
+    .select('id')
+    .eq('id', ids[1])
+    .single();
   if (contractError || !contract) throw new AppError('NOT_FOUND', 'Contrato não encontrado');
-  const { data: registered, error: registryError } = await db.from('contract_files')
-    .select('id').eq('contract_id', ids[1]).eq('storage_path', path).limit(1);
+  const { data: registered, error: registryError } = await db
+    .from('contract_files')
+    .select('id')
+    .eq('contract_id', ids[1])
+    .eq('storage_path', path)
+    .limit(1);
   if (registryError || !registered?.length) throw new AppError('NOT_FOUND', 'PDF não registrado');
   const { data, error } = await db.storage.from(BUCKET).createSignedUrl(path, 60);
   if (error || !data?.signedUrl) throw new AppError('NOT_FOUND', 'Documento privado indisponível');
   return data.signedUrl;
 }
-

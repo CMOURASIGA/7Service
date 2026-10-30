@@ -52,7 +52,11 @@ export function grantAccess(input: GrantAccessInput, actor: InternalUser): UserP
     throw new AppError('FORBIDDEN', 'Cliente não está ativo');
   }
   const product = store.products.find((item) => item.id === subscription.productId);
-  if (!product || product.status !== 'ACTIVE' || !product.roles.some((role) => role.id === input.productRoleId && role.status === 'ACTIVE')) {
+  if (
+    !product ||
+    product.status !== 'ACTIVE' ||
+    !product.roles.some((role) => role.id === input.productRoleId && role.status === 'ACTIVE')
+  ) {
     throw new AppError('VALIDATION_ERROR', 'Perfil não pertence ao produto ativo');
   }
 

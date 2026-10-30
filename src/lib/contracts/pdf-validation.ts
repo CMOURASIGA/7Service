@@ -29,14 +29,25 @@ export function validateContractPdfMetadata(input: {
     throw new AppError('VALIDATION_ERROR', 'Somente arquivos PDF são permitidos');
   }
 
-  if (!Number.isSafeInteger(input.sizeBytes) || input.sizeBytes <= 0 || input.sizeBytes > 10 * 1024 * 1024) {
+  if (
+    !Number.isSafeInteger(input.sizeBytes) ||
+    input.sizeBytes <= 0 ||
+    input.sizeBytes > 10 * 1024 * 1024
+  ) {
     throw new AppError('VALIDATION_ERROR', 'O PDF deve possuir tamanho válido');
   }
 }
 
 /** Initial content check. This does not replace server-side authorization or malware scanning. */
 export function assertPdfSignature(bytes: Uint8Array): void {
-  if (bytes.length < 5 || bytes[0] !== 0x25 || bytes[1] !== 0x50 || bytes[2] !== 0x44 || bytes[3] !== 0x46 || bytes[4] !== 0x2d) {
+  if (
+    bytes.length < 5 ||
+    bytes[0] !== 0x25 ||
+    bytes[1] !== 0x50 ||
+    bytes[2] !== 0x44 ||
+    bytes[3] !== 0x46 ||
+    bytes[4] !== 0x2d
+  ) {
     throw new AppError('VALIDATION_ERROR', 'O arquivo não possui assinatura PDF válida');
   }
 }

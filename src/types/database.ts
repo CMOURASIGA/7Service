@@ -489,10 +489,41 @@ export type Database = {
         ];
       };
       client_integration_links: {
-        Row: { id: string; client_id: string; product_code: string; external_tenant_id: string; status: string; created_at: string; updated_at: string };
-        Insert: { id?: string; client_id: string; product_code: string; external_tenant_id: string; status?: string; created_at?: string; updated_at?: string };
-        Update: { id?: string; client_id?: string; product_code?: string; external_tenant_id?: string; status?: string; updated_at?: string };
-        Relationships: [{ foreignKeyName: 'client_integration_links_client_id_fkey'; columns: ['client_id']; isOneToOne: false; referencedRelation: 'clients'; referencedColumns: ['id'] }];
+        Row: {
+          id: string;
+          client_id: string;
+          product_code: string;
+          external_tenant_id: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          client_id: string;
+          product_code: string;
+          external_tenant_id: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          client_id?: string;
+          product_code?: string;
+          external_tenant_id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'client_integration_links_client_id_fkey';
+            columns: ['client_id'];
+            isOneToOne: false;
+            referencedRelation: 'clients';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       contracts: {
         Row: {

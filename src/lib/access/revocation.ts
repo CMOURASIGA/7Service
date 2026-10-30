@@ -19,18 +19,21 @@ export function canUseProductAccess(input: {
     input.accessStatus !== 'ACTIVE' ||
     input.subscriptionStatus !== 'ACTIVE' ||
     input.clientStatus !== 'ACTIVE'
-  ) return false;
+  )
+    return false;
 
   const at = Date.parse(input.at);
   if (!Number.isFinite(at)) throw new AppError('VALIDATION_ERROR', 'Data de verificação inválida');
   if (input.validFrom !== null && input.validFrom !== undefined) {
     const startsAt = Date.parse(input.validFrom);
-    if (!Number.isFinite(startsAt)) throw new AppError('VALIDATION_ERROR', 'Início de acesso inválido');
+    if (!Number.isFinite(startsAt))
+      throw new AppError('VALIDATION_ERROR', 'Início de acesso inválido');
     if (at < startsAt) return false;
   }
   if (input.validUntil !== null && input.validUntil !== undefined) {
     const expiresAt = Date.parse(input.validUntil);
-    if (!Number.isFinite(expiresAt)) throw new AppError('VALIDATION_ERROR', 'Validade de acesso inválida');
+    if (!Number.isFinite(expiresAt))
+      throw new AppError('VALIDATION_ERROR', 'Validade de acesso inválida');
     if (at >= expiresAt) return false;
   }
   return true;

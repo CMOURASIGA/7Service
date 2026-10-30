@@ -1,21 +1,36 @@
 import { describe, expect, it } from 'vitest';
 
-import { assertPdfSignature, contractPdfStoragePath, validateContractPdfMetadata } from './pdf-validation';
+import {
+  assertPdfSignature,
+  contractPdfStoragePath,
+  validateContractPdfMetadata,
+} from './pdf-validation';
 
-const valid = { originalName: 'contrato-assinado.pdf', mimeType: 'application/pdf', sizeBytes: 1024 };
+const valid = {
+  originalName: 'contrato-assinado.pdf',
+  mimeType: 'application/pdf',
+  sizeBytes: 1024,
+};
 
 describe('validateContractPdfMetadata', () => {
   it('accepts PDF metadata', () => {
     expect(() => validateContractPdfMetadata(valid)).not.toThrow();
-    expect(() => validateContractPdfMetadata({ ...valid, originalName: 'CONTRATO.PDF' })).not.toThrow();
+    expect(() =>
+      validateContractPdfMetadata({ ...valid, originalName: 'CONTRATO.PDF' }),
+    ).not.toThrow();
   });
 
-  it.each([' contrato.pdf', 'contrato.pdf ', 'contrato.txt', '../contrato.pdf', 'folder/contrato.pdf', 'folder\\contrato.pdf', 'contrato\n.pdf'])(
-    'rejects unsafe filename %s',
-    (originalName) => {
-      expect(() => validateContractPdfMetadata({ ...valid, originalName })).toThrow();
-    },
-  );
+  it.each([
+    ' contrato.pdf',
+    'contrato.pdf ',
+    'contrato.txt',
+    '../contrato.pdf',
+    'folder/contrato.pdf',
+    'folder\\contrato.pdf',
+    'contrato\n.pdf',
+  ])('rejects unsafe filename %s', (originalName) => {
+    expect(() => validateContractPdfMetadata({ ...valid, originalName })).toThrow();
+  });
 
   it('rejects a non-PDF MIME type', () => {
     expect(() => validateContractPdfMetadata({ ...valid, mimeType: 'image/png' })).toThrow();
@@ -28,7 +43,6 @@ describe('validateContractPdfMetadata', () => {
     },
   );
 });
-
 
 describe('private PDF storage helpers', () => {
   const contractId = '123e4567-e89b-42d3-a456-426614174000';
@@ -43,7 +57,9 @@ describe('private PDF storage helpers', () => {
   });
 
   it('permits the exact configured maximum size', () => {
-    expect(() => validateContractPdfMetadata({ ...valid, sizeBytes: 10 * 1024 * 1024 })).not.toThrow();
+    expect(() =>
+      validateContractPdfMetadata({ ...valid, sizeBytes: 10 * 1024 * 1024 }),
+    ).not.toThrow();
   });
 
   it('rejects IDs that look like paths', () => {

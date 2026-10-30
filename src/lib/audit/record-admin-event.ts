@@ -13,16 +13,18 @@ export async function recordAdminEvent(input: {
   productId?: string | null;
   reason?: string | null;
 }): Promise<void> {
-  const { error } = await createAdminClient().from('audit_logs').insert({
-    source: '7service',
-    actor_internal_user_id: input.actorInternalUserId,
-    action: input.action,
-    target_type: input.targetType,
-    target_id: input.targetId,
-    client_id: input.clientId ?? null,
-    product_id: input.productId ?? null,
-    reason: input.reason ?? null,
-    metadata_safe: {},
-  });
+  const { error } = await createAdminClient()
+    .from('audit_logs')
+    .insert({
+      source: '7service',
+      actor_internal_user_id: input.actorInternalUserId,
+      action: input.action,
+      target_type: input.targetType,
+      target_id: input.targetId,
+      client_id: input.clientId ?? null,
+      product_id: input.productId ?? null,
+      reason: input.reason ?? null,
+      metadata_safe: {},
+    });
   if (error) throw new AppError('UNEXPECTED_ERROR', 'Falha ao registrar auditoria administrativa');
 }

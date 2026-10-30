@@ -17,7 +17,13 @@ export function assertAccessTransition(current: AccessStatus, next: AccessStatus
 }
 
 export function assertAccessReason(next: AccessStatus, reason?: string): void {
-  if ((next === 'SUSPENDED' || next === 'REVOKED') && (!reason?.trim() || reason.trim().length < 5)) {
-    throw new AppError('VALIDATION_ERROR', 'Informe uma justificativa com pelo menos cinco caracteres');
+  if (
+    (next === 'SUSPENDED' || next === 'REVOKED') &&
+    (!reason?.trim() || reason.trim().length < 5)
+  ) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      'Informe uma justificativa com pelo menos cinco caracteres',
+    );
   }
 }
