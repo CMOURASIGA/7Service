@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 
 import { createClient } from '@/lib/supabase/client';
@@ -42,6 +43,8 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+      {searchParams.get('password_updated') === '1' && <p role="status" className="text-sm text-green-700">Senha definida. Entre com suas novas credenciais.</p>}
+      {searchParams.get('auth_error') && <p role="alert" className="text-sm text-red-700">Link expirado ou inválido. Solicite uma recuperação de acesso.</p>}
       <div className="flex flex-col gap-1.5">
         <label htmlFor="email" className="text-foreground text-sm font-medium">
           E-mail
@@ -74,6 +77,7 @@ export function LoginForm() {
         />
       </div>
 
+      <Link href="/esqueci-senha" className="text-sm text-blue-700 underline">Esqueci minha senha</Link>
       {error ? (
         <p role="alert" className="text-danger text-sm">
           {error}
