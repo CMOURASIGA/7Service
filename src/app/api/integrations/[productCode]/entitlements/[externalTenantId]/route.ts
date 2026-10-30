@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { tokenMatches, productFromPath, machineProductSecret } from '@/lib/integrations/machine-auth';
+import {
+  tokenMatches,
+  productFromPath,
+  machineProductSecret,
+} from '@/lib/integrations/machine-auth';
 import {
   readProductEntitlement,
   type IntegratedProduct,

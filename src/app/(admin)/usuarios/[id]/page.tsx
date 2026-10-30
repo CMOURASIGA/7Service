@@ -243,13 +243,22 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                     <div className="space-y-1">
                       <span>{a.subscriptions?.products?.name || a.subscription_id}</span>
                       {(() => {
-                        const destination = a.subscriptions?.products?.login_url ??
+                        const destination =
+                          a.subscriptions?.products?.login_url ??
                           a.subscriptions?.products?.entry_url;
                         if (!destination || !/^https:\/\//i.test(destination)) return null;
-                        return <div><a href={destination} target="_blank" rel="noopener noreferrer"
-                          className="text-brand-700 break-all text-sm underline">
-                          Link de acesso ao sistema contratado
-                        </a></div>;
+                        return (
+                          <div>
+                            <a
+                              href={destination}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-brand-700 text-sm break-all underline"
+                            >
+                              Link de acesso ao sistema contratado
+                            </a>
+                          </div>
+                        );
                       })()}
                     </div>
                     <StatusBadge label={info.label} tone={info.tone} />

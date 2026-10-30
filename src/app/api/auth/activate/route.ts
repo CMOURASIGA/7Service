@@ -7,7 +7,10 @@ export const dynamic = 'force-dynamic';
 
 export async function POST() {
   const auth = await createClient();
-  const { data: { user }, error: authenticationError } = await auth.auth.getUser();
+  const {
+    data: { user },
+    error: authenticationError,
+  } = await auth.auth.getUser();
   if (authenticationError || !user || !user.email_confirmed_at) {
     return NextResponse.json({ error: 'Sessão confirmada necessária' }, { status: 401 });
   }
@@ -21,8 +24,5 @@ export async function POST() {
       { status: 403, headers: { 'Cache-Control': 'no-store' } },
     );
   }
-  return NextResponse.json(
-    { activated: true },
-    { headers: { 'Cache-Control': 'no-store' } },
-  );
+  return NextResponse.json({ activated: true }, { headers: { 'Cache-Control': 'no-store' } });
 }

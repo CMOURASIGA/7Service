@@ -113,7 +113,9 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
       activated = false;
     }
     if (mode === 'invite' && !activated) {
-      setError('Senha definida, mas a ativação da identidade não foi confirmada. Contate a Consult Services.');
+      setError(
+        'Senha definida, mas a ativação da identidade não foi confirmada. Contate a Consult Services.',
+      );
       setSaving(false);
       return;
     }
