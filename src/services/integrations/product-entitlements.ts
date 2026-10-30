@@ -43,7 +43,11 @@ export async function getProductEntitlement(
     (item.end_date === null || item.end_date >= today)
   );
   const latest = eligible ?? subscriptions?.[0] ?? null;
-  const active = Boolean(eligible && client.status === 'ACTIVE' && product.status === 'ACTIVE');
+  const { data: link, error: linkError } = await db.from('client_integration_links')
+    .select('status').eq('client_id', clientId).eq('product_code', productCode).maybeSingle();
+  if (linkError) throw new AppError('UNEXPECTED_ERROR', 'Erro ao consultar vínculo externo');
+  const active = Boolean(eligible && link?.status === 'ACTIVE' &&
+    client.status === 'ACTIVE' && product.status === 'ACTIVE');
   let extraLicenses = 0;
   if (active && eligible) {
     const { data: overrides, error: overrideError } = await db.from('license_overrides')
