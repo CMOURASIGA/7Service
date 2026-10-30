@@ -41,7 +41,12 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/login');
+  const isAuthRoute = request.nextUrl.pathname === '/login';
+  const isPublicAuthFlow =
+    request.nextUrl.pathname === '/aceitar-convite' ||
+    request.nextUrl.pathname === '/esqueci-senha' ||
+    request.nextUrl.pathname === '/redefinir-senha' ||
+    request.nextUrl.pathname === '/auth/confirm';
   const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
   const isPublicAsset =
     request.nextUrl.pathname.startsWith('/_next') ||
@@ -54,7 +59,7 @@ export async function updateSession(request: NextRequest) {
     );
   }
 
-  if (!user && !isAuthRoute && !isPublicAsset) {
+  if (!user && !isAuthRoute && !isPublicAuthFlow && !isPublicAsset) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
     loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
