@@ -26,7 +26,7 @@ export default function ContractDocumentsPage({
   }, [endpoint]);
 
   useEffect(() => {
-    refresh().catch((err: unknown) => setError(err instanceof Error ? err.message : 'Falha na consulta'));
+    Promise.resolve().then(() => refresh()).catch((err: unknown) => setError(err instanceof Error ? err.message : 'Falha na consulta'));
   }, [refresh]);
 
   async function upload(event: React.FormEvent<HTMLFormElement>) {
