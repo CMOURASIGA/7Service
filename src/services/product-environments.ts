@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { requireInternalAdmin } from '@/lib/auth/require-admin';
+import { recordAdminEvent } from '@/lib/audit/record-admin-event';
 
 import { AppError } from '@/lib/errors';
 import { assertEnvironmentStatusTransition, type EnvironmentStatus } from '@/lib/environments/status';
@@ -26,7 +27,7 @@ export async function listProductEnvironments(deploymentId: string) {
 }
 
 export async function createProductEnvironment(deploymentId: string, input: ProductEnvironmentInput) {
-  await requireInternalAdmin();
+  const actorId = await requireInternalAdmin();
   const normalized = validateProductEnvironment(input);
   const db = createAdminClient();
   const { data: deployment, error: deploymentError } = await db.from('product_deployments')
@@ -47,6 +48,7 @@ export async function createProductEnvironment(deploymentId: string, input: Prod
   }).select('id,deployment_id,environment,entry_url,status,database_resource_ref,version_sha,created_at').single();
   if (error?.code === '23505') throw new AppError('CONFLICT', 'Ambiente já cadastrado nesta implantação');
   if (error || !data) throw new AppError('UNEXPECTED_ERROR', 'Não foi possível criar o ambiente');
+  await recordAdminEvent({ actorInternalUserId: actorId, action: 'environment.created', targetType: 'product_environment', targetId: data.id });
   return data;
 }
 
@@ -62,12 +64,13 @@ export async function updateProductEnvironment(id: string, input: ProductEnviron
     .eq('id', id).eq('environment', normalized.environment)
     .select('id,deployment_id,environment,entry_url,status,database_resource_ref,version_sha,created_at').single();
   if (error || !data) throw new AppError('NOT_FOUND', 'Ambiente não encontrado ou tipo divergente');
+  await recordAdminEvent({ actorInternalUserId: actorId, action: 'environment.updated', targetType: 'product_environment', targetId: data.id });
   return data;
 }
 
 /** Update status only after caller checks administrative RBAC and deployment scope. */
 export async function setProductEnvironmentStatus(id: string, status: EnvironmentStatus) {
-  await requireInternalAdmin();
+  const actorId = await requireInternalAdmin();
   const db = createAdminClient();
   const { data: current, error: readError } = await db.from('product_environments')
     .select('id,status').eq('id', id).single();
@@ -78,5 +81,6 @@ export async function setProductEnvironmentStatus(id: string, status: Environmen
     .update({ status }).eq('id', id).eq('status', current.status)
     .select('id,status').single();
   if (error || !data) throw new AppError('CONFLICT', 'O ambiente foi alterado por outra operação');
+  await recordAdminEvent({ actorInternalUserId: actorId, action: 'environment.status_changed', targetType: 'product_environment', targetId: data.id, reason: status });
   return data;
 }
