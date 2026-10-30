@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { requireInternalAdmin } from '@/lib/auth/require-admin';
+
 import { AppError } from '@/lib/errors';
 import { assertEnvironmentStatusTransition, type EnvironmentStatus } from '@/lib/environments/status';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -13,6 +15,7 @@ import {
  * and authorization for the requested deployment. The service role bypasses RLS.
  */
 export async function listProductEnvironments(deploymentId: string) {
+  await requireInternalAdmin();
   const { data, error } = await createAdminClient()
     .from('product_environments')
     .select('id,deployment_id,environment,entry_url,status,database_resource_ref,version_sha,created_at')
@@ -23,6 +26,7 @@ export async function listProductEnvironments(deploymentId: string) {
 }
 
 export async function createProductEnvironment(deploymentId: string, input: ProductEnvironmentInput) {
+  await requireInternalAdmin();
   const normalized = validateProductEnvironment(input);
   const db = createAdminClient();
   const { data: existing, error: lookupError } = await db.from('product_environments')
@@ -44,6 +48,7 @@ export async function createProductEnvironment(deploymentId: string, input: Prod
 }
 
 export async function updateProductEnvironment(id: string, input: ProductEnvironmentInput) {
+  await requireInternalAdmin();
   const normalized = validateProductEnvironment(input);
   const { data, error } = await createAdminClient().from('product_environments')
     .update({
@@ -59,6 +64,7 @@ export async function updateProductEnvironment(id: string, input: ProductEnviron
 
 /** Update status only after caller checks administrative RBAC and deployment scope. */
 export async function setProductEnvironmentStatus(id: string, status: EnvironmentStatus) {
+  await requireInternalAdmin();
   const db = createAdminClient();
   const { data: current, error: readError } = await db.from('product_environments')
     .select('id,status').eq('id', id).single();
