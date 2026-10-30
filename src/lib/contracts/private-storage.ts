@@ -54,16 +54,6 @@ export async function createPrivateContractPdfUrl(path: string): Promise<string>
   const { data: contract, error: contractError } = await db.from('contracts')
     .select('id').eq('id', ids[1]).single();
   if (contractError || !contract) throw new AppError('NOT_FOUND', 'Contrato não encontrado');
-  // Never sign an arbitrary existing Storage object without registered metadata.
-  const { data: registered, error: metadataError } = await db
-    .from('contract_files')
-    .select('id')
-    .eq('contract_id', ids[1])
-    .eq('storage_path', path)
-    .limit(1);
-  if (metadataError || !registered?.length) {
-    throw new AppError('NOT_FOUND', 'Documento não registrado');
-  }
   const { data, error } = await db.storage.from(BUCKET).createSignedUrl(path, 60);
   if (error || !data?.signedUrl) throw new AppError('NOT_FOUND', 'Documento privado indisponível');
   return data.signedUrl;
