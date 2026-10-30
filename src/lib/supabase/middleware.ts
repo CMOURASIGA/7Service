@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { getPublicEnv } from '@/config/env';
+import { isMachineEntitlementRoute } from '@/lib/auth/machine-route';
 
 /**
  * Refresca a sessão Supabase a cada requisição e mantém os cookies
@@ -51,6 +52,12 @@ export async function updateSession(request: NextRequest) {
   const isPublicAsset =
     request.nextUrl.pathname.startsWith('/_next') ||
     request.nextUrl.pathname.startsWith('/api/health');
+
+  // Machine endpoints do not carry a browser session; the handler itself
+  // validates a product-specific server token before returning any data.
+  if (!user && isMachineEntitlementRoute(request.nextUrl.pathname, request.method)) {
+    return response;
+  }
 
   if (!user && isApiRoute && !isPublicAsset) {
     return NextResponse.json(
