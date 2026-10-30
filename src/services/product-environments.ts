@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { AppError } from '@/lib/errors';
+import { assertEnvironmentStatusTransition, type EnvironmentStatus } from '@/lib/environments/status';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
   validateProductEnvironment,
@@ -53,5 +54,20 @@ export async function updateProductEnvironment(id: string, input: ProductEnviron
     .eq('id', id).eq('environment', normalized.environment)
     .select('id,deployment_id,environment,entry_url,status,database_resource_ref,version_sha,created_at').single();
   if (error || !data) throw new AppError('NOT_FOUND', 'Ambiente não encontrado ou tipo divergente');
+  return data;
+}
+
+/** Update status only after caller checks administrative RBAC and deployment scope. */
+export async function setProductEnvironmentStatus(id: string, status: EnvironmentStatus) {
+  const db = createAdminClient();
+  const { data: current, error: readError } = await db.from('product_environments')
+    .select('id,status').eq('id', id).single();
+  if (readError || !current) throw new AppError('NOT_FOUND', 'Ambiente não encontrado');
+  assertEnvironmentStatusTransition(current.status as EnvironmentStatus, status);
+  if (current.status === status) return current;
+  const { data, error } = await db.from('product_environments')
+    .update({ status }).eq('id', id).eq('status', current.status)
+    .select('id,status').single();
+  if (error || !data) throw new AppError('CONFLICT', 'O ambiente foi alterado por outra operação');
   return data;
 }
