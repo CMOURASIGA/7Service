@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { requireInternalAdmin } from '@/lib/auth/require-admin';
+
 import { createAdminClient } from '@/lib/supabase/admin';
 import { AppError } from '@/lib/errors';
 import { assertPdfSignature, contractPdfStoragePath, validateContractPdfMetadata } from './pdf-validation';
@@ -17,6 +19,7 @@ export async function uploadPrivateContractPdf(input: {
   originalName: string;
   bytes: Uint8Array;
 }): Promise<{ path: string; sizeBytes: number }> {
+  await requireInternalAdmin();
   validateContractPdfMetadata({
     originalName: input.originalName,
     mimeType: 'application/pdf',
@@ -39,6 +42,7 @@ export async function uploadPrivateContractPdf(input: {
 
 /** Never return public object URLs for contracts. */
 export async function createPrivateContractPdfUrl(path: string): Promise<string> {
+  await requireInternalAdmin();
   const ids = path.match(/^([0-9a-f-]{36})\/([0-9a-f-]{36})\.pdf$/i);
   if (!ids || contractPdfStoragePath(ids[1], ids[2]) !== path) {
     throw new AppError('VALIDATION_ERROR', 'Caminho de contrato inválido');
