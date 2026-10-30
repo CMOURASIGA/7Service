@@ -66,7 +66,9 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
     });
     setVerifying(false);
     if (verifyError || !data.user) {
-      setError('Código inválido ou expirado. Solicite outro código quando o envio estiver disponível.');
+      setError(
+        'Código inválido ou expirado. Solicite outro código quando o envio estiver disponível.',
+      );
       return;
     }
     setValidSession(true);
@@ -115,24 +117,44 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
     return (
       <div className="space-y-4">
         <p role="status" className="text-sm text-gray-700">
-          Se o link expirou, informe o código temporário recebido por e-mail.
-          Esta opção requer um modelo de e-mail configurado com código OTP.
+          Se o link expirou, informe o código temporário recebido por e-mail. Esta opção requer um
+          modelo de e-mail configurado com código OTP.
         </p>
         <form onSubmit={verifyEmailCode} className="space-y-3">
           <label className="flex flex-col gap-1 text-sm">
             E-mail
-            <input type="email" required autoComplete="email" className="rounded border p-2"
-              value={otpEmail} onChange={(e) => setOtpEmail(e.target.value)} />
+            <input
+              type="email"
+              required
+              autoComplete="email"
+              className="rounded border p-2"
+              value={otpEmail}
+              onChange={(e) => setOtpEmail(e.target.value)}
+            />
           </label>
           <label className="flex flex-col gap-1 text-sm">
             Código de verificação
-            <input type="text" inputMode="numeric" required pattern="[0-9]{6,8}"
-              autoComplete="one-time-code" className="rounded border p-2"
-              value={otpCode} onChange={(e) => setOtpCode(e.target.value)} />
+            <input
+              type="text"
+              inputMode="numeric"
+              required
+              pattern="[0-9]{6,8}"
+              autoComplete="one-time-code"
+              className="rounded border p-2"
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value)}
+            />
           </label>
-          {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-          <button type="submit" disabled={verifying}
-            className="rounded bg-blue-700 px-4 py-2 text-white disabled:opacity-50">
+          {error && (
+            <p role="alert" className="text-sm text-red-700">
+              {error}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={verifying}
+            className="rounded bg-blue-700 px-4 py-2 text-white disabled:opacity-50"
+          >
             {verifying ? 'Validando...' : 'Validar código'}
           </button>
         </form>
