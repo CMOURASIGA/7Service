@@ -25,6 +25,11 @@ export async function getProductEntitlement(
   productCode: IntegratedProduct,
 ): Promise<ProductEntitlement> {
   await requireInternalAdmin();
+  return readProductEntitlement(clientId, productCode);
+}
+
+/** Internal-only read used after an independently verified machine identity. */
+export async function readProductEntitlement(clientId: string, productCode: IntegratedProduct): Promise<ProductEntitlement> {
   const db = createAdminClient();
   const { data: client, error: clientError } = await db.from('clients')
     .select('id,status').eq('id', clientId).single();
