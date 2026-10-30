@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 
 type Product = '7COMMANDER' | '7CLINIC';
 type Entitlement = {
@@ -47,6 +48,7 @@ export default function ClientIntegrationsPage({
   return (
     <main className="mx-auto max-w-5xl space-y-6 p-6">
       <h1 className="text-2xl font-semibold">Integrações comerciais do cliente</h1>
+      <Link className="text-blue-700 underline" href={`/admin/clients/${encodeURIComponent(clientId)}/integrations/links`}>Gerenciar vínculos de sistemas</Link>
       <p className="text-sm text-gray-600">Situação de assinatura e limite de licenças no 7Service. A ativação técnica em cada sistema é independente.</p>
       <button type="button" onClick={() => void refresh()} disabled={loading}
         className="rounded border px-4 py-2 text-sm disabled:opacity-50">
