@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { updateProductEnvironment, setProductEnvironmentStatus } from '@/services/product-environments';
 import { AppError } from '@/lib/errors';
+import { requireInternalAdmin } from '@/lib/auth/require-admin';
 import type { ProductEnvironmentInput } from '@/lib/environments/validation';
 import type { EnvironmentStatus } from '@/lib/environments/status';
 
@@ -14,6 +15,7 @@ function failure(error: unknown) {
 }
 export async function PATCH(request: Request, context: Context) {
   try {
+    await requireInternalAdmin();
     const { deploymentId, environmentId } = await context.params;
     const body = await request.json() as { action?: string; status?: EnvironmentStatus; input?: ProductEnvironmentInput };
     const db = (await import('@/lib/supabase/admin')).createAdminClient();
@@ -21,6 +23,8 @@ export async function PATCH(request: Request, context: Context) {
       .select('id').eq('id', environmentId).eq('deployment_id', deploymentId).single();
     if (error || !existing) throw new AppError('NOT_FOUND', 'Ambiente não pertence à implantação');
     if (body.action === 'status') {
+      if (!['ACTIVE', 'SUSPENDED', 'RETIRED'].includes(body.status ?? ''))
+        throw new AppError('VALIDATION_ERROR', 'Status inválido');
       const environment = await setProductEnvironmentStatus(environmentId, body.status as EnvironmentStatus);
       return NextResponse.json({ environment });
     }
