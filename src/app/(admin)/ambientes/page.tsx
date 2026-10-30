@@ -1,6 +1,7 @@
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { EnvironmentRegistry } from './registry';
+import { EnvironmentLifecycleControls } from './lifecycle-controls';
 import { VersionHistoryForm } from '@/features/environments/components/version-history-form';
 import { EvidenceForm } from '@/features/environments/components/evidence-form';
 import { GithubEvidenceReview } from '@/features/environments/components/github-evidence-review';
@@ -105,6 +106,7 @@ export default async function AmbientesPage() {
                   {x.database_resource_ref ?? 'Não registrada / provisionamento não confirmado'}
                 </p>
                 <p>URL cadastrada: {x.entry_url ?? 'Não cadastrada'}</p>
+                <EnvironmentLifecycleControls environment={x} />
               </li>
             ))}
           </ul>
