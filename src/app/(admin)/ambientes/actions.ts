@@ -63,3 +63,38 @@ export async function registerEnvironment(
     success: 'Ambiente cadastrado e auditado como planejado; nenhum recurso foi provisionado.',
   };
 }
+
+const lifecycleInput = z.object({
+  environmentId: z.string().uuid(),
+  action: z.enum(['EDIT', 'SUSPEND', 'REACTIVATE', 'RETIRE']),
+  entryUrl: z.string().max(2048).optional(),
+  versionSha: z.string().max(40).optional(),
+  databaseResourceRef: z.string().max(200).optional(),
+});
+
+export async function manageEnvironment(
+  _state: EnvironmentFormState,
+  formData: FormData,
+): Promise<EnvironmentFormState> {
+  const { internalUser } = await requirePermission('clients.manage');
+  const parsed = lifecycleInput.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: 'Dados inválidos para a operação no ambiente.' };
+  const input = parsed.data;
+  if (input.action === 'EDIT') {
+    if (input.entryUrl && !input.entryUrl.startsWith('https://'))
+      return { error: 'A URL do ambiente deve começar com https://' };
+    if (input.versionSha && !/^[a-fA-F0-9]{7,40}$/.test(input.versionSha))
+      return { error: 'SHA deve ser hexadecimal de 7 a 40 caracteres.' };
+  }
+  const { error } = await createAdminClient().rpc('manage_product_environment_atomic', {
+    p_actor_id: internalUser.id,
+    p_environment_id: input.environmentId,
+    p_action: input.action,
+    p_entry_url: input.entryUrl ?? null,
+    p_version_sha: input.versionSha ?? null,
+    p_database_resource_ref: input.databaseResourceRef ?? null,
+  });
+  if (error) return { error: error.message };
+  revalidatePath('/ambientes');
+  return { error: null, success: 'Operação realizada e registrada na auditoria.' };
+}
