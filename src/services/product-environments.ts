@@ -17,7 +17,10 @@ import {
  */
 export async function listProductEnvironments(deploymentId: string) {
   await requireInternalAdmin();
-  const { data, error } = await createAdminClient()
+  const db = createAdminClient();
+  const { data: parent, error: parentError } = await db.from('product_deployments').select('id').eq('id', deploymentId).single();
+  if (parentError || !parent) throw new AppError('NOT_FOUND', 'Implantação não encontrada');
+  const { data, error } = await db
     .from('product_environments')
     .select('id,deployment_id,environment,entry_url,status,database_resource_ref,version_sha,created_at')
     .eq('deployment_id', deploymentId)
@@ -55,7 +58,12 @@ export async function createProductEnvironment(deploymentId: string, input: Prod
 export async function updateProductEnvironment(id: string, input: ProductEnvironmentInput) {
   await requireInternalAdmin();
   const normalized = validateProductEnvironment(input);
-  const { data, error } = await createAdminClient().from('product_environments')
+  const db = createAdminClient();
+  const { data: current, error: readError } = await db.from('product_environments')
+    .select('id,status').eq('id', id).single();
+  if (readError || !current) throw new AppError('NOT_FOUND', 'Ambiente não encontrado');
+  if (current.status === 'RETIRED') throw new AppError('CONFLICT', 'Ambiente encerrado não pode ser editado');
+  const { data, error } = await db.from('product_environments')
     .update({
       entry_url: normalized.entryUrl ?? null,
       database_resource_ref: normalized.databaseResourceRef ?? null,
