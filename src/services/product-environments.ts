@@ -29,6 +29,9 @@ export async function createProductEnvironment(deploymentId: string, input: Prod
   await requireInternalAdmin();
   const normalized = validateProductEnvironment(input);
   const db = createAdminClient();
+  const { data: deployment, error: deploymentError } = await db.from('product_deployments')
+    .select('id').eq('id', deploymentId).single();
+  if (deploymentError || !deployment) throw new AppError('NOT_FOUND', 'Implantação não encontrada');
   const { data: existing, error: lookupError } = await db.from('product_environments')
     .select('id').eq('deployment_id', deploymentId).eq('environment', normalized.environment).limit(1);
   if (lookupError) throw new AppError('UNEXPECTED_ERROR', 'Não foi possível verificar o ambiente');
