@@ -49,3 +49,12 @@ Fluxo esperado: cliente contratado e ativo -> produto e implantação configurad
 - Até que os pilotos INT sejam PASS, **não declarar o produto preparado para clientes reais**.
 
 Não executar alteração em produção ou em `main` sem autorização explícita.
+
+
+## Problema adicional comprovado na integração M2M
+
+O middleware tratava todas as APIs sem sessão Supabase como navegador, devolvendo HTTP 401 antes da verificação do token específico de produto. Corrigido em `develop`: somente `GET /api/integrations/(7commander|7clinic)/entitlements/{externalTenantId}` alcança o handler M2M sem cookie. O handler mantém Bearer obrigatório e o vínculo produto + tenant. Revalidar com token correto, token incorreto, tenant inexistente e sessão anônima em API privada de PDF.
+
+## Diretriz para identidade entre bancos
+
+Enquanto os produtos usarem instâncias independentes de Supabase Auth, uma senha central **não** se replica automaticamente e não deve ser copiada. O piloto deve explicitar uma de duas arquiteturas antes do desenvolvimento do login: federação suportada pelo provedor ou provisionamento por API segura no Auth específico do produto. Em ambas, o produto deve validar o direito central depois de autenticar localmente. Não dar acesso apenas por possuir e-mail igual, sem conferir origem e vínculo de empresa.
