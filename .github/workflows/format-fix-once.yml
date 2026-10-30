@@ -1,0 +1,34 @@
+name: One-time Prettier normalization develop
+on:
+  push:
+    branches: [develop]
+    paths:
+      - '.github/workflows/format-fix-once.yml'
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Normalize formatting and verify
+        run: |
+          npm run format
+          npm run format:check
+      - name: Remove one-time workflow and commit only formatting
+        run: |
+          rm .github/workflows/format-fix-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "style: normalize Prettier formatting for CI"
+          git push origin HEAD:develop
