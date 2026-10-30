@@ -3,6 +3,7 @@ import 'server-only';
 import { requireInternalAdmin } from '@/lib/auth/require-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { AppError } from '@/lib/errors';
+import { subscriptionInAccessWindow } from '@/lib/integrations/subscription-validity';
 
 export type IntegratedProduct = '7COMMANDER' | '7CLINIC';
 
@@ -48,17 +49,19 @@ export async function readProductEntitlement(
   if (productError || !product) throw new AppError('NOT_FOUND', 'Produto não cadastrado');
   const { data: subscriptions, error } = await db
     .from('subscriptions')
-    .select('id,status,start_date,end_date,license_limit')
+    .select('id,status,start_date,end_date,grace_days,license_limit')
     .eq('client_id', clientId)
     .eq('product_id', product.id)
     .order('start_date', { ascending: false });
   if (error) throw new AppError('UNEXPECTED_ERROR', 'Erro ao consultar assinatura');
   const today = new Date().toISOString().slice(0, 10);
-  const eligible = (subscriptions ?? []).find(
-    (item) =>
-      item.status === 'ACTIVE' &&
-      item.start_date <= today &&
-      (item.end_date === null || item.end_date >= today),
+  const eligible = (subscriptions ?? []).find((item) =>
+    subscriptionInAccessWindow({
+      status: item.status,
+      startDate: item.start_date,
+      endDate: item.end_date,
+      graceDays: item.grace_days,
+    }, today),
   );
   const latest = eligible ?? subscriptions?.[0] ?? null;
   const { data: link, error: linkError } = await db
