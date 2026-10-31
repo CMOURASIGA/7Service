@@ -1,0 +1,31 @@
+name: One-time OTP validation formatter
+on:
+  push:
+    branches: [develop]
+    paths:
+      - '.github/workflows/format-otp-fix-once.yml'
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx prettier --write src/lib/auth/email-otp-validation.ts
+      - name: Remove temporary workflow and commit format
+        run: |
+          rm .github/workflows/format-otp-fix-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/lib/auth/email-otp-validation.ts .github/workflows/format-otp-fix-once.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "style: normalize OTP validation helper"
+          git push origin HEAD:develop
