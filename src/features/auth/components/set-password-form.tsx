@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { passwordValidationError } from '@/lib/auth/password-rules';
+import { isValidEmailOtp } from '@/lib/auth/email-otp-validation';
 
 export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
   const router = useRouter();
@@ -64,7 +65,7 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
     if (verifying) return;
     const email = otpEmail.trim().toLowerCase();
     const token = otpCode.trim();
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || !/^\\d{6,8}$/.test(token)) {
+    if (!isValidEmailOtp(email, token)) {
       setError('Informe o e-mail e o código recebido, de 6 a 8 dígitos.');
       return;
     }
