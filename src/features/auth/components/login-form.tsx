@@ -36,7 +36,32 @@ export function LoginForm() {
       return;
     }
 
-    const redirectTo = searchParams.get('redirect') ?? '/';
+    // Authentication alone does not grant access to the Consult Services
+    // administrative panel. Customer identities must use their product URL.
+    let authorized = false;
+    let validationUnavailable = false;
+    try {
+      const accessResponse = await fetch('/api/auth/internal-access', { cache: 'no-store' });
+      authorized = accessResponse.ok;
+      validationUnavailable = accessResponse.status >= 500;
+    } catch {
+      validationUnavailable = true;
+    }
+    if (!authorized) {
+      await supabase.auth.signOut();
+      setError(
+        validationUnavailable
+          ? 'Não foi possível verificar sua autorização. Tente novamente.'
+          : 'Esta conta não possui acesso ao painel interno do 7Service. Utilize o link do sistema contratado.',
+      );
+      return;
+    }
+
+    const redirectCandidate = searchParams.get('redirect');
+    const redirectTo =
+      redirectCandidate?.startsWith('/') && !redirectCandidate.startsWith('//')
+        ? redirectCandidate
+        : '/';
     router.push(redirectTo);
     router.refresh();
   }
