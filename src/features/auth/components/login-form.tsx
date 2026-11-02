@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 
 import { createClient } from '@/lib/supabase/client';
+import { safeAdminRedirect } from '@/lib/auth/safe-admin-redirect';
 
 /**
  * Formulário de login básico do 7Service.
@@ -29,9 +30,8 @@ export function LoginForm() {
     const supabase = createClient();
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
-    setIsSubmitting(false);
-
     if (signInError) {
+      setIsSubmitting(false);
       setError('Não foi possível entrar. Verifique suas credenciais.');
       return;
     }
@@ -54,14 +54,12 @@ export function LoginForm() {
           ? 'Não foi possível verificar sua autorização. Tente novamente.'
           : 'Esta conta não possui acesso ao painel interno do 7Service. Utilize o link do sistema contratado.',
       );
+      setIsSubmitting(false);
       return;
     }
 
-    const redirectCandidate = searchParams.get('redirect');
-    const redirectTo =
-      redirectCandidate?.startsWith('/') && !redirectCandidate.startsWith('//')
-        ? redirectCandidate
-        : '/';
+    const redirectTo = safeAdminRedirect(searchParams.get('redirect'));
+    setIsSubmitting(false);
     router.push(redirectTo);
     router.refresh();
   }
