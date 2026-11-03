@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 
 import { isSupabaseConfigured } from '@/config/env';
+import { LogoutButton } from './logout-button';
 import type { InternalUser } from '@/types/domain';
 
 const PAGE_TITLES: Record<string, string> = {
@@ -89,6 +90,7 @@ export function Topbar({
         <span className="bg-brand-600 inline-flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-semibold text-white">
           {initialsFor(user.firstName, user.lastName)}
         </span>
+        <LogoutButton />
       </div>
     </header>
   );
