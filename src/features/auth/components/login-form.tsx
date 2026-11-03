@@ -38,22 +38,26 @@ export function LoginForm() {
 
     // Authentication alone does not grant access to the Consult Services
     // administrative panel. Customer identities must use their product URL.
-    let authorized = false;
-    let validationUnavailable = false;
+    let accessStatus: number | null = null;
     try {
-      const accessResponse = await fetch('/api/auth/internal-access', { cache: 'no-store' });
-      authorized = accessResponse.ok;
-      validationUnavailable = accessResponse.status >= 500;
+      const accessResponse = await fetch('/api/auth/internal-access', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      accessStatus = accessResponse.status;
     } catch {
-      validationUnavailable = true;
+      // A transient authorization service failure must never grant access.
     }
-    if (!authorized) {
-      await supabase.auth.signOut();
-      setError(
-        validationUnavailable
-          ? 'Não foi possível verificar sua autorização. Tente novamente.'
-          : 'Esta conta não possui acesso ao painel interno do 7Service. Utilize o link do sistema contratado.',
-      );
+    if (accessStatus === 403) {
+      // A customer has a VALID Auth session, but no internal permission.
+      // Keep this session for the 403 API contract and product identity flow.
+      setIsSubmitting(false);
+      router.replace('/acesso-restrito');
+      router.refresh();
+      return;
+    }
+    if (accessStatus !== 200) {
+      setError('Não foi possível verificar sua autorização administrativa. Tente novamente.');
       setIsSubmitting(false);
       return;
     }
