@@ -24,9 +24,8 @@ export function RestrictedAccess() {
           Acesso administrativo não autorizado
         </h1>
         <p className="text-muted mt-3 text-sm">
-          Sua conta está autenticada, mas não possui permissão para acessar o painel interno do
-          7Service. Isso é esperado para usuários de clientes. Utilize diretamente o endereço do
-          produto contratado.
+          Esta conta não possui acesso ao painel interno do 7Service. Utilize o link do sistema
+          contratado.
         </p>
         <button
           type="button"
