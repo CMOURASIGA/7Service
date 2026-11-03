@@ -43,7 +43,11 @@ export function LogoutButton() {
       >
         {busy ? 'Saindo...' : 'Sair'}
       </button>
-      {error ? <span role="alert" className="text-danger text-xs">{error}</span> : null}
+      {error ? (
+        <span role="alert" className="text-danger text-xs">
+          {error}
+        </span>
+      ) : null}
       {busy ? (
         <div
           role="status"

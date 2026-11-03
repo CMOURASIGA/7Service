@@ -21,7 +21,8 @@ describe('POST /api/auth/logout HTTP contract', () => {
 
   it('rejects cross-origin logout before accessing Auth', async () => {
     const request = new NextRequest('https://app.example.test/api/auth/logout', {
-      method: 'POST', headers: { origin: 'https://other.example.test' },
+      method: 'POST',
+      headers: { origin: 'https://other.example.test' },
     });
     const response = await POST(request);
     expect(response.status).toBe(403);
@@ -31,7 +32,8 @@ describe('POST /api/auth/logout HTTP contract', () => {
   it('signs out the Supabase session and returns JSON with no-store', async () => {
     mocks.signOut.mockResolvedValue({ error: null });
     const request = new NextRequest('https://app.example.test/api/auth/logout', {
-      method: 'POST', headers: { origin: 'https://app.example.test' },
+      method: 'POST',
+      headers: { origin: 'https://app.example.test' },
     });
     const response = await POST(request);
     expect(response.status).toBe(200);
@@ -43,7 +45,8 @@ describe('POST /api/auth/logout HTTP contract', () => {
   it('returns 503 without reporting success when Auth signout fails', async () => {
     mocks.signOut.mockResolvedValue({ error: { message: 'failure' } });
     const request = new NextRequest('https://app.example.test/api/auth/logout', {
-      method: 'POST', headers: { origin: 'https://app.example.test' },
+      method: 'POST',
+      headers: { origin: 'https://app.example.test' },
     });
     const response = await POST(request);
     expect(response.status).toBe(503);
