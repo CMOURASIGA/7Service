@@ -47,7 +47,8 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname === '/aceitar-convite' ||
     request.nextUrl.pathname === '/esqueci-senha' ||
     request.nextUrl.pathname === '/redefinir-senha' ||
-    request.nextUrl.pathname === '/auth/confirm';
+    request.nextUrl.pathname === '/auth/confirm' ||
+    request.nextUrl.pathname === '/acesso-restrito';
   const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
   const isPublicAsset =
     request.nextUrl.pathname.startsWith('/_next') ||
@@ -56,6 +57,12 @@ export async function updateSession(request: NextRequest) {
   // Machine endpoints do not carry a browser session; the handler itself
   // validates a product-specific server token before returning any data.
   if (!user && isMachineEntitlementRoute(request.nextUrl.pathname, request.method)) {
+    return response;
+  }
+
+  // This endpoint owns its exact HTTP 401/403/200 JSON contract.
+  // Never intercept it with the generic API authentication response.
+  if (request.nextUrl.pathname === '/api/auth/internal-access' && request.method === 'GET') {
     return response;
   }
 
