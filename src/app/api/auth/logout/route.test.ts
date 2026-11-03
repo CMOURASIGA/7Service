@@ -1,15 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
-const mocks = vi.hoisted(() => ({ signOut: vi.fn() }));
+const mocks = vi.hoisted(() => ({ signOut: vi.fn(), getCurrentSession: vi.fn(), audit: vi.fn() }));
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({ auth: { signOut: mocks.signOut } }),
 }));
 
+vi.mock('@/lib/auth/session', () => ({ getCurrentSession: mocks.getCurrentSession }));
+vi.mock('@/lib/audit/record-admin-event', () => ({ recordAdminEvent: mocks.audit }));
+
 import { POST } from './route';
 
 describe('POST /api/auth/logout HTTP contract', () => {
-  beforeEach(() => mocks.signOut.mockReset());
+  beforeEach(() => {
+    mocks.signOut.mockReset();
+    mocks.getCurrentSession.mockReset();
+    mocks.getCurrentSession.mockResolvedValue(null);
+    mocks.audit.mockReset();
+  });
 
   it('rejects cross-origin logout before accessing Auth', async () => {
     const request = new NextRequest('https://app.example.test/api/auth/logout', {
