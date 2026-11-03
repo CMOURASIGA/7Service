@@ -21,8 +21,9 @@ export function LogoutButton() {
         cache: 'no-store',
       });
       if (!response.ok) throw new Error('Falha ao encerrar sessão no servidor');
-      const { error: clientError } = await createClient().auth.signOut({ scope: 'local' });
-      if (clientError) throw clientError;
+      // The server has already invalidated the Auth session and removed
+      // its cookies. Also clear the browser client state before navigating.
+      await createClient().auth.signOut({ scope: 'local' });
       router.replace('/login');
       router.refresh();
     } catch {
@@ -43,6 +44,15 @@ export function LogoutButton() {
         {busy ? 'Saindo...' : 'Sair'}
       </button>
       {error ? <span role="alert" className="text-danger text-xs">{error}</span> : null}
+      {busy ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-white"
+        >
+          <p className="text-foreground text-base font-medium">Encerrando sessão...</p>
+        </div>
+      ) : null}
     </div>
   );
 }
