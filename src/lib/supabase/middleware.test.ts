@@ -61,9 +61,7 @@ describe('authentication middleware HTTP contract', () => {
 
   it('redirects unauthenticated private pages to login', async () => {
     mocks.getUser.mockResolvedValue({ data: { user: null } });
-    const response = await updateSession(
-      new NextRequest('https://7service.example.test/clientes'),
-    );
+    const response = await updateSession(new NextRequest('https://7service.example.test/clientes'));
     expect(response.status).toBe(307);
     expect(response.headers.get('location')).toContain('/login');
   });
