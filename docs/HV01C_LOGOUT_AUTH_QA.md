@@ -30,3 +30,9 @@ Estes testes de contrato usam sessões simuladas de Auth e não substituem teste
 ## Evidências a devolver
 
 SHA da alias, URL, data/hora, CI, respostas e capturas de tela sem segredos; status PASS/FAIL/BLOCKED por HV-01B e HV-01C. O acesso QA deve permanecer REVOKED, e nenhum cenário de login em produto deve ser confundido com acesso administrativo.
+
+## Observações de execução
+
+O endpoint de logout encerra a sessão no Supabase pelo backend, limpa os cookies via adaptador SSR e solicita também `signOut` ao cliente. Enquanto o logout é processado, a interface cobre o painel para não exibir dados internos. A auditoria registra `auth.logout` após sucesso do logout, sem registrar credenciais e sem bloquear o encerramento se o armazenamento de auditoria falhar.
+
+Os testes de contrato HTTP usam sessões simuladas. As evidências reais de navegação e as respostas com cookie QA ou operador exigem homologação humana com identidades existentes; não solicitar a senha nem reproduzir uma concessão para a QA revogada.
