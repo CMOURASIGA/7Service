@@ -66,6 +66,16 @@ export async function updateSession(request: NextRequest) {
     return response;
   }
 
+  // INT-01: the machine-to-machine decision endpoint authenticates a bearer JWT
+  // in its own handler. Do not require a browser cookie at the proxy layer.
+  // Keep the exception scoped to this exact method and path.
+  if (
+    request.method === 'GET' &&
+    request.nextUrl.pathname === '/api/v1/authorization/decision'
+  ) {
+    return response;
+  }
+
   if (!user && isApiRoute && !isPublicAsset) {
     return NextResponse.json(
       { error: 'Sessão necessária' },
