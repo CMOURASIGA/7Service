@@ -6,8 +6,9 @@ import { createAdminClient } from '@/lib/supabase/admin';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 const headers = { 'Cache-Control': 'private, no-store, max-age=0', Vary: 'Authorization' };
-const denial = (status: number) =>
-  NextResponse.json({ authorized: false }, { status, headers });
+function denial(status: number) {
+  return NextResponse.json({ authorized: false }, { status, headers });
+}
 
 /**
  * The verified caller learns only the ID of their own active 7Service identity.
@@ -34,10 +35,7 @@ export async function GET(request: Request) {
       .maybeSingle();
     if (result.error) return denial(503);
     if (result.data?.status !== 'ACTIVE') return denial(403);
-    return NextResponse.json(
-      { authorized: true, identityId: result.data.id },
-      { headers },
-    );
+    return NextResponse.json({ authorized: true, identityId: result.data.id }, { headers });
   } catch {
     return denial(503);
   }
