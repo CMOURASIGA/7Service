@@ -73,6 +73,11 @@ export async function updateSession(request: NextRequest) {
     return response;
   }
 
+  // Verified identity lookup validates its own bearer JWT (no browser cookie).
+  if (request.method === 'GET' && request.nextUrl.pathname === '/api/v1/identity/self') {
+    return response;
+  }
+
   if (!user && isApiRoute && !isPublicAsset) {
     return NextResponse.json(
       { error: 'Sessão necessária' },
