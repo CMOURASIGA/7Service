@@ -33,8 +33,11 @@ export default async function ClientsPage({
       'id,person_type,document,legal_name,trade_name,phone,email,contact_name,status,relationship_start_date',
     )
     .order('legal_name');
-  if (params.status && ['ACTIVE', 'SUSPENDED', 'CLOSED'].includes(params.status))
+  if (!params.status || params.status === 'operational') {
+    query = query.in('status', ['ACTIVE', 'SUSPENDED']);
+  } else if (['ACTIVE', 'SUSPENDED', 'CLOSED'].includes(params.status)) {
     query = query.eq('status', params.status);
+  }
   if (params.q?.trim())
     query = query.or(
       ['legal_name', 'trade_name', 'document', 'email']
@@ -77,10 +80,11 @@ export default async function ClientsPage({
         />
         <select
           name="status"
-          defaultValue={params.status ?? ''}
+          defaultValue={params.status ?? 'operational'}
           className="border-border rounded-md border px-3 py-2 text-sm"
         >
-          <option value="">Todos os status</option>
+          <option value="operational">Em operação</option>
+          <option value="all">Todos, inclusive históricos</option>
           <option value="ACTIVE">Ativo</option>
           <option value="SUSPENDED">Suspenso</option>
           <option value="CLOSED">Encerrado</option>

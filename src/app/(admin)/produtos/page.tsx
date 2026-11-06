@@ -8,7 +8,13 @@ export const metadata = {
   title: 'Produtos - 7Service',
 };
 
-export default async function ProductsPage() {
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ historico?: string }>;
+}) {
+  const { historico } = await searchParams;
+  const showHistory = historico === '1';
   await requirePermission('clients.view');
   const db = createAdminClient();
   const { data: products, error: productsError } = await db
@@ -16,7 +22,10 @@ export default async function ProductsPage() {
     .select('id,name,status,description,entry_url')
     .order('name');
   if (productsError) throw new Error('Falha ao consultar catálogo de produtos.');
-  const productIds = (products ?? []).map((product) => product.id);
+  const visibleProducts = (products ?? []).filter(
+    (product) => showHistory || product.status === 'ACTIVE',
+  );
+  const productIds = visibleProducts.map((product) => product.id);
   const { data: roles, error: rolesError } = productIds.length
     ? await db.from('product_roles').select('id,product_id,name').in('product_id', productIds)
     : { data: [], error: null };
@@ -37,9 +46,17 @@ export default async function ProductsPage() {
         </p>
       </div>
 
+      <div className="text-sm">
+        <Link
+          href={showHistory ? '/produtos' : '/produtos?historico=1'}
+          className="text-brand-700 underline"
+        >
+          {showHistory ? 'Ocultar produtos desativados' : 'Consultar produtos históricos'}
+        </Link>
+      </div>
       <CreateProductForm />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {(products ?? []).map((product) => (
+        {visibleProducts.map((product) => (
           <div key={product.id} className="border-border bg-background rounded-lg border p-4">
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-foreground font-medium">
