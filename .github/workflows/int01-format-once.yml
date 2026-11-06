@@ -1,0 +1,34 @@
+name: One-time format of INT-01 help and operational history
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - .github/workflows/int01-format-once.yml
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Apply repository Prettier rules
+        run: |
+          npm exec -- prettier --write 'src/app/(admin)/ajuda/page.tsx' 'src/app/(admin)/convites/page.tsx' 'src/app/(admin)/licenciamento/page.tsx' 'src/app/(admin)/suporte/page.tsx' src/services/dashboard.ts
+      - name: Commit only formatted source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 'src/app/(admin)/ajuda/page.tsx' 'src/app/(admin)/convites/page.tsx' 'src/app/(admin)/licenciamento/page.tsx' 'src/app/(admin)/suporte/page.tsx' src/services/dashboard.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "style(7service): apply formatter to INT-01 help and history"
+            git push origin HEAD:develop
+          fi
