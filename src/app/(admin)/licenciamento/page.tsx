@@ -7,7 +7,8 @@ import { OverrideForm } from '@/features/licensing/components/override-form';
 import { SUBSCRIPTION_EFFECTIVE_STATUS_LABEL } from '@/lib/status-labels';
 
 export const dynamic = 'force-dynamic';
-export default async function LicensingPage() {
+export default async function LicensingPage({ searchParams }: { searchParams: Promise<{ historico?: string }> }) {
+  const showHistory = (await searchParams).historico === '1';
   await requirePermission('clients.view');
   let canOverride = false;
   try {
@@ -28,11 +29,12 @@ export default async function LicensingPage() {
   if ([subscriptions, accesses, overrides].some((x) => x.error))
     throw new Error('Falha ao consultar licenciamento');
 
+  const visibleSubscriptions = (subscriptions.data ?? []).filter(s => showHistory || s.status !== 'CANCELLED');
   const clientIds = [
-    ...new Set((subscriptions.data ?? []).map((subscription) => subscription.client_id)),
+    ...new Set(visibleSubscriptions.map((subscription) => subscription.client_id)),
   ];
   const productIds = [
-    ...new Set((subscriptions.data ?? []).map((subscription) => subscription.product_id)),
+    ...new Set(visibleSubscriptions.map((subscription) => subscription.product_id)),
   ];
   const [clients, products] = await Promise.all([
     clientIds.length
@@ -47,7 +49,7 @@ export default async function LicensingPage() {
   const clientById = new Map((clients.data ?? []).map((client) => [client.id, client]));
   const productById = new Map((products.data ?? []).map((product) => [product.id, product]));
   const now = getCurrentTimeMs();
-  const entries = (subscriptions.data ?? []).map((s) => {
+  const entries = visibleSubscriptions.map((s) => {
     const used = (accesses.data ?? []).filter(
       (a) => a.subscription_id === s.id && ['ACTIVE', 'PENDING'].includes(a.status),
     ).length;
@@ -85,6 +87,7 @@ export default async function LicensingPage() {
           Assinaturas e licencas persistidas por cliente e produto.
         </p>
       </div>
+      <Link href={showHistory ? "/licenciamento" : "/licenciamento?historico=1"} className="text-brand-700 text-sm underline">{showHistory ? "Ocultar assinaturas encerradas" : "Consultar assinaturas históricas"}</Link>
       <div className="overflow-x-auto rounded-lg border">
         <table className="w-full text-left text-sm">
           <thead className="border-b bg-slate-50">
