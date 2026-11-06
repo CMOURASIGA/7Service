@@ -108,6 +108,58 @@ export async function createIdentityMembershipAction(
   }
 
   if (!identity.auth_user_id) {
+    // Existing confirmed Auth accounts must be linked rather than invited again.
+    // Only an administrator with users.manage may run this flow.
+    // Do not use an unconfirmed email as proof of an existing account.
+    let existingAuthUserId: string | null = null;
+    for (let page = 1; page <= 20; page += 1) {
+      const { data, error } = await db.auth.admin.listUsers({ page, perPage: 500 });
+      if (error || !data) {
+        return { error: 'Falha ao conferir contas de autenticação existentes.' };
+      }
+      const matches = data.users.filter(
+        (user) => user.email?.toLowerCase() === email && Boolean(user.email_confirmed_at),
+      );
+      if (matches.length > 1) return { error: 'Há mais de uma conta confirmada para este e-mail.' };
+      if (matches.length === 1) {
+        existingAuthUserId = matches[0].id;
+        break;
+      }
+      if (data.users.length < 500) break;
+      if (page === 20) {
+        return { error: 'Limite de conferência de contas atingido. Procure o suporte.' };
+      }
+    }
+
+    if (existingAuthUserId) {
+      const { data: alreadyLinked, error: linkLookupError } = await db
+        .from('identities')
+        .select('id')
+        .eq('auth_user_id', existingAuthUserId)
+        .neq('id', identity.id)
+        .limit(1);
+      if (linkLookupError || (alreadyLinked?.length ?? 0) > 0) {
+        return { error: 'Conta de autenticação já associada a outra identidade.' };
+      }
+      const { data: linked, error: linkError } = await db
+        .from('identities')
+        .update({
+          auth_user_id: existingAuthUserId,
+          status: 'ACTIVE',
+          activated_at: new Date().toISOString(),
+        })
+        .eq('id', identity.id)
+        .eq('status', 'PENDING_INVITE')
+        .is('auth_user_id', null)
+        .select('id');
+      if (linkError || linked?.length !== 1) {
+        return { error: 'Não foi possível conciliar a conta existente com a identidade.' };
+      }
+      identity = { ...identity, auth_user_id: existingAuthUserId, status: 'ACTIVE' };
+    }
+  }
+
+  if (!identity.auth_user_id) {
     resentInvite = !createdIdentity && !createdMembership;
     // Preview invite links must land on a public password-setup page.
     // Configure the URL under Supabase Auth > URL Configuration redirect allowlist.
@@ -146,7 +198,9 @@ export async function createIdentityMembershipAction(
   const { error: auditError } = await db.from('audit_logs').insert({
     actor_internal_user_id: internalUser.id,
     action: createdIdentity
-      ? 'identity.invited'
+      ? identity.auth_user_id && !resentInvite
+        ? 'identity.linked_existing_auth'
+        : 'identity.invited'
       : resentInvite
         ? 'identity.invitation_resent'
         : 'identity.membership_added',
@@ -161,7 +215,9 @@ export async function createIdentityMembershipAction(
   return {
     error: null,
     success: createdIdentity
-      ? 'Identidade criada e convite solicitado.'
+      ? identity.auth_user_id && !resentInvite
+        ? 'Identidade vinculada à conta existente, sem novo convite.'
+        : 'Identidade criada e convite solicitado.'
       : resentInvite
         ? 'Novo convite solicitado para identidade existente, mantendo o vínculo empresarial.'
         : 'Vínculo com a empresa cadastrado.',

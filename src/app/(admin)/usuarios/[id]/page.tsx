@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ConfirmAction } from '@/components/ui/confirm-action';
+import { CorrectPendingEmailForm } from '@/features/identity/components/correct-email-form';
 import { StatusBadge } from '@/components/ui/status-badge';
 import {
   GrantAccessForm,
@@ -20,6 +21,8 @@ import {
   revokeAccessAction,
   initiateRecoveryAction,
   grantAccessAction,
+  correctPendingIdentityEmailAction,
+  resendPendingActivationAction,
 } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -175,12 +178,31 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
         </h1>
         <p className="text-muted text-sm">{user.email}</p>
         <StatusBadge label={badge.label} tone={badge.tone} />
+        {user.status === 'PENDING_INVITE' ? (
+          <CorrectPendingEmailForm
+            initialEmail={user.email}
+            action={correctPendingIdentityEmailAction.bind(null, id)}
+          />
+        ) : null}
         <div className="mt-3">
           <ConfirmAction
-            triggerLabel="Solicitar recuperacao de acesso"
-            action={initiateRecoveryAction.bind(null, id)}
-            impactMessage="Envia um e-mail de recuperacao pelo Supabase Auth ao usuario cadastrado."
-            confirmLabel="Enviar recuperacao"
+            triggerLabel={
+              user.status === 'PENDING_INVITE'
+                ? 'Reenviar convite de ativação'
+                : 'Solicitar recuperação de acesso'
+            }
+            action={(user.status === 'PENDING_INVITE'
+              ? resendPendingActivationAction
+              : initiateRecoveryAction
+            ).bind(null, id)}
+            impactMessage={
+              user.status === 'PENDING_INVITE'
+                ? 'Envia um novo link para definir a senha ao e-mail corrigido. Não cria outra conta. O envio é solicitado ao Supabase Auth, sem garantia de entrega na caixa de entrada.'
+                : 'Envia um e-mail de recuperação pelo Supabase Auth ao usuário cadastrado.'
+            }
+            confirmLabel={
+              user.status === 'PENDING_INVITE' ? 'Enviar link de ativação' : 'Enviar recuperação'
+            }
           />
         </div>
       </div>

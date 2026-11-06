@@ -93,3 +93,183 @@ export async function initiateRecoveryAction(identityId: string, _form: FormData
   if (auditError) throw new Error('Recuperacao solicitada, mas auditoria falhou.');
   revalidatePath('/usuarios/' + identityId);
 }
+
+/**
+ * Correct a mistyped address before the account is ever activated.
+ * Preserve identity ID, membership, grants and Auth UID; never touch an active user.
+ */
+export async function correctPendingIdentityEmailAction(
+  identityId: string,
+  _previous: { error: string | null; success?: string },
+  form: FormData,
+): Promise<{ error: string | null; success?: string }> {
+  const { internalUser } = await requirePermission('users.manage');
+  const requestedEmail = String(form.get('newEmail') ?? '')
+    .trim()
+    .toLowerCase();
+  const reason = String(form.get('reason') ?? '').trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requestedEmail) || requestedEmail.length > 254)
+    return { error: 'Informe um e-mail válido.' };
+  if (reason.length < 8) return { error: 'Informe o motivo da correção (mínimo 8 caracteres).' };
+
+  const db = createAdminClient();
+  const { data: identity, error: identityError } = await db
+    .from('identities')
+    .select('id,email,status,auth_user_id,activated_at')
+    .eq('id', identityId)
+    .maybeSingle();
+  if (identityError || !identity) return { error: 'Identidade não encontrada.' };
+  const previousEmail = identity.email.toLowerCase();
+  if (previousEmail === requestedEmail) return { error: 'O novo e-mail deve ser diferente.' };
+  if (identity.status !== 'PENDING_INVITE' || identity.activated_at || !identity.auth_user_id)
+    return { error: 'Correção administrativa disponível apenas antes da ativação.' };
+  const [collision, grants, invitations] = await Promise.all([
+    db
+      .from('identities')
+      .select('id')
+      .ilike('email', requestedEmail)
+      .neq('id', identityId)
+      .limit(1),
+    db.from('user_product_access').select('id').eq('identity_id', identityId).limit(1),
+    db.from('invitations').select('id').eq('identity_id', identityId).eq('status', 'SENT'),
+  ]);
+  if (collision.error || grants.error || invitations.error)
+    return { error: 'Não foi possível validar a situação cadastral.' };
+  if (collision.data?.length)
+    return { error: 'O endereço informado já pertence a outra identidade.' };
+  if (grants.data?.length)
+    return { error: 'Há acessos associados. Solicite revisão administrativa.' };
+
+  const { data: existingAuth, error: authError } = await db.auth.admin.getUserById(
+    identity.auth_user_id,
+  );
+  if (authError || !existingAuth.user) return { error: 'Conta Auth não localizada.' };
+  if (
+    existingAuth.user.email?.toLowerCase() !== previousEmail ||
+    existingAuth.user.email_confirmed_at ||
+    existingAuth.user.last_sign_in_at
+  )
+    return { error: 'A conta Auth já foi utilizada ou diverge do cadastro. Correção bloqueada.' };
+
+  // Never modify auth.users by SQL; the Auth Admin API enforces email uniqueness.
+  const { error: updateAuthError } = await db.auth.admin.updateUserById(identity.auth_user_id, {
+    email: requestedEmail,
+  });
+  if (updateAuthError)
+    return { error: 'Não foi possível corrigir o endereço no Auth. Verifique duplicidade.' };
+
+  const { data: updatedIdentity, error: updateIdentityError } = await db
+    .from('identities')
+    .update({ email: requestedEmail })
+    .eq('id', identityId)
+    .eq('status', 'PENDING_INVITE')
+    .eq('email', identity.email)
+    .select('id');
+  if (updateIdentityError || updatedIdentity?.length !== 1) {
+    const rollback = await db.auth.admin.updateUserById(identity.auth_user_id, {
+      email: previousEmail,
+    });
+    return {
+      error: rollback.error
+        ? 'Correção parcial entre Auth e identidade. Bloqueie novos convites e solicite conciliação.'
+        : 'Correção não concluída. O endereço anterior foi restaurado.',
+    };
+  }
+
+  // A SENT receipt records the request, not verified inbox delivery.
+  const { error: cancelError } = await db
+    .from('invitations')
+    .update({ status: 'CANCELLED', cancelled_at: new Date().toISOString() })
+    .eq('identity_id', identityId)
+    .eq('status', 'SENT');
+  const { error: auditError } = await db.from('audit_logs').insert({
+    actor_internal_user_id: internalUser.id,
+    action: 'identity.pending_email_corrected',
+    target_type: 'identity',
+    target_id: identityId,
+    source: '7service',
+    before_json: { email: previousEmail },
+    after_json: { email: requestedEmail },
+    reason,
+  });
+  if (auditError || cancelError)
+    return {
+      error: 'E-mail corrigido, mas auditoria ou histórico pendente. Não reenvie até conciliar.',
+    };
+  revalidatePath('/usuarios');
+  revalidatePath('/usuarios/' + identityId);
+  return {
+    error: null,
+    success:
+      'E-mail corrigido na identidade e no Auth. Solicite um novo convite para este endereço.',
+  };
+}
+
+/**
+ * An invited Auth user already exists. Supabase cannot invite the same email a
+ * second time, so issue a password-setup/recovery link and activate via the
+ * existing /api/auth/activate flow after the user verifies email ownership.
+ */
+export async function resendPendingActivationAction(identityId: string, _form: FormData) {
+  const { internalUser } = await requirePermission('users.manage');
+  const db = createAdminClient();
+  const { data: identity, error: identityError } = await db
+    .from('identities')
+    .select('id,email,status,auth_user_id,activated_at')
+    .eq('id', identityId)
+    .maybeSingle();
+  if (
+    identityError ||
+    !identity ||
+    identity.status !== 'PENDING_INVITE' ||
+    !identity.auth_user_id ||
+    identity.activated_at
+  )
+    throw new Error('Reenvio permitido apenas para identidade com convite pendente.');
+
+  const { data: authData, error: authError } = await db.auth.admin.getUserById(
+    identity.auth_user_id,
+  );
+  if (
+    authError ||
+    !authData.user ||
+    authData.user.email?.toLowerCase() !== identity.email.toLowerCase() ||
+    authData.user.email_confirmed_at ||
+    authData.user.last_sign_in_at
+  )
+    throw new Error('Conta já utilizada ou e-mail divergente. Reenvio bloqueado.');
+
+  const { data: latest, error: latestError } = await db
+    .from('invitations')
+    .select('sent_at')
+    .eq('identity_id', identityId)
+    .eq('status', 'SENT')
+    .order('sent_at', { ascending: false })
+    .limit(1);
+  if (latestError) throw new Error('Não foi possível consultar o histórico de convites.');
+  if (latest?.[0]?.sent_at && Date.now() - new Date(latest[0].sent_at).getTime() < 60000)
+    throw new Error('Aguarde pelo menos 60 segundos antes de reenviar.');
+
+  const origin =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_ENV === 'preview'
+      ? 'https://7service-git-develop-christians-projects-4954426e.vercel.app'
+      : 'https://7service.vercel.app');
+  const { error: sendError } = await db.auth.resetPasswordForEmail(identity.email, {
+    redirectTo: new URL('/redefinir-senha', origin).toString(),
+  });
+  if (sendError) throw new Error('Supabase não aceitou o reenvio. Verifique o provedor de e-mail.');
+
+  const { trackAuthInvitation } = await import('@/lib/invitations/track');
+  await trackAuthInvitation({ identityId, operatorId: internalUser.id });
+  const { error: auditError } = await db.from('audit_logs').insert({
+    actor_internal_user_id: internalUser.id,
+    action: 'identity.activation_link_resent',
+    target_type: 'identity',
+    target_id: identityId,
+    source: '7service',
+    metadata_safe: { email: identity.email, method: 'recovery_link_for_pending_invite' },
+  });
+  if (auditError) throw new Error('Envio solicitado, mas auditoria não confirmada.');
+  revalidatePath('/usuarios/' + identityId);
+}
