@@ -104,11 +104,14 @@ export async function correctPendingIdentityEmailAction(
   form: FormData,
 ): Promise<{ error: string | null; success?: string }> {
   const { internalUser } = await requirePermission('users.manage');
-  const requestedEmail = String(form.get('newEmail') ?? '').trim().toLowerCase();
+  const requestedEmail = String(form.get('newEmail') ?? '')
+    .trim()
+    .toLowerCase();
   const reason = String(form.get('reason') ?? '').trim();
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(requestedEmail) || requestedEmail.length > 254)
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requestedEmail) || requestedEmail.length > 254)
     return { error: 'Informe um e-mail válido.' };
-  if (reason.length < 8) return { error: 'Informe o motivo da correção (mínimo 8 caracteres).' };
+  if (reason.length < 8)
+    return { error: 'Informe o motivo da correção (mínimo 8 caracteres).' };
 
   const db = createAdminClient();
   const { data: identity, error: identityError } = await db
@@ -121,28 +124,35 @@ export async function correctPendingIdentityEmailAction(
   if (previousEmail === requestedEmail) return { error: 'O novo e-mail deve ser diferente.' };
   if (identity.status !== 'PENDING_INVITE' || identity.activated_at || !identity.auth_user_id)
     return { error: 'Correção administrativa disponível apenas antes da ativação.' };
-  const [collision, grants, existingInvitations] = await Promise.all([
+  const [collision, grants, invitations] = await Promise.all([
     db.from('identities').select('id').ilike('email', requestedEmail).neq('id', identityId).limit(1),
     db.from('user_product_access').select('id').eq('identity_id', identityId).limit(1),
-    db.from('invitations').select('id,status').eq('identity_id', identityId).eq('status', 'SENT'),
+    db.from('invitations').select('id').eq('identity_id', identityId).eq('status', 'SENT'),
   ]);
-  if (collision.error || grants.error || existingInvitations.error)
+  if (collision.error || grants.error || invitations.error)
     return { error: 'Não foi possível validar a situação cadastral.' };
-  if (collision.data?.length) return { error: 'O endereço informado já pertence a outra identidade.' };
-  if (grants.data?.length) return { error: 'Há acessos associados. Solicite revisão administrativa.' };
+  if (collision.data?.length)
+    return { error: 'O endereço informado já pertence a outra identidade.' };
+  if (grants.data?.length)
+    return { error: 'Há acessos associados. Solicite revisão administrativa.' };
 
-  const { data: existingAuth, error: authError } = await db.auth.admin.getUserById(identity.auth_user_id);
+  const { data: existingAuth, error: authError } = await db.auth.admin.getUserById(
+    identity.auth_user_id,
+  );
   if (authError || !existingAuth.user) return { error: 'Conta Auth não localizada.' };
-  if (existingAuth.user.email?.toLowerCase() !== previousEmail ||
-      existingAuth.user.email_confirmed_at || existingAuth.user.last_sign_in_at)
+  if (
+    existingAuth.user.email?.toLowerCase() !== previousEmail ||
+    existingAuth.user.email_confirmed_at ||
+    existingAuth.user.last_sign_in_at
+  )
     return { error: 'A conta Auth já foi utilizada ou diverge do cadastro. Correção bloqueada.' };
 
-  // Admin API performs the Auth mutation; direct SQL into auth.users is forbidden.
-  // Email collisions are also enforced by the Supabase Auth service.
+  // Never modify auth.users by SQL; the Auth Admin API enforces email uniqueness.
   const { error: updateAuthError } = await db.auth.admin.updateUserById(identity.auth_user_id, {
     email: requestedEmail,
   });
-  if (updateAuthError) return { error: 'Não foi possível corrigir o endereço no Auth. Verifique duplicidade.' };
+  if (updateAuthError)
+    return { error: 'Não foi possível corrigir o endereço no Auth. Verifique duplicidade.' };
 
   const { data: updatedIdentity, error: updateIdentityError } = await db
     .from('identities')
@@ -152,7 +162,9 @@ export async function correctPendingIdentityEmailAction(
     .eq('email', identity.email)
     .select('id');
   if (updateIdentityError || updatedIdentity?.length !== 1) {
-    const rollback = await db.auth.admin.updateUserById(identity.auth_user_id, { email: previousEmail });
+    const rollback = await db.auth.admin.updateUserById(identity.auth_user_id, {
+      email: previousEmail,
+    });
     return {
       error: rollback.error
         ? 'Correção parcial entre Auth e identidade. Bloqueie novos convites e solicite conciliação.'
@@ -160,10 +172,12 @@ export async function correctPendingIdentityEmailAction(
     };
   }
 
-  // Mark previous receipts invalid so the operator does not interpret them as delivered.
-  const { error: cancelError } = await db.from('invitations')
+  // A SENT receipt records the request, not verified inbox delivery.
+  const { error: cancelError } = await db
+    .from('invitations')
     .update({ status: 'CANCELLED', cancelled_at: new Date().toISOString() })
-    .eq('identity_id', identityId).eq('status', 'SENT');
+    .eq('identity_id', identityId)
+    .eq('status', 'SENT');
   const { error: auditError } = await db.from('audit_logs').insert({
     actor_internal_user_id: internalUser.id,
     action: 'identity.pending_email_corrected',
