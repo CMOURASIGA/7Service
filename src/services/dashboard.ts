@@ -8,24 +8,30 @@ import { createAdminClient } from '@/lib/supabase/admin';
  */
 export async function getDashboardKpis() {
   const db = createAdminClient();
-  const [clients, identities, invitations, subscriptions, accesses, products] = await Promise.all([
+  const [clients, identities, invitations, subscriptions, accesses, products, memberships] = await Promise.all([
     db.from('clients').select('id,status'),
     db.from('identities').select('id,status'),
-    db.from('invitations').select('id,status,expires_at'),
+    db.from('invitations').select('id,identity_id,status,expires_at'),
     db.from('subscriptions').select('id,product_id,status,license_limit,end_date,grace_days'),
-    db.from('user_product_access').select('id,status'),
+    db.from('user_product_access').select('id,subscription_id,status'),
     db
       .from('products')
       .select('id,name,code,status,entry_url,login_url,logo_path,description,created_at'),
+    db.from('client_memberships').select('identity_id,client_id,status'),
   ]);
-  for (const result of [clients, identities, invitations, subscriptions, accesses, products]) {
+  for (const result of [clients, identities, invitations, subscriptions, accesses, products, memberships]) {
     if (result.error) throw new Error('Erro ao consultar indicadores administrativos.');
   }
   const c = clients.data ?? [];
   const ids = identities.data ?? [];
-  const invitationsData = invitations.data ?? [];
-  const subs = subscriptions.data ?? [];
-  const users = accesses.data ?? [];
+  const activeClientIds = new Set((clients.data ?? []).filter(c => c.status === 'ACTIVE').map(c => c.id));
+  const activeProductIds = new Set((products.data ?? []).filter(p => p.status === 'ACTIVE').map(p => p.id));
+  const activeIdentityIds = new Set((identities.data ?? []).filter(i => i.status === 'ACTIVE' || i.status === 'PENDING_INVITE').map(i => i.id));
+  const currentIdentityIds = new Set((memberships.data ?? []).filter(m => activeClientIds.has(m.client_id) && ['ACTIVE', 'PENDING'].includes(m.status) && activeIdentityIds.has(m.identity_id)).map(m => m.identity_id));
+  const invitationsData = (invitations.data ?? []).filter(i => currentIdentityIds.has(i.identity_id));
+  const subs = (subscriptions.data ?? []).filter(s => s.status === 'ACTIVE' && activeProductIds.has(s.product_id));
+  const activeSubscriptionIds = new Set(subs.map(s => s.id));
+  const users = (accesses.data ?? []).filter(a => activeSubscriptionIds.has(a.subscription_id));
   const now = Date.now();
   const day = 86400000;
   const effective = (s: (typeof subs)[number]) => {
@@ -51,7 +57,7 @@ export async function getDashboardKpis() {
     licenseUsedTotal: users.filter((x) => ['ACTIVE', 'PENDING'].includes(x.status)).length,
     graceCount: subs.filter((x) => effective(x) === 'GRACE_PERIOD').length,
     blockedCount: subs.filter((x) => effective(x) === 'BLOCKED').length,
-    byProduct: (products.data ?? []).map((p) => ({
+    byProduct: (products.data ?? []).filter(p => p.status === 'ACTIVE').map((p) => ({
       product: p,
       subscriptions: subs.filter((s) => s.product_id === p.id).length,
     })),
