@@ -204,3 +204,60 @@ export async function correctPendingIdentityEmailAction(
       'E-mail corrigido na identidade e no Auth. Solicite um novo convite para este endereço.',
   };
 }
+
+
+/**
+ * An invited Auth user already exists. Supabase cannot invite the same email a
+ * second time, so issue a password-setup/recovery link and activate via the
+ * existing /api/auth/activate flow after the user verifies email ownership.
+ */
+export async function resendPendingActivationAction(identityId: string, _form: FormData) {
+  const { internalUser } = await requirePermission('users.manage');
+  const db = createAdminClient();
+  const { data: identity, error: identityError } = await db
+    .from('identities')
+    .select('id,email,status,auth_user_id,activated_at')
+    .eq('id', identityId)
+    .maybeSingle();
+  if (identityError || !identity || identity.status !== 'PENDING_INVITE' || !identity.auth_user_id || identity.activated_at)
+    throw new Error('Reenvio permitido apenas para identidade com convite pendente.');
+
+  const { data: authData, error: authError } = await db.auth.admin.getUserById(identity.auth_user_id);
+  if (authError || !authData.user ||
+      authData.user.email?.toLowerCase() !== identity.email.toLowerCase() ||
+      authData.user.email_confirmed_at || authData.user.last_sign_in_at)
+    throw new Error('Conta já utilizada ou e-mail divergente. Reenvio bloqueado.');
+
+  const { data: latest, error: latestError } = await db
+    .from('invitations')
+    .select('sent_at')
+    .eq('identity_id', identityId)
+    .eq('status', 'SENT')
+    .order('sent_at', { ascending: false })
+    .limit(1);
+  if (latestError) throw new Error('Não foi possível consultar o histórico de convites.');
+  if (latest?.[0]?.sent_at && Date.now() - new Date(latest[0].sent_at).getTime() < 60000)
+    throw new Error('Aguarde pelo menos 60 segundos antes de reenviar.');
+
+  const origin = process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_ENV === 'preview'
+      ? 'https://7service-git-develop-christians-projects-4954426e.vercel.app'
+      : 'https://7service.vercel.app');
+  const { error: sendError } = await db.auth.resetPasswordForEmail(identity.email, {
+    redirectTo: new URL('/auth/confirm?type=recovery', origin).toString(),
+  });
+  if (sendError) throw new Error('Supabase não aceitou o reenvio. Verifique o provedor de e-mail.');
+
+  const { trackAuthInvitation } = await import('@/lib/invitations/track');
+  await trackAuthInvitation({ identityId, operatorId: internalUser.id });
+  const { error: auditError } = await db.from('audit_logs').insert({
+    actor_internal_user_id: internalUser.id,
+    action: 'identity.activation_link_resent',
+    target_type: 'identity',
+    target_id: identityId,
+    source: '7service',
+    metadata_safe: { email: identity.email, method: 'recovery_link_for_pending_invite' },
+  });
+  if (auditError) throw new Error('Envio solicitado, mas auditoria não confirmada.');
+  revalidatePath('/usuarios/' + identityId);
+}
