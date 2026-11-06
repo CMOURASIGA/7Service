@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ConfirmAction } from '@/components/ui/confirm-action';
+import { CorrectPendingEmailForm } from '@/features/identity/components/correct-email-form';
 import { StatusBadge } from '@/components/ui/status-badge';
 import {
   GrantAccessForm,
@@ -20,6 +21,7 @@ import {
   revokeAccessAction,
   initiateRecoveryAction,
   grantAccessAction,
+  correctPendingIdentityEmailAction,
 } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -175,6 +177,12 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
         </h1>
         <p className="text-muted text-sm">{user.email}</p>
         <StatusBadge label={badge.label} tone={badge.tone} />
+        {user.status === 'PENDING_INVITE' ? (
+          <CorrectPendingEmailForm
+            initialEmail={user.email}
+            action={correctPendingIdentityEmailAction.bind(null, id)}
+          />
+        ) : null}
         <div className="mt-3">
           <ConfirmAction
             triggerLabel="Solicitar recuperacao de acesso"
