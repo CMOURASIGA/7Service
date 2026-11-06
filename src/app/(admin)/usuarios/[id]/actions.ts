@@ -110,8 +110,7 @@ export async function correctPendingIdentityEmailAction(
   const reason = String(form.get('reason') ?? '').trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requestedEmail) || requestedEmail.length > 254)
     return { error: 'Informe um e-mail válido.' };
-  if (reason.length < 8)
-    return { error: 'Informe o motivo da correção (mínimo 8 caracteres).' };
+  if (reason.length < 8) return { error: 'Informe o motivo da correção (mínimo 8 caracteres).' };
 
   const db = createAdminClient();
   const { data: identity, error: identityError } = await db
@@ -125,7 +124,12 @@ export async function correctPendingIdentityEmailAction(
   if (identity.status !== 'PENDING_INVITE' || identity.activated_at || !identity.auth_user_id)
     return { error: 'Correção administrativa disponível apenas antes da ativação.' };
   const [collision, grants, invitations] = await Promise.all([
-    db.from('identities').select('id').ilike('email', requestedEmail).neq('id', identityId).limit(1),
+    db
+      .from('identities')
+      .select('id')
+      .ilike('email', requestedEmail)
+      .neq('id', identityId)
+      .limit(1),
     db.from('user_product_access').select('id').eq('identity_id', identityId).limit(1),
     db.from('invitations').select('id').eq('identity_id', identityId).eq('status', 'SENT'),
   ]);
@@ -189,11 +193,14 @@ export async function correctPendingIdentityEmailAction(
     reason,
   });
   if (auditError || cancelError)
-    return { error: 'E-mail corrigido, mas auditoria ou histórico pendente. Não reenvie até conciliar.' };
+    return {
+      error: 'E-mail corrigido, mas auditoria ou histórico pendente. Não reenvie até conciliar.',
+    };
   revalidatePath('/usuarios');
   revalidatePath('/usuarios/' + identityId);
   return {
     error: null,
-    success: 'E-mail corrigido na identidade e no Auth. Solicite um novo convite para este endereço.',
+    success:
+      'E-mail corrigido na identidade e no Auth. Solicite um novo convite para este endereço.',
   };
 }

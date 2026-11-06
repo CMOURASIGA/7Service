@@ -13,7 +13,10 @@ export function CorrectPendingEmailForm({
 }) {
   const [state, formAction, isPending] = useActionState(action, { error: null });
   return (
-    <form action={formAction} className="mt-3 max-w-xl rounded-md border border-amber-200 bg-amber-50 p-4">
+    <form
+      action={formAction}
+      className="mt-3 max-w-xl rounded-md border border-amber-200 bg-amber-50 p-4"
+    >
       <h2 className="font-semibold">Corrigir e-mail antes da ativação</h2>
       <p className="mt-1 text-sm text-slate-700">
         Corrige o endereço no 7Service e no provedor de autenticação, sem criar outra pessoa. A
@@ -57,7 +60,7 @@ export function CorrectPendingEmailForm({
       <button
         type="submit"
         disabled={isPending}
-        className="mt-3 rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+        className="bg-brand-700 mt-3 rounded-md px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
       >
         {isPending ? 'Corrigindo...' : 'Salvar correção de e-mail'}
       </button>
