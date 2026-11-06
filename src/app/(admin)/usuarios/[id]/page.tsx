@@ -22,6 +22,7 @@ import {
   initiateRecoveryAction,
   grantAccessAction,
   correctPendingIdentityEmailAction,
+  resendPendingActivationAction,
 } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -185,10 +186,10 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
         ) : null}
         <div className="mt-3">
           <ConfirmAction
-            triggerLabel="Solicitar recuperacao de acesso"
-            action={initiateRecoveryAction.bind(null, id)}
-            impactMessage="Envia um e-mail de recuperacao pelo Supabase Auth ao usuario cadastrado."
-            confirmLabel="Enviar recuperacao"
+            triggerLabel={user.status === 'PENDING_INVITE' ? 'Reenviar convite de ativação' : 'Solicitar recuperação de acesso'}
+            action={(user.status === 'PENDING_INVITE' ? resendPendingActivationAction : initiateRecoveryAction).bind(null, id)}
+            impactMessage={user.status === 'PENDING_INVITE' ? 'Envia um novo link para definir a senha ao e-mail corrigido. Não cria outra conta. O envio é solicitado ao Supabase Auth, sem garantia de entrega na caixa de entrada.' : 'Envia um e-mail de recuperação pelo Supabase Auth ao usuário cadastrado.'}
+            confirmLabel={user.status === 'PENDING_INVITE' ? 'Enviar link de ativação' : 'Enviar recuperação'}
           />
         </div>
       </div>
