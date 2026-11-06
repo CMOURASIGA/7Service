@@ -13,7 +13,7 @@ export const metadata = {
 export default async function IdentitiesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; status?: string }>;
 }) {
   const params = await searchParams;
   await requirePermission('users.manage');
@@ -24,6 +24,9 @@ export default async function IdentitiesPage({
       'id,first_name,last_name,email,status,client_memberships(status,clients(legal_name,trade_name)),user_product_access(status)',
     )
     .order('first_name');
+  if (params.status !== 'all') {
+    query = query.in('status', ['ACTIVE', 'PENDING_INVITE']);
+  }
   if (params.q?.trim()) {
     const term = params.q.trim().replace(/[,%()]/g, '');
     query = query.or(
@@ -49,7 +52,7 @@ export default async function IdentitiesPage({
       </div>
 
       <NewIdentityForm clients={clients ?? []} />
-      <form className="flex gap-2" action="/usuarios">
+      <form className="flex flex-wrap gap-2" action="/usuarios">
         <input
           type="search"
           name="q"
@@ -57,6 +60,10 @@ export default async function IdentitiesPage({
           placeholder="Buscar por nome ou e-mail"
           className="border-border focus:border-brand-600 focus:ring-brand-100 w-full max-w-md rounded-md border px-3 py-2 text-sm outline-none focus:ring-2"
         />
+        <select name="status" defaultValue={params.status === "all" ? "all" : "operational"} className="rounded-md border px-3 py-2 text-sm">
+          <option value="operational">Usuários operacionais</option>
+          <option value="all">Incluir históricos e suspensos</option>
+        </select>
         <button
           type="submit"
           className="border-border rounded-md border px-4 py-2 text-sm font-medium hover:bg-slate-50"
