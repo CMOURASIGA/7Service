@@ -8,7 +8,11 @@ export const metadata = {
   title: 'Produtos - 7Service',
 };
 
-export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ historico?: string }> }) {
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ historico?: string }>;
+}) {
   const { historico } = await searchParams;
   const showHistory = historico === '1';
   await requirePermission('clients.view');
@@ -18,7 +22,9 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
     .select('id,name,status,description,entry_url')
     .order('name');
   if (productsError) throw new Error('Falha ao consultar catálogo de produtos.');
-  const visibleProducts = (products ?? []).filter((product) => showHistory || product.status === 'ACTIVE');
+  const visibleProducts = (products ?? []).filter(
+    (product) => showHistory || product.status === 'ACTIVE',
+  );
   const productIds = visibleProducts.map((product) => product.id);
   const { data: roles, error: rolesError } = productIds.length
     ? await db.from('product_roles').select('id,product_id,name').in('product_id', productIds)
@@ -40,7 +46,14 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         </p>
       </div>
 
-      <div className="text-sm"><Link href={showHistory ? '/produtos' : '/produtos?historico=1'} className="text-brand-700 underline">{showHistory ? 'Ocultar produtos desativados' : 'Consultar produtos históricos'}</Link></div>
+      <div className="text-sm">
+        <Link
+          href={showHistory ? '/produtos' : '/produtos?historico=1'}
+          className="text-brand-700 underline"
+        >
+          {showHistory ? 'Ocultar produtos desativados' : 'Consultar produtos históricos'}
+        </Link>
+      </div>
       <CreateProductForm />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {visibleProducts.map((product) => (
