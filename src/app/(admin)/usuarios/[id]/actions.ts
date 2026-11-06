@@ -94,7 +94,6 @@ export async function initiateRecoveryAction(identityId: string, _form: FormData
   revalidatePath('/usuarios/' + identityId);
 }
 
-
 /**
  * Correct a mistyped address before the account is ever activated.
  * Preserve identity ID, membership, grants and Auth UID; never touch an active user.
