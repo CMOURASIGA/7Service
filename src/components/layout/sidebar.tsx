@@ -21,6 +21,7 @@ const NAV_ITEMS = [
   { section: 'Dados', href: '/convites', label: 'Convites', icon: 'invite' as const },
   { section: 'Sistema', href: '/suporte', label: 'Suporte', icon: 'audit' as const },
   { section: 'Sistema', href: '/auditoria', label: 'Auditoria', icon: 'audit' as const },
+  { section: 'Sistema', href: '/ajuda', label: 'Ajuda', icon: 'help' as const },
   {
     section: 'Sistema',
     href: '/administracao/operadores',
@@ -71,6 +72,13 @@ const ICON_PATHS: Record<IconName, ReactNode> = {
     <>
       <path d="M12 3.5 5 6.3V11c0 4.7 2.9 8.2 7 9.5 4.1-1.3 7-4.8 7-9.5V6.3L12 3.5Z" />
       <path d="m9.3 12.2 1.9 1.9 3.6-3.9" />
+    </>
+  ),
+  help: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.6 9a2.6 2.6 0 1 1 4.8 1.3c-.5.8-2.4 1.2-2.4 3.2" />
+      <path d="M12 17.5h.01" />
     </>
   ),
   admin: (
