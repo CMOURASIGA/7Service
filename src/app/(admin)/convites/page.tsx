@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { ConfirmAction } from '@/components/ui/confirm-action';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { requirePermission } from '@/lib/auth/session';
@@ -10,7 +11,8 @@ export const metadata = {
   title: 'Convites - 7Service',
 };
 
-export default async function InvitationsPage() {
+export default async function InvitationsPage({ searchParams }: { searchParams: Promise<{ historico?: string }> }) {
+  const showHistory = (await searchParams).historico === '1';
   await requirePermission('invitations.manage');
   const db = createAdminClient();
   const { data: invitations, error } = await db
@@ -19,6 +21,15 @@ export default async function InvitationsPage() {
     .order('created_at', { ascending: false });
   if (error) throw new Error('Falha ao consultar convites');
 
+  const { data: clients, error: clientsError } = await db.from('clients').select('id').eq('status', 'ACTIVE');
+  if (clientsError) throw new Error('Falha ao consultar clientes ativos');
+  const clientIds = (clients ?? []).map(c => c.id);
+  const { data: memberships, error: membershipsError } = clientIds.length
+    ? await db.from('client_memberships').select('identity_id').in('client_id', clientIds)
+    : { data: [], error: null };
+  if (membershipsError) throw new Error('Falha ao consultar usuários vinculados');
+  const visibleIdentities = new Set((memberships ?? []).map(m => m.identity_id));
+  const visibleInvitations = (invitations ?? []).filter(inv => showHistory || visibleIdentities.has(inv.identity_id));
   const now = new Date().getTime();
   return (
     <div className="flex flex-col gap-4">
@@ -30,6 +41,7 @@ export default async function InvitationsPage() {
         </p>
       </div>
 
+      <Link className="text-brand-700 text-sm underline" href={showHistory ? '/convites' : '/convites?historico=1'}>{showHistory ? 'Ocultar convites históricos' : 'Consultar convites históricos'}</Link>
       <div className="border-border bg-background overflow-x-auto rounded-lg border">
         <table className="w-full text-left text-sm">
           <thead className="border-border text-muted border-b bg-slate-50 text-xs">
@@ -41,7 +53,7 @@ export default async function InvitationsPage() {
             </tr>
           </thead>
           <tbody>
-            {(invitations ?? []).map((inv) => {
+            {visibleInvitations.map((inv) => {
               const identity = inv.identities;
               const effectiveStatus =
                 ['PENDING', 'SENT'].includes(inv.status) &&
