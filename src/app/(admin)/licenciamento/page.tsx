@@ -7,7 +7,11 @@ import { OverrideForm } from '@/features/licensing/components/override-form';
 import { SUBSCRIPTION_EFFECTIVE_STATUS_LABEL } from '@/lib/status-labels';
 
 export const dynamic = 'force-dynamic';
-export default async function LicensingPage({ searchParams }: { searchParams: Promise<{ historico?: string }> }) {
+export default async function LicensingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ historico?: string }>;
+}) {
   const showHistory = (await searchParams).historico === '1';
   await requirePermission('clients.view');
   let canOverride = false;
@@ -29,7 +33,9 @@ export default async function LicensingPage({ searchParams }: { searchParams: Pr
   if ([subscriptions, accesses, overrides].some((x) => x.error))
     throw new Error('Falha ao consultar licenciamento');
 
-  const visibleSubscriptions = (subscriptions.data ?? []).filter(s => showHistory || s.status !== 'CANCELLED');
+  const visibleSubscriptions = (subscriptions.data ?? []).filter(
+    (s) => showHistory || s.status !== 'CANCELLED',
+  );
   const clientIds = [
     ...new Set(visibleSubscriptions.map((subscription) => subscription.client_id)),
   ];
@@ -87,7 +93,12 @@ export default async function LicensingPage({ searchParams }: { searchParams: Pr
           Assinaturas e licencas persistidas por cliente e produto.
         </p>
       </div>
-      <Link href={showHistory ? "/licenciamento" : "/licenciamento?historico=1"} className="text-brand-700 text-sm underline">{showHistory ? "Ocultar assinaturas encerradas" : "Consultar assinaturas históricas"}</Link>
+      <Link
+        href={showHistory ? '/licenciamento' : '/licenciamento?historico=1'}
+        className="text-brand-700 text-sm underline"
+      >
+        {showHistory ? 'Ocultar assinaturas encerradas' : 'Consultar assinaturas históricas'}
+      </Link>
       <div className="overflow-x-auto rounded-lg border">
         <table className="w-full text-left text-sm">
           <thead className="border-b bg-slate-50">

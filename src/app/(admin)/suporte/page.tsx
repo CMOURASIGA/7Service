@@ -5,7 +5,11 @@ import { IncidentForm } from '@/features/support/components/incident-form';
 import { IncidentActions } from '@/features/support/components/incident-actions';
 
 export const dynamic = 'force-dynamic';
-export default async function SupportPage({ searchParams }: { searchParams: Promise<{ historico?: string }> }) {
+export default async function SupportPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ historico?: string }>;
+}) {
   const showHistory = (await searchParams).historico === '1';
   await requirePermission('support.view');
   let canManage = false;
@@ -32,8 +36,10 @@ export default async function SupportPage({ searchParams }: { searchParams: Prom
   ]);
   if (incidents.error || clients.error || products.error || environments.error)
     throw new Error('Falha ao consultar dados de suporte.');
-  const activeClientIds = new Set((clients.data ?? []).map(c => c.id));
-  const visibleIncidents = (incidents.data ?? []).filter(i => showHistory || activeClientIds.has(i.client_id));
+  const activeClientIds = new Set((clients.data ?? []).map((c) => c.id));
+  const visibleIncidents = (incidents.data ?? []).filter(
+    (i) => showHistory || activeClientIds.has(i.client_id),
+  );
   return (
     <main className="flex flex-col gap-5">
       <div>
@@ -52,7 +58,12 @@ export default async function SupportPage({ searchParams }: { searchParams: Prom
           environments={(environments.data ?? []).map((e) => ({ id: e.id, label: e.environment }))}
         />
       ) : null}
-      <Link className="text-brand-700 text-sm underline" href={showHistory ? '/suporte' : '/suporte?historico=1'}>{showHistory ? 'Ocultar incidentes históricos' : 'Consultar histórico de incidentes'}</Link>
+      <Link
+        className="text-brand-700 text-sm underline"
+        href={showHistory ? '/suporte' : '/suporte?historico=1'}
+      >
+        {showHistory ? 'Ocultar incidentes históricos' : 'Consultar histórico de incidentes'}
+      </Link>
       <section className="rounded-lg border p-4">
         <h2 className="mb-3 font-semibold">Incidentes registrados</h2>
         {!visibleIncidents.length ? (

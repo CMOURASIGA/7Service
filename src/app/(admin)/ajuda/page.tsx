@@ -114,7 +114,10 @@ function Procedure({ title, steps }: { title: string; steps: Step[] }) {
               <h3 className="font-semibold text-slate-900">{step.title}</h3>
               <p className="text-sm text-slate-700">{step.description}</p>
               {step.href ? (
-                <Link href={step.href} className="inline-block text-sm font-medium text-blue-700 underline">
+                <Link
+                  href={step.href}
+                  className="inline-block text-sm font-medium text-blue-700 underline"
+                >
                   {step.linkLabel ?? 'Abrir tela'}
                 </Link>
               ) : null}
@@ -140,15 +143,12 @@ export default async function HelpPage() {
       <section className="rounded-xl border border-blue-200 bg-blue-50 p-5">
         <h2 className="font-semibold text-blue-950">Antes de começar</h2>
         <p className="mt-2 text-sm text-blue-950">
-          O 7Service controla identidades, empresas, assinaturas e concessões. O 7Commander
-          mantém sua própria autenticação, organizações e permissões. Apenas cadastrar a
-          pessoa no 7Service não libera automaticamente o acesso ao Commander.
+          O 7Service controla identidades, empresas, assinaturas e concessões. O 7Commander mantém
+          sua própria autenticação, organizações e permissões. Apenas cadastrar a pessoa no 7Service
+          não libera automaticamente o acesso ao Commander.
         </p>
       </section>
-      <Procedure
-        title="Cenário 1. Novo cliente de 7Commander ou 7Clinic"
-        steps={customerSteps}
-      />
+      <Procedure title="Cenário 1. Novo cliente de 7Commander ou 7Clinic" steps={customerSteps} />
       <Procedure title="Cenário 2. Novo colaborador no 7Commander" steps={colleagueSteps} />
       <section className="rounded-xl border p-5">
         <h2 className="font-semibold">Checklist de liberação</h2>
@@ -164,8 +164,8 @@ export default async function HelpPage() {
       <section className="rounded-xl border border-amber-200 bg-amber-50 p-5">
         <h2 className="font-semibold text-amber-950">Atenção ao 7Clinic</h2>
         <p className="mt-2 text-sm text-amber-950">
-          Cadastrar o 7Clinic no catálogo não implanta uma instância da clínica e não ativa
-          login central automaticamente. Valide a integração técnica antes de liberar clientes.
+          Cadastrar o 7Clinic no catálogo não implanta uma instância da clínica e não ativa login
+          central automaticamente. Valide a integração técnica antes de liberar clientes.
         </p>
       </section>
     </main>
