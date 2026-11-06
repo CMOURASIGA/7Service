@@ -205,7 +205,6 @@ export async function correctPendingIdentityEmailAction(
   };
 }
 
-
 /**
  * An invited Auth user already exists. Supabase cannot invite the same email a
  * second time, so issue a password-setup/recovery link and activate via the
@@ -219,13 +218,25 @@ export async function resendPendingActivationAction(identityId: string, _form: F
     .select('id,email,status,auth_user_id,activated_at')
     .eq('id', identityId)
     .maybeSingle();
-  if (identityError || !identity || identity.status !== 'PENDING_INVITE' || !identity.auth_user_id || identity.activated_at)
+  if (
+    identityError ||
+    !identity ||
+    identity.status !== 'PENDING_INVITE' ||
+    !identity.auth_user_id ||
+    identity.activated_at
+  )
     throw new Error('Reenvio permitido apenas para identidade com convite pendente.');
 
-  const { data: authData, error: authError } = await db.auth.admin.getUserById(identity.auth_user_id);
-  if (authError || !authData.user ||
-      authData.user.email?.toLowerCase() !== identity.email.toLowerCase() ||
-      authData.user.email_confirmed_at || authData.user.last_sign_in_at)
+  const { data: authData, error: authError } = await db.auth.admin.getUserById(
+    identity.auth_user_id,
+  );
+  if (
+    authError ||
+    !authData.user ||
+    authData.user.email?.toLowerCase() !== identity.email.toLowerCase() ||
+    authData.user.email_confirmed_at ||
+    authData.user.last_sign_in_at
+  )
     throw new Error('Conta já utilizada ou e-mail divergente. Reenvio bloqueado.');
 
   const { data: latest, error: latestError } = await db
@@ -239,7 +250,8 @@ export async function resendPendingActivationAction(identityId: string, _form: F
   if (latest?.[0]?.sent_at && Date.now() - new Date(latest[0].sent_at).getTime() < 60000)
     throw new Error('Aguarde pelo menos 60 segundos antes de reenviar.');
 
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ??
+  const origin =
+    process.env.NEXT_PUBLIC_SITE_URL ??
     (process.env.VERCEL_ENV === 'preview'
       ? 'https://7service-git-develop-christians-projects-4954426e.vercel.app'
       : 'https://7service.vercel.app');
