@@ -244,7 +244,7 @@ export async function resendPendingActivationAction(identityId: string, _form: F
       ? 'https://7service-git-develop-christians-projects-4954426e.vercel.app'
       : 'https://7service.vercel.app');
   const { error: sendError } = await db.auth.resetPasswordForEmail(identity.email, {
-    redirectTo: new URL('/auth/confirm?type=recovery', origin).toString(),
+    redirectTo: new URL('/redefinir-senha', origin).toString(),
   });
   if (sendError) throw new Error('Supabase não aceitou o reenvio. Verifique o provedor de e-mail.');
 
