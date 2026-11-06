@@ -12,7 +12,7 @@ export async function getDashboardKpis() {
     db.from('clients').select('id,status'),
     db.from('identities').select('id,status'),
     db.from('invitations').select('id,identity_id,status,expires_at'),
-    db.from('subscriptions').select('id,product_id,status,license_limit,end_date,grace_days'),
+    db.from('subscriptions').select('id,client_id,product_id,status,license_limit,end_date,grace_days'),
     db.from('user_product_access').select('id,subscription_id,status'),
     db
       .from('products')
@@ -29,7 +29,7 @@ export async function getDashboardKpis() {
   const activeIdentityIds = new Set((identities.data ?? []).filter(i => i.status === 'ACTIVE' || i.status === 'PENDING_INVITE').map(i => i.id));
   const currentIdentityIds = new Set((memberships.data ?? []).filter(m => activeClientIds.has(m.client_id) && ['ACTIVE', 'PENDING'].includes(m.status) && activeIdentityIds.has(m.identity_id)).map(m => m.identity_id));
   const invitationsData = (invitations.data ?? []).filter(i => currentIdentityIds.has(i.identity_id));
-  const subs = (subscriptions.data ?? []).filter(s => s.status === 'ACTIVE' && activeProductIds.has(s.product_id));
+  const subs = (subscriptions.data ?? []).filter(s => s.status === 'ACTIVE' && activeClientIds.has(s.client_id) && activeProductIds.has(s.product_id));
   const activeSubscriptionIds = new Set(subs.map(s => s.id));
   const users = (accesses.data ?? []).filter(a => activeSubscriptionIds.has(a.subscription_id));
   const now = Date.now();
