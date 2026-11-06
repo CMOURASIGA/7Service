@@ -131,3 +131,7 @@ A primeira versão pode direcionar para a entrada do produto. A arquitetura deve
 ## 19. Critérios de sucesso
 
 A Consult Services deve conseguir administrar um cliente e seus usuários sem acessar diretamente o banco ou painel administrativo individual de cada produto. O sistema deve impedir concessão incompatível com licença, registrar mudanças críticas e fornecer uma origem única e confiável para os direitos de acesso.
+
+
+## Atualizacao de escopo — 28/10/2026
+A decisao de identidade global multiempresa e acesso administrativo exclusivo da Consult Services prevalece sobre os trechos anteriores que sugerem usuario operacional vinculado a apenas um cliente. Ver `docs/SPEC_00_CENTRAL_PLATFORM.md`. O modelo final separa identidade, membership empresa e acesso por produto/assinatura; a migracao e implementacao permanecem pendentes.

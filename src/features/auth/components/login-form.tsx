@@ -1,0 +1,133 @@
+'use client';
+
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { useState, type FormEvent } from 'react';
+
+import { createClient } from '@/lib/supabase/client';
+import { safeAdminRedirect } from '@/lib/auth/safe-admin-redirect';
+
+/**
+ * Formulário de login básico do 7Service.
+ *
+ * A administração de operadores internos e o RBAC completo são entregues
+ * na Etapa 1 (docs/DEV_IMPLEMENTATION_PLAN.md). Este formulário cobre
+ * apenas a autenticação via Supabase Auth exigida pela Etapa 0.
+ */
+export function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+
+    const supabase = createClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (signInError) {
+      setIsSubmitting(false);
+      setError('Não foi possível entrar. Verifique suas credenciais.');
+      return;
+    }
+
+    // Authentication alone does not grant access to the Consult Services
+    // administrative panel. Customer identities must use their product URL.
+    let accessStatus: number | null = null;
+    try {
+      const accessResponse = await fetch('/api/auth/internal-access', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      accessStatus = accessResponse.status;
+    } catch {
+      // A transient authorization service failure must never grant access.
+    }
+    if (accessStatus === 403) {
+      // A customer has a VALID Auth session, but no internal permission.
+      // Keep this session for the 403 API contract and product identity flow.
+      setIsSubmitting(false);
+      router.replace('/acesso-restrito');
+      router.refresh();
+      return;
+    }
+    if (accessStatus !== 200) {
+      setError('Não foi possível verificar sua autorização administrativa. Tente novamente.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const redirectTo = safeAdminRedirect(searchParams.get('redirect'));
+    setIsSubmitting(false);
+    router.push(redirectTo);
+    router.refresh();
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+      {searchParams.get('password_updated') === '1' && (
+        <p role="status" className="text-sm text-green-700">
+          Senha definida. Entre com suas novas credenciais.
+        </p>
+      )}
+      {searchParams.get('auth_error') && (
+        <p role="alert" className="text-sm text-red-700">
+          Link expirado ou inválido. Solicite uma recuperação de acesso.
+        </p>
+      )}
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="email" className="text-foreground text-sm font-medium">
+          E-mail
+        </label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          className="border-border focus:border-brand-600 focus:ring-brand-100 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2"
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="password" className="text-foreground text-sm font-medium">
+          Senha
+        </label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          className="border-border focus:border-brand-600 focus:ring-brand-100 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2"
+        />
+      </div>
+
+      <Link href="/esqueci-senha" className="text-sm text-blue-700 underline">
+        Esqueci minha senha
+      </Link>
+      {error ? (
+        <p role="alert" className="text-danger text-sm">
+          {error}
+        </p>
+      ) : null}
+
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="bg-brand-600 hover:bg-brand-700 mt-2 rounded-md px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {isSubmitting ? 'Entrando...' : 'Entrar'}
+      </button>
+    </form>
+  );
+}

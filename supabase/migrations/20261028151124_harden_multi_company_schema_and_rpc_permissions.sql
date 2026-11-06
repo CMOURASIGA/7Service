@@ -1,0 +1,11 @@
+ALTER TABLE public.user_product_access ALTER COLUMN membership_id SET NOT NULL; ALTER TABLE public.user_product_access ALTER COLUMN client_id SET NOT NULL;
+REVOKE EXECUTE ON FUNCTION public.current_identity_client_id() FROM PUBLIC,anon,authenticated;
+REVOKE EXECUTE ON FUNCTION public.subscription_license_usage(uuid) FROM PUBLIC,anon,authenticated;
+REVOKE EXECUTE ON FUNCTION public.is_internal_operator() FROM PUBLIC,anon;
+REVOKE EXECUTE ON FUNCTION public.has_internal_permission(text) FROM PUBLIC,anon;
+CREATE INDEX IF NOT EXISTS idx_memberships_client ON public.client_memberships(client_id);
+CREATE INDEX IF NOT EXISTS idx_access_membership ON public.user_product_access(membership_id);
+CREATE INDEX IF NOT EXISTS idx_deployments_product ON public.product_deployments(product_id);
+CREATE INDEX IF NOT EXISTS idx_env_deployment ON public.product_environments(deployment_id);
+CREATE INDEX IF NOT EXISTS idx_env_access_environment ON public.environment_access(environment_id);
+CREATE INDEX IF NOT EXISTS idx_audit_client_time ON public.audit_logs(client_id,occurred_at DESC);

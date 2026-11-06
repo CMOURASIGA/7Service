@@ -265,3 +265,9 @@ No detalhe do cliente:
 - bloquear gestão após encerramento formal quando aplicável.
 
 A exportação não implica remoção automática dos registros que devam ser retidos por obrigação legal, segurança ou auditoria.
+
+
+## Adendo — Ficha do cliente e onboarding dedicado (28/10/2026)
+Cada cliente tera inicialmente banco operacional dedicado. O frontend devera separar: empresa, produto, banco dedicado, deployment, ambiente, URL e autorizacao. Fluxo: cadastrar cliente -> vincular contrato/produto/licencas -> provisionar banco e ambientes com retorno comprovado -> registrar URLs -> vincular identidades -> conceder acessos por ambiente -> testar isolamento -> homologar -> autorizar producao.
+
+Usuario de cliente nao acessa o painel 7Service. HML e desenvolvimento sao isolados da producao; ambiente de demonstracao permanece estavel quando houver. Acoes de suporte requerem permissao, justificativa e auditoria. Funcionalidades exclusivas sao ativadas por cliente e verificadas no backend. Detalhes e criterios em `docs/SPEC_07_ENVIRONMENTS_AND_FRONTEND.md`.

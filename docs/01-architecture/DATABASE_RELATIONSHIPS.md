@@ -239,3 +239,7 @@ Buckets sugeridos:
 - `client-assets` quando necessário.
 
 URLs de documentos sensíveis devem ser assinadas e temporárias.
+
+
+## Revisao arquitetural aprovada para desenvolvimento — 28/10/2026
+**Substitui a Decisao 1 (identidade 1:1 por cliente) acima como arquitetura-alvo.** Uma identidade global pode associar-se a varias empresas via `client_memberships(identity_id, client_id, status, ...)`. A tabela `identities` nao devera exigir `client_id` no modelo final. `user_product_access` deve referenciar a membership e uma subscription pertencente ao MESMO cliente. As demais constraints, fluxos de migracao, RLS e autorizacao devem ser atualizados conforme `docs/SPEC_00_CENTRAL_PLATFORM.md`. O conteudo historico acima e mantido apenas como referencia do desenho anterior e nao deve ser implementado como requisito vigente.
