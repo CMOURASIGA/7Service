@@ -143,15 +143,20 @@ export default async function HelpPage() {
       <section className="rounded-xl border border-blue-200 bg-blue-50 p-5">
         <h2 className="font-semibold text-blue-950">Antes de começar</h2>
         <p className="mt-2 text-sm text-blue-950">
-          O 7Service controla identidades, empresas, assinaturas e concessões de acesso aos
-          produtos da Consult Services. Cada sistema contratado pode manter autenticação,
-          organizações e permissões próprias. Cadastrar uma pessoa no 7Service não garante,
-          isoladamente, o acesso ao produto. É necessário conferir a concessão e a integração
-          específica de cada sistema.
+          O 7Service controla identidades, empresas, assinaturas e concessões de acesso aos produtos
+          da Consult Services. Cada sistema contratado pode manter autenticação, organizações e
+          permissões próprias. Cadastrar uma pessoa no 7Service não garante, isoladamente, o acesso
+          ao produto. É necessário conferir a concessão e a integração específica de cada sistema.
         </p>
       </section>
-      <Procedure title="Cenário 1. Novo cliente de qualquer produto Consult Services" steps={customerSteps} />
-      <Procedure title="Cenário 2. Novo usuário de uma empresa ou produto existente" steps={colleagueSteps} />
+      <Procedure
+        title="Cenário 1. Novo cliente de qualquer produto Consult Services"
+        steps={customerSteps}
+      />
+      <Procedure
+        title="Cenário 2. Novo usuário de uma empresa ou produto existente"
+        steps={colleagueSteps}
+      />
       <section className="rounded-xl border p-5">
         <h2 className="font-semibold">Checklist de liberação</h2>
         <ul className="mt-3 list-inside list-disc space-y-2 text-sm text-slate-700">
@@ -167,8 +172,8 @@ export default async function HelpPage() {
         <h2 className="font-semibold text-amber-950">Atenção à integração de produtos</h2>
         <p className="mt-2 text-sm text-amber-950">
           Cadastrar qualquer produto no catálogo não implanta automaticamente a aplicação nem
-          habilita login central. Confira o provisionamento e os requisitos técnicos de cada
-          produto antes de liberar clientes. Exemplos: 7Commander e 7Clinic.
+          habilita login central. Confira o provisionamento e os requisitos técnicos de cada produto
+          antes de liberar clientes. Exemplos: 7Commander e 7Clinic.
         </p>
       </section>
     </main>

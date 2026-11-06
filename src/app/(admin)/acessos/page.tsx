@@ -32,21 +32,36 @@ export default async function AccessManagementPage({
   const showHistory = params.historico === '1';
   const db = createAdminClient();
 
-  const [clientsResult, identitiesResult, membershipsResult, subscriptionsResult, grantsResult, productsResult, rolesResult] =
-    await Promise.all([
-      db.from('clients').select('id,legal_name,trade_name,status').order('legal_name'),
-      db.from('identities').select('id,first_name,last_name,email,status,auth_user_id'),
-      db.from('client_memberships').select('identity_id,client_id,status'),
-      db.from('subscriptions').select('id,client_id,product_id,status'),
-      db.from('user_product_access').select('id,identity_id,client_id,subscription_id,product_role_id,status'),
-      db.from('products').select('id,code,name,status'),
-      db.from('product_roles').select('id,name,code,status'),
-    ]);
+  const [
+    clientsResult,
+    identitiesResult,
+    membershipsResult,
+    subscriptionsResult,
+    grantsResult,
+    productsResult,
+    rolesResult,
+  ] = await Promise.all([
+    db.from('clients').select('id,legal_name,trade_name,status').order('legal_name'),
+    db.from('identities').select('id,first_name,last_name,email,status,auth_user_id'),
+    db.from('client_memberships').select('identity_id,client_id,status'),
+    db.from('subscriptions').select('id,client_id,product_id,status'),
+    db
+      .from('user_product_access')
+      .select('id,identity_id,client_id,subscription_id,product_role_id,status'),
+    db.from('products').select('id,code,name,status'),
+    db.from('product_roles').select('id,name,code,status'),
+  ]);
 
   if (
-    [clientsResult, identitiesResult, membershipsResult, subscriptionsResult, grantsResult, productsResult, rolesResult].some(
-      (result) => result.error,
-    )
+    [
+      clientsResult,
+      identitiesResult,
+      membershipsResult,
+      subscriptionsResult,
+      grantsResult,
+      productsResult,
+      rolesResult,
+    ].some((result) => result.error)
   ) {
     throw new Error('Falha ao consultar concessões. Nenhum acesso foi alterado.');
   }
@@ -110,10 +125,13 @@ export default async function AccessManagementPage({
       </header>
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
         A situação de provisionamento só poderá ser marcada como validada após uma consulta
-        autenticada ao sistema de destino. Sem confirmação técnica, a coluna indica
-        &quot;Não verificado&quot;. Nenhuma conta é criada automaticamente nesta tela.
+        autenticada ao sistema de destino. Sem confirmação técnica, a coluna indica &quot;Não
+        verificado&quot;. Nenhuma conta é criada automaticamente nesta tela.
       </div>
-      <form action="/acessos" className="flex flex-wrap items-end gap-3 rounded-lg border bg-white p-4">
+      <form
+        action="/acessos"
+        className="flex flex-wrap items-end gap-3 rounded-lg border bg-white p-4"
+      >
         <label className="flex min-w-64 flex-col gap-1 text-sm">
           Cliente
           <select name="client" defaultValue={params.client ?? ''} className="rounded border p-2">
@@ -147,7 +165,10 @@ export default async function AccessManagementPage({
           </thead>
           <tbody>
             {rows.map((row, index) => (
-              <tr key={row.identityId + ':' + row.companyId + ':' + row.productCode + ':' + index} className="border-b last:border-0">
+              <tr
+                key={row.identityId + ':' + row.companyId + ':' + row.productCode + ':' + index}
+                className="border-b last:border-0"
+              >
                 <td className="p-3">{row.companyName}</td>
                 <td className="p-3">
                   <div className="font-medium">{row.name}</div>
