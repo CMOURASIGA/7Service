@@ -39,6 +39,12 @@ BEGIN
  SELECT * INTO v FROM public.contract_role_assignments
  WHERE id=p_assignment AND status='PENDING' FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'ROLE_ASSIGNMENT_NOT_PENDING'; END IF;
+ IF EXISTS (
+   SELECT 1 FROM public.provisioning_operations op
+   WHERE op.role_assignment_id=p_assignment
+     AND op.operation IN ('GRANT','REVOKE')
+     AND op.status IN ('PENDING','RUNNING','RECONCILIATION_REQUIRED')
+ ) THEN RAISE EXCEPTION 'DESTINATION_OPERATION_ALREADY_PENDING'; END IF;
  SELECT c.client_id INTO v_client FROM public.contracts c
  JOIN public.contract_seat_pools p ON p.contract_id=c.id
  WHERE c.id=v.contract_id AND c.status='ACTIVE'
