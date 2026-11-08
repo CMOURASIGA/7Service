@@ -34,7 +34,7 @@ CREATE OR REPLACE FUNCTION public.assign_contract_role_atomic(
  p_role uuid
 ) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
 AS $$
-DECLARE v_result uuid; v_client uuid; v_group uuid; v_count integer; v_limit integer;
+DECLARE v_result uuid; v_client uuid; v_group uuid; v_count integer; v_limit integer; v_existing_contract uuid;
 BEGIN
  IF (auth.jwt()->>'role') IS DISTINCT FROM 'service_role' THEN
    RAISE EXCEPTION 'SERVICE_ROLE_REQUIRED' USING ERRCODE='42501';
@@ -50,7 +50,10 @@ BEGIN
  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(p_contract::text,0));
  SELECT p.license_limit,c.client_id,p.group_id INTO v_limit,v_client,v_group
  FROM public.contract_seat_pools p JOIN public.contracts c ON c.id=p.contract_id
- WHERE p.contract_id=p_contract AND p.enforcement_mode='ENFORCED' FOR UPDATE OF p;
+ WHERE p.contract_id=p_contract AND p.enforcement_mode='ENFORCED'
+   AND c.status='ACTIVE' AND c.start_date<=current_date
+   AND (c.end_date IS NULL OR c.end_date>=current_date)
+   FOR UPDATE OF p;
  IF NOT FOUND THEN RAISE EXCEPTION 'CONTRACT_LICENSE_POOL_NOT_ACTIVE'; END IF;
 
  IF v_client<>p_company AND (
@@ -79,8 +82,10 @@ BEGIN
    JOIN public.product_environments pe ON pe.id=cb.environment_id
    JOIN public.product_deployments d ON d.id=pe.deployment_id
    JOIN public.environment_connections ec ON ec.environment_id=pe.id
+   JOIN public.client_deployments cd ON cd.deployment_id=pe.deployment_id
    WHERE cb.environment_id=p_environment AND cb.client_id=p_company
-    AND d.product_id=p_product AND pe.status='ACTIVE' AND ec.status='VERIFIED'
+    AND d.product_id=p_product AND cd.client_id=p_company
+    AND cd.product_id=p_product AND pe.status='ACTIVE' AND ec.status='VERIFIED'
  ) THEN RAISE EXCEPTION 'ENVIRONMENT_NOT_AUTHORIZED' USING ERRCODE='42501'; END IF;
 
  -- Reuse a seat for the same identity across any product or company.
@@ -100,10 +105,13 @@ BEGIN
  END IF;
 
  -- A role change is not a new license: update in place and preserve audit.
- SELECT id INTO v_result FROM public.contract_role_assignments
+ SELECT id,contract_id INTO v_result,v_existing_contract FROM public.contract_role_assignments
  WHERE identity_id=p_identity AND company_id=p_company
    AND product_id=p_product AND environment_id=p_environment
    AND status IN ('PENDING','ACTIVE','SUSPENDED') FOR UPDATE;
+ IF v_result IS NOT NULL AND v_existing_contract<>p_contract THEN
+   RAISE EXCEPTION 'EXISTING_ROLE_BELONGS_TO_DIFFERENT_CONTRACT' USING ERRCODE='42501';
+ END IF;
  IF v_result IS NOT NULL THEN
    UPDATE public.contract_role_assignments
    SET role_id=p_role,status='PENDING',updated_at=now()
