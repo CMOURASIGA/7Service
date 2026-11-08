@@ -49,3 +49,33 @@
 
 ## Critério de aceite de ponta a ponta
 Configurar instalação existente, registrar contrato e empresas, convidar um usuário, provisionar seu Auth correto e o perfil local, contar uma licença apesar de múltiplos produtos/empresas, impedir duplicidade de perfil, negar excesso de licenças, revogar acesso por empresa/produto, demonstrar bloqueio via API, e registrar evidências e auditoria.
+
+
+## Execution update | 08/11/2026 | continued development
+
+### Code delivered on `develop` (NOT production-approved)
+- Contract named-seat rules and tests: `src/lib/licensing/named-seats*`.
+- Client/product/environment deterministic routing: `src/lib/integrations/deployment-routing*`.
+- Server-only encrypted credential handling: `src/lib/integrations/supabase-connector.ts`.
+- Destination Auth invitation/verification/recovery adapter: `src/lib/integrations/supabase-auth-provisioner.ts`.
+- Strict provisioning intent/idempotency key: `src/lib/integrations/provisioning-intent*`.
+- Product entitlement adapter contract and receipt validation: `src/lib/integrations/product-provisioning-contract*`.
+- Fail-closed effective-access reconciler and tests: `src/lib/integrations/provisioning-reconciliation*`.
+- Administrative UI: `/clientes/grupos`, `/clientes/licencas`, `/ambientes/conexoes`, `/acessos/provisionamento`.
+- Additive (staged, unapplied) SQL scripts for group membership, seat pools, connection storage, identity mapping, atomic operations, remote company mapping, and company/product/installation role assignment.
+
+### Explicitly NOT completed
+- Applying/verifying migrations to a QA/develop database.
+- Authoritative backfill of existing subscriptions and historical grants.
+- Activating `ENFORCED` contract-seat mode (currently `SHADOW`).
+- Connecting the existing `grant_product_access_atomic` flow to the new contract-seat enforcement.
+- Implementing the destination-specific product profile adapter.
+- Secure end-to-end provisioning of Auth and company/profile permissions.
+- Successful execution of lint, typecheck, test, integration test and full build on the **latest** commit.
+- Any changes to 7Commander or production.
+
+### Deployment validation blocker
+Vercel returned build-rate-limit failures for recent commits. A previous preview compiled, but subsequent source changes need fresh CI verification. Do not equate a Vercel status of failure caused by quota with a code failure; equally, do not declare the code PASS without test evidence.
+
+### Safety gate
+`SERVICE_DESTINATION_PROVISIONING_ENABLED` defaults to disabled. Do not enable it before applying verified migrations, reconciling seats, implementing product profile adapters, and completing the E2E authorization test.
