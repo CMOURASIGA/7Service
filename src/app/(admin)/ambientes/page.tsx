@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { EnvironmentRegistry } from './registry';
+import { ExistingDeploymentCompanyForm } from './existing-deployment-company-form';
 import { EnvironmentLifecycleControls } from './lifecycle-controls';
 import { VersionHistoryForm } from '@/features/environments/components/version-history-form';
 import { EvidenceForm } from '@/features/environments/components/evidence-form';
@@ -62,6 +63,10 @@ export default async function AmbientesPage() {
         clients={clientsResult.data ?? []}
         products={productsResult.data ?? []}
         deployments={deploymentsResult.data ?? []}
+      />
+      <ExistingDeploymentCompanyForm
+        deployments={deploymentsResult.data ?? []}
+        clients={clientsResult.data ?? []}
       />
       <VersionHistoryForm
         environments={(environmentsResult.data ?? []).map((e) => ({
