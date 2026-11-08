@@ -1,5 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -14,7 +15,8 @@ export async function createCustomerGroup(
   const { internalUser } = await requirePermission('clients.manage');
   const parsed = group.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: 'Informe um nome de grupo válido.' };
-  const { data, error } = await createAdminClient().rpc('create_customer_group_atomic', {
+  const extensionDb = createAdminClient() as unknown as SupabaseClient;
+  const { data, error } = await extensionDb.rpc('create_customer_group_atomic', {
     p_actor: internalUser.id, p_name: parsed.data.name,
   });
   if (error || !data) return { error: 'Não foi possível criar o grupo. Verifique a migração.' };
@@ -28,7 +30,8 @@ export async function addCompanyToGroup(
   const { internalUser } = await requirePermission('clients.manage');
   const parsed = membership.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: 'Selecione grupo e empresa válidos.' };
-  const { error } = await createAdminClient().rpc('add_company_to_customer_group_atomic', {
+  const extensionDb = createAdminClient() as unknown as SupabaseClient;
+  const { error } = await extensionDb.rpc('add_company_to_customer_group_atomic', {
     p_actor: internalUser.id,
     p_group: parsed.data.groupId,
     p_client: parsed.data.clientId,
