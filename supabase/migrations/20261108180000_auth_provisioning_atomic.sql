@@ -34,8 +34,8 @@ BEGIN
    JOIN public.subscriptions s ON s.id=a.subscription_id
    JOIN public.identities i ON i.id=a.identity_id
    JOIN public.client_memberships m ON m.id=a.membership_id
-   WHERE a.id=p_access AND a.status='ACTIVE'
-     AND i.status='ACTIVE' AND m.status='ACTIVE' AND s.status='ACTIVE'
+   WHERE a.id=p_access AND a.status IN ('ACTIVE','PENDING')
+     AND i.status IN ('ACTIVE','PENDING_INVITE') AND m.status='ACTIVE' AND s.status='ACTIVE'
      AND m.client_id=a.client_id AND m.identity_id=a.identity_id
    FOR UPDATE OF a;
  IF NOT FOUND THEN RAISE EXCEPTION 'NO_EFFECTIVE_CENTRAL_GRANT' USING ERRCODE='42501'; END IF;
