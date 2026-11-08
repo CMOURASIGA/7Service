@@ -20,7 +20,13 @@ BEGIN
      OR p_encrypted_admin_key NOT LIKE 'v1.%' THEN
     RAISE EXCEPTION 'INVALID_CONNECTION_PROPERTIES';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM public.internal_users WHERE id=p_actor AND status='ACTIVE') THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.internal_users u
+    JOIN public.internal_user_roles ur ON ur.internal_user_id=u.id
+    JOIN public.internal_role_permissions rp ON rp.role_id=ur.role_id
+    JOIN public.internal_permissions ip ON ip.id=rp.permission_id
+    WHERE u.id=p_actor AND u.status='ACTIVE' AND ip.code='clients.manage'
+  ) THEN
     RAISE EXCEPTION 'OPERATOR_NOT_AUTHORIZED' USING ERRCODE='42501';
   END IF;
   SELECT status INTO v_status FROM public.product_environments WHERE id=p_environment FOR UPDATE;
