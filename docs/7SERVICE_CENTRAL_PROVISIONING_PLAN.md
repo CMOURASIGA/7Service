@@ -133,3 +133,49 @@ Vercel returned build-rate-limit failures for recent commits. A previous preview
 **Current definitive cutover rule:** no production change, no new database,
 no 7Commander code change, and no activation of provisioning flags without
 successful QA migration plus product adapter E2E.
+
+
+## Follow-on development | 2026-11-08 | access lifecycle (develop only)
+
+### New code
+- `20261108183500_contract_role_revocation_lifecycle.sql`:
+  central suspension before a remote REVOKE, authenticated remote receipt
+  confirmation, delayed final REVOKED state, and reactivation to PENDING.
+- `20261108184000_finalize_verified_suspension.sql`:
+  finalize previously verified suspension as REVOKED without repeating a
+  dangerous external call; leave named seats reserved until explicit release.
+- `src/app/(admin)/acessos/atribuicoes/lifecycle-actions.ts`:
+  privileged suspension, revocation, reactivation and finalization actions.
+- `src/app/(admin)/acessos/atribuicoes/lifecycle-controls.tsx`:
+  administrative controls hidden until product adapter flag is enabled.
+- `src/lib/integrations/provisioning-reconciliation.ts` and
+  `provisioning-revocation.test.ts`: fail-closed remote revocation validation
+  and seat release policy.
+- `.github/workflows/develop-quality-gates.yml`:
+  separate GitHub Actions quality pipeline for migration safety, lint,
+  typecheck, unit tests and Next.js build, bypassing Vercel quota as a
+  prerequisite for code verification. Its execution is **not yet verified**.
+
+### Safety restrictions maintained
+- Concurrency check prevents overlapping pending GRANT and REVOKE operations
+  for a single contract role assignment.
+- `REVOKE` is only confirmed after authenticated readback confirms
+  `effective=false` and `roleCode=null`.
+- SUSPENDED retains the seat. A separate verified-release process is
+  required to free it after all legacy and new grants have been closed.
+- The current product grant RPC remains active and **is not yet migrated**
+  to nominal contract licensing. Therefore this lifecycle code **does not
+  yet secure the actual 7Commander runtime**.
+- New migrations are staged in GitHub only. No existing Supabase schemas,
+  product data, Vercel production deployments or 7Commander code were modified.
+- Latest Vercel check remains blocked by build-rate-limit. Lint, TypeScript,
+  Vitest and build remain unconfirmed for the current HEAD.
+
+### Next release gates
+1. PostgreSQL migration runtime verification on existing controlled QA
+   environment, including DDL, grants and RPC privilege tests.
+2. Full reconciliation and safe cutover of the old per-subscription licensing
+   authorization without bypass of nominal seat controls.
+3. Verified product adapter and effective revocation in a destination product.
+4. Independent GitHub CI PASS plus full E2E/race/RLS tests.
+5. A separately authorized production release.
