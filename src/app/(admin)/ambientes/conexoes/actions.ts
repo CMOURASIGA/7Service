@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -47,7 +48,8 @@ export async function verifyAndSaveConnection(
   } catch { return { error: 'Falha ao testar o Auth do ambiente informado.' }; }
 
   const projectRef = new URL(cleanUrl).hostname.split('.')[0];
-  const { error: registrationError } = await db.rpc('register_environment_connection_atomic', {
+  const extensionDb = db as unknown as SupabaseClient;
+  const { error: registrationError } = await extensionDb.rpc('register_environment_connection_atomic', {
     p_actor: internalUser.id,
     p_environment: environmentId,
     p_project_url: cleanUrl,
