@@ -62,12 +62,18 @@ export default async function ClientsPage({
           <h1 className="text-foreground text-xl font-semibold">Clientes</h1>
           <p className="text-muted text-sm">Cadastro completo, sem exclusão física</p>
         </div>
+        <div className="flex items-center gap-2">
+          <Link href="/clientes/grupos"
+            className="rounded-md border px-4 py-2 text-sm font-medium text-brand-700">
+            Grupos empresariais
+          </Link>
         <Link
           href="/clientes/novo"
           className="bg-brand-600 hover:bg-brand-700 rounded-md px-4 py-2 text-sm font-medium text-white"
         >
           Novo cliente
         </Link>
+        </div>
       </div>
 
       <form className="flex gap-2" action="/clientes">
