@@ -27,7 +27,9 @@ BEGIN
   SELECT p.license_limit, p.enforcement_mode, c.client_id, p.group_id
     INTO v_limit, v_mode, v_owner, v_group
     FROM public.contract_seat_pools p JOIN public.contracts c ON c.id=p.contract_id
-   WHERE p.contract_id=p_contract_id
+   WHERE p.contract_id=p_contract_id AND c.status='ACTIVE'
+     AND c.start_date<=current_date
+     AND (c.end_date IS NULL OR c.end_date>=current_date)
    FOR UPDATE OF p;
   IF NOT FOUND OR v_mode <> 'ENFORCED' THEN
     RAISE EXCEPTION 'NAMED_SEATS_NOT_ENABLED';
@@ -102,7 +104,11 @@ BEGIN
   JOIN public.subscriptions s ON s.id=a.subscription_id
   WHERE s.contract_id=p_contract_id AND a.identity_id=p_identity_id
     AND a.status IN ('PENDING','ACTIVE','SUSPENDED');
-  IF v_active > 0 THEN
+  IF v_active > 0 OR EXISTS(
+    SELECT 1 FROM public.contract_role_assignments r
+     WHERE r.contract_id=p_contract_id AND r.identity_id=p_identity_id
+       AND r.status IN ('PENDING','ACTIVE','SUSPENDED')
+  ) THEN
     RAISE EXCEPTION 'ACTIVE_GRANTS_STILL_EXIST';
   END IF;
   UPDATE public.contract_named_seats SET status='RELEASED',updated_at=now()
