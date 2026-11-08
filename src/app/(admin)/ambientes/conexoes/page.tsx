@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ConnectionForm } from './form';
+import { EnvironmentCompanyForm } from './company-form';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,11 @@ export default async function EnvironmentConnectionsPage() {
     .neq('status', 'RETIRED')
     .neq('status', 'SUSPENDED');
   const extensionDb = db as unknown as SupabaseClient;
+  const [clientResult, mappingResult] = await Promise.all([
+    db.from('clients').select('id,legal_name,trade_name').eq('status','ACTIVE'),
+    extensionDb.from('environment_company_bindings')
+      .select('environment_id,client_id,remote_company_id'),
+  ]);
   const { data: connections, error: connectionsError } = await extensionDb
     .from('environment_connections')
     .select('environment_id,project_url,status,verified_at');
@@ -28,7 +34,7 @@ export default async function EnvironmentConnectionsPage() {
           não são exibidas depois do registro.
         </p>
       </div>
-      {envError || connectionsError ? (
+      {envError || connectionsError || clientResult.error || mappingResult.error ? (
         <p role="alert" className="rounded-md border p-4 text-sm">
           A estrutura de conexões ainda não está disponível neste banco.
           Aplique e valide as migrações aditivas antes de habilitar esta operação.
@@ -39,6 +45,25 @@ export default async function EnvironmentConnectionsPage() {
             id: e.id,
             label: `${e.environment} / implantação ${e.deployment_id.slice(0, 8)}`,
           }))} />
+          <EnvironmentCompanyForm
+            environments={(envs ?? []).map(e => ({
+              id: e.id,
+              label: `${e.environment} / implantação ${e.deployment_id.slice(0,8)}`,
+            }))}
+            clients={(clientResult.data ?? []).map(c => ({
+              id: c.id, label: c.trade_name || c.legal_name,
+            }))}
+          />
+          <section className="rounded-lg border p-4">
+            <h2 className="mb-2 font-semibold">Empresas vinculadas</h2>
+            <ul className="space-y-1 text-sm">
+              {(mappingResult.data ?? []).map(m => (
+                <li key={m.environment_id + ':' + m.client_id}>
+                  {m.client_id} / {m.environment_id}: {m.remote_company_id}
+                </li>
+              ))}
+            </ul>
+          </section>
           <section className="rounded-lg border p-4">
             <h2 className="mb-3 font-semibold">Conexões registradas</h2>
             {!connections?.length ? (
