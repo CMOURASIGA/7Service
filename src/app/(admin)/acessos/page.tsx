@@ -197,6 +197,9 @@ export default async function AccessManagementPage({
         ) : null}
       </div>
       <div className="flex flex-wrap gap-3 text-sm">
+        <Link className="text-blue-700 underline" href="/acessos/provisionamento">
+          Ver operações de provisionamento
+        </Link>
         <Link className="text-blue-700 underline" href="/clientes/novo">
           Cadastrar cliente
         </Link>
