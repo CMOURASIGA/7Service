@@ -108,3 +108,28 @@ Vercel returned build-rate-limit failures for recent commits. A previous preview
 - The 7Commander destination adapter is intentionally deferred because another developer is modifying that product.
 - Latest GitHub Vercel check is blocked by the account's build-rate-limit; lint, typecheck, Vitest and full build on the latest SHA are unverified.
 - `SERVICE_DESTINATION_PROVISIONING_ENABLED` and `SERVICE_NAMED_SEATS_CUTOVER_ENABLED` remain disabled by default.
+
+
+## Additional implementation | 2026-11-08 | 7Service-only completion preparation
+
+- `20261108182500_existing_deployment_group_company.sql` and Ambientes UI:
+  attach an existing company to an existing deployment, including dedicated
+  installations, with same-group and product-entitlement enforcement.
+- `src/lib/integrations/supabase-product-adapter.ts` + tests:
+  standard `service_apply_profile_v1` and `service_read_profile_v1` RPC
+  adapter with receipt shape validation and independent readback.
+- `20261108183000_contract_role_provisioning_atomic.sql`:
+  service-only, audited transaction boundary for prepared and remotely confirmed
+  profile grants; confirms central identity, active contract, group eligibility,
+  named seat, company mapping, product role and verified destination again.
+- `src/app/(admin)/acessos/atribuicoes/provisioning-actions.ts`:
+  server-only coordinator, disabled by default, with reconciliation on error.
+- Product integration protocol documented in
+  `docs/DESTINATION_PROVISIONING_CONTRACT_V1.md`.
+- Vercel account build-rate-limit still blocks final CI verification.
+- All 12 staged SQL migrations inspected via GitHub: static safety gate PASS.
+  This does not validate SQL runtime, migration application or integration tests.
+
+**Current definitive cutover rule:** no production change, no new database,
+no 7Commander code change, and no activation of provisioning flags without
+successful QA migration plus product adapter E2E.
