@@ -9,7 +9,13 @@ BEGIN
  IF (auth.jwt()->>'role') IS DISTINCT FROM 'service_role' THEN
   RAISE EXCEPTION 'SERVICE_ROLE_REQUIRED' USING ERRCODE='42501';
  END IF;
- IF NOT EXISTS(SELECT 1 FROM public.internal_users WHERE id=p_actor AND status='ACTIVE')
+ IF NOT EXISTS (
+    SELECT 1 FROM public.internal_users u
+    JOIN public.internal_user_roles ur ON ur.internal_user_id=u.id
+    JOIN public.internal_role_permissions rp ON rp.role_id=ur.role_id
+    JOIN public.internal_permissions ip ON ip.id=rp.permission_id
+    WHERE u.id=p_actor AND u.status='ACTIVE' AND ip.code='clients.manage'
+  )
   OR NOT EXISTS(SELECT 1 FROM public.clients WHERE id=p_client AND status='ACTIVE') THEN
   RAISE EXCEPTION 'OPERATOR_OR_COMPANY_NOT_ELIGIBLE' USING ERRCODE='42501';
  END IF;
