@@ -129,3 +129,32 @@ export async function reactivateContractRole(
   revalidatePath('/acessos/atribuicoes');
   return { error: null, success: 'Reativação solicitada. O acesso ficará pendente até confirmação no produto.' };
 }
+
+/**
+ * Turns a successfully remote-suspended access into permanent revocation.
+ * No second remote operation is issued and the named seat is not freed here.
+ */
+export async function finalizeSuspendedRoleRevocation(
+  _previous: RoleLifecycleState,
+  form: FormData,
+): Promise<RoleLifecycleState> {
+  const { internalUser } = await requirePermission('users.access.manage');
+  if (process.env.SERVICE_PRODUCT_PROFILE_PROVISIONING_ENABLED !== 'true')
+    return { error: 'Finalização desabilitada até homologação dos perfis de destino.' };
+  const parsed = z.object({
+    assignmentId: uuid,
+    reason: z.string().trim().min(5).max(500),
+  }).safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { error: 'Atribuição ou justificativa inválida.' };
+  const db = createAdminClient() as unknown as SupabaseClient;
+  const { error } = await db.rpc('finalize_suspended_contract_role_atomic', {
+    p_actor: internalUser.id,
+    p_assignment: parsed.data.assignmentId,
+    p_reason: parsed.data.reason,
+  });
+  if (error) return {
+    error: 'Revogação definitiva recusada. Verifique confirmação remota e operações pendentes.',
+  };
+  revalidatePath('/acessos/atribuicoes');
+  return { error: null, success: 'Acesso revogado definitivamente, com licença preservada até conciliação.' };
+}
