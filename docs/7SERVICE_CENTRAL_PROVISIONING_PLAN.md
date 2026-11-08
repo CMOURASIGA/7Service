@@ -79,3 +79,32 @@ Vercel returned build-rate-limit failures for recent commits. A previous preview
 
 ### Safety gate
 `SERVICE_DESTINATION_PROVISIONING_ENABLED` defaults to disabled. Do not enable it before applying verified migrations, reconciling seats, implementing product profile adapters, and completing the E2E authorization test.
+
+
+## Continuation evidence | 2026-11-08 (second development session)
+
+**Delivered on `develop`:**
+- `provisioning-reconciliation.ts` plus tests: strict mismatch handling for identity, company, role and remote receipt.
+- `/acessos/provisionamento`: read-only reconciliation ledger.
+- `/acessos/atribuicoes`: company/product/installation/role request UI with server-side atomic RPC, assignments remain `PENDING`.
+- `/clientes/licencas`: manual SHADOW reconciliation and a separate feature-flagged cutover operation.
+- `20261108182000_contract_seat_reconciliation.sql`: legacy backfill, contract-level distinct users, entitlement and company diagnostics, duplicate legacy role checks, controlled ENFORCED activation.
+- `20261108181500_provisioning_reconciliation_atomic.sql`: auditable classification of uncertain Auth interactions.
+- Additional checks: existing contract validity, actor permission, original-contract preservation, preventing seat release while any assignment is effective/pending.
+- `npm run test:migration-safety` command for static checks (not yet run by npm on the repository).
+
+**Verified directly against the existing 7Service schema with read-only queries:**
+- Contracts: 2. Subscriptions: 3. Identities: 6. Product grants: 7.
+- Unique nominal identity/contract pairs with pending/active/suspended grants: 5.
+- Historical duplicate/conflicting role groups: 0. Revoked grants: 1.
+- Existing data remains untouched.
+
+**Static GitHub SQL audit:** ten staged `20261108*.sql` migration files checked; PASS for forbidden destructive DDL/DML, transaction boundaries, public writes, uniqueness/cutover gates. This does NOT prove the SQL will execute successfully in PostgreSQL.
+
+**Unresolved release gates:**
+- No migrations applied.
+- No real provisioner readback or connector E2E PASS.
+- Current product authorization RPC still enforces legacy per-subscription limits.
+- The 7Commander destination adapter is intentionally deferred because another developer is modifying that product.
+- Latest GitHub Vercel check is blocked by the account's build-rate-limit; lint, typecheck, Vitest and full build on the latest SHA are unverified.
+- `SERVICE_DESTINATION_PROVISIONING_ENABLED` and `SERVICE_NAMED_SEATS_CUTOVER_ENABLED` remain disabled by default.
