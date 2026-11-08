@@ -12,7 +12,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.mts",
-    "test:all": "npm run test && npm run test:integration"
+    "test:all": "npm run test && npm run test:integration",
+    "test:migration-safety": "node scripts/check-central-provisioning-migrations.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
