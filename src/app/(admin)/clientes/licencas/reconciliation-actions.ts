@@ -14,6 +14,7 @@ export type ContractReconciliationResult = {
     missingSeats: number;
     missingProducts: number;
     outsideCompanies: number;
+    conflictingRoles: number;
     ready: boolean;
   };
   success?: string;
@@ -48,6 +49,7 @@ export async function reconcileContractSeats(
       missingSeats: number('missing_seats'),
       missingProducts: number('missing_products'),
       outsideCompanies: number('companies_outside_contract'),
+      conflictingRoles: number('legacy_role_conflicts'),
       ready: value.ready === true,
     },
   };
