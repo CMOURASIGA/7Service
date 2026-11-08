@@ -98,3 +98,27 @@ export async function manageEnvironment(
   revalidatePath('/ambientes');
   return { error: null, success: 'Operação realizada e registrada na auditoria.' };
 }
+
+/** Vincula uma empresa contratada a uma instalação já existente, sem criar banco. */
+export async function attachCompanyToExistingDeployment(
+  _previous: EnvironmentFormState,
+  formData: FormData,
+): Promise<EnvironmentFormState> {
+  const { internalUser } = await requirePermission('clients.manage');
+  const parsed = z.object({
+    deploymentId: z.string().uuid(),
+    clientId: z.string().uuid(),
+  }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: 'Selecione uma empresa e implantação válidas.' };
+  const { error } = await (createAdminClient() as unknown as import('@supabase/supabase-js').SupabaseClient)
+    .rpc('attach_group_company_to_deployment_atomic', {
+      p_actor: internalUser.id,
+      p_deployment: parsed.data.deploymentId,
+      p_client: parsed.data.clientId,
+    });
+  if (error) return {
+    error: 'Vínculo recusado. Verifique grupo empresarial, produto contratado e instalação de destino.',
+  };
+  revalidatePath('/ambientes');
+  return { error: null, success: 'Empresa associada à implantação existente, sem criar infraestrutura.' };
+}
