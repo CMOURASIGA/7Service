@@ -24,7 +24,7 @@ const customerSteps: Step[] = [
   {
     title: 'Conferir o produto',
     description:
-      'Em Produtos, confirme o 7Commander ativo. Para 7Clinic, o catálogo não cria uma aplicação nem ativa uma integração.',
+      'Em Produtos, confirme que o produto contratado está ativo. O cadastro no catálogo não cria a aplicação nem ativa sua integração.',
     href: '/produtos',
     linkLabel: 'Consultar produtos',
   },
@@ -59,7 +59,7 @@ const customerSteps: Step[] = [
   {
     title: 'Verificar provisionamento no produto',
     description:
-      'No 7Commander, a conta local do Auth, o vínculo da identidade central, a empresa e o membership são obrigatórios. A integração não provisiona tudo automaticamente.',
+      'No sistema contratado, confirme a conta de autenticação, o vínculo com a identidade central, a empresa e as permissões locais, quando exigidos por sua integração. O 7Service não provisiona automaticamente todos os sistemas.',
   },
   {
     title: 'Validar login e permissões',
@@ -72,31 +72,31 @@ const colleagueSteps: Step[] = [
   {
     title: 'Escolher a organização existente',
     description:
-      'Para colaboradores da CONSULT SERVICES ou 7CONSULTING, use a empresa já cadastrada no 7Commander.',
+      'Para colaboradores internos ou usuários de empresas existentes, use a organização já cadastrada e evite duplicidade de empresas.',
   },
   {
     title: 'Distinguir perfil interno e acesso ao produto',
     description:
-      'SUPER_ADMIN no 7Service é administração interna; não equivale automaticamente a uma licença do Commander.',
+      'SUPER_ADMIN no 7Service é administração interna; não equivale automaticamente a uma licença ou acesso em outro produto.',
     href: '/administracao/operadores',
     linkLabel: 'Administração interna',
   },
   {
     title: 'Configurar identidade e concessão central, se aplicável',
     description:
-      'Vincule a identidade à empresa, confirme assinatura COMMANDER7 e atribua o perfil de produto correto.',
+      'Vincule a identidade à empresa, confirme uma assinatura ativa do produto solicitado e atribua o perfil correto.',
     href: '/usuarios',
     linkLabel: 'Abrir usuários',
   },
   {
-    title: 'Conferir o usuário no 7Commander',
+    title: 'Conferir o usuário no sistema de destino',
     description:
-      'A conta local, a associação central e a participação na organização precisam existir. Esse provisionamento ainda requer atuação técnica.',
+      'Verifique se o sistema de destino exige conta local, associação central e participação na organização. Quando não houver provisionamento automático, solicite a etapa técnica.',
   },
   {
     title: 'Testar acesso efetivo',
     description:
-      'Valide Projetos, Clientes, Atividades, mudança de organização e restrições do papel concedido.',
+      'Valide os módulos do produto contratado, a organização selecionada, a troca de empresa (quando aplicável) e as restrições do papel concedido.',
   },
 ];
 
@@ -143,13 +143,20 @@ export default async function HelpPage() {
       <section className="rounded-xl border border-blue-200 bg-blue-50 p-5">
         <h2 className="font-semibold text-blue-950">Antes de começar</h2>
         <p className="mt-2 text-sm text-blue-950">
-          O 7Service controla identidades, empresas, assinaturas e concessões. O 7Commander mantém
-          sua própria autenticação, organizações e permissões. Apenas cadastrar a pessoa no 7Service
-          não libera automaticamente o acesso ao Commander.
+          O 7Service controla identidades, empresas, assinaturas e concessões de acesso aos produtos
+          da Consult Services. Cada sistema contratado pode manter autenticação, organizações e
+          permissões próprias. Cadastrar uma pessoa no 7Service não garante, isoladamente, o acesso
+          ao produto. É necessário conferir a concessão e a integração específica de cada sistema.
         </p>
       </section>
-      <Procedure title="Cenário 1. Novo cliente de 7Commander ou 7Clinic" steps={customerSteps} />
-      <Procedure title="Cenário 2. Novo colaborador no 7Commander" steps={colleagueSteps} />
+      <Procedure
+        title="Cenário 1. Novo cliente de qualquer produto Consult Services"
+        steps={customerSteps}
+      />
+      <Procedure
+        title="Cenário 2. Novo usuário de uma empresa ou produto existente"
+        steps={colleagueSteps}
+      />
       <section className="rounded-xl border p-5">
         <h2 className="font-semibold">Checklist de liberação</h2>
         <ul className="mt-3 list-inside list-disc space-y-2 text-sm text-slate-700">
@@ -162,10 +169,11 @@ export default async function HelpPage() {
         </ul>
       </section>
       <section className="rounded-xl border border-amber-200 bg-amber-50 p-5">
-        <h2 className="font-semibold text-amber-950">Atenção ao 7Clinic</h2>
+        <h2 className="font-semibold text-amber-950">Atenção à integração de produtos</h2>
         <p className="mt-2 text-sm text-amber-950">
-          Cadastrar o 7Clinic no catálogo não implanta uma instância da clínica e não ativa login
-          central automaticamente. Valide a integração técnica antes de liberar clientes.
+          Cadastrar qualquer produto no catálogo não implanta automaticamente a aplicação nem
+          habilita login central. Confira o provisionamento e os requisitos técnicos de cada produto
+          antes de liberar clientes. Exemplos: 7Commander e 7Clinic.
         </p>
       </section>
     </main>
