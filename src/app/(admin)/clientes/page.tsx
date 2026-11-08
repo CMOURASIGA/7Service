@@ -63,6 +63,10 @@ export default async function ClientsPage({
           <p className="text-muted text-sm">Cadastro completo, sem exclusão física</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/clientes/licencas"
+            className="rounded-md border px-4 py-2 text-sm font-medium text-brand-700">
+            Licenças por contrato
+          </Link>
           <Link href="/clientes/grupos"
             className="rounded-md border px-4 py-2 text-sm font-medium text-brand-700">
             Grupos empresariais
