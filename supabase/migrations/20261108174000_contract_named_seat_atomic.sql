@@ -19,7 +19,7 @@ DECLARE
   v_current text;
 BEGIN
   -- Never allow a public API caller to bypass the authenticated server flow.
-  IF auth.role() IS DISTINCT FROM 'service_role' THEN
+  IF (auth.jwt() ->> 'role') IS DISTINCT FROM 'service_role' THEN
     RAISE EXCEPTION 'SERVICE_ROLE_REQUIRED' USING ERRCODE = '42501';
   END IF;
   -- Acquire a transaction-scoped lock per contract, preventing overbooking.
@@ -93,7 +93,7 @@ SET search_path = ''
 AS $$
 DECLARE v_active integer;
 BEGIN
-  IF auth.role() IS DISTINCT FROM 'service_role' THEN
+  IF (auth.jwt() ->> 'role') IS DISTINCT FROM 'service_role' THEN
     RAISE EXCEPTION 'SERVICE_ROLE_REQUIRED' USING ERRCODE = '42501';
   END IF;
   PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(p_contract_id::text,0));
