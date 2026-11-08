@@ -25,7 +25,13 @@ BEGIN
  IF (auth.jwt()->>'role') IS DISTINCT FROM 'service_role' THEN
    RAISE EXCEPTION 'SERVICE_ROLE_REQUIRED' USING ERRCODE='42501';
  END IF;
- IF NOT EXISTS(SELECT 1 FROM public.internal_users WHERE id=p_actor AND status='ACTIVE') THEN
+ IF NOT EXISTS(
+   SELECT 1 FROM public.internal_users u
+   JOIN public.internal_user_roles ur ON ur.internal_user_id=u.id
+   JOIN public.internal_role_permissions rp ON rp.role_id=ur.role_id
+   JOIN public.internal_permissions ip ON ip.id=rp.permission_id
+   WHERE u.id=p_actor AND u.status='ACTIVE' AND ip.code='users.access.manage'
+ ) THEN
    RAISE EXCEPTION 'ACTOR_NOT_ALLOWED' USING ERRCODE='42501';
  END IF;
  SELECT a.identity_id,a.client_id,s.product_id,s.contract_id
@@ -36,6 +42,8 @@ BEGIN
    JOIN public.client_memberships m ON m.id=a.membership_id
    WHERE a.id=p_access AND a.status IN ('ACTIVE','PENDING')
      AND i.status IN ('ACTIVE','PENDING_INVITE') AND m.status='ACTIVE' AND s.status='ACTIVE'
+     AND s.start_date<=current_date
+     AND (s.end_date IS NULL OR s.end_date + coalesce(s.grace_days,0)>=current_date)
      AND m.client_id=a.client_id AND m.identity_id=a.identity_id
    FOR UPDATE OF a;
  IF NOT FOUND THEN RAISE EXCEPTION 'NO_EFFECTIVE_CENTRAL_GRANT' USING ERRCODE='42501'; END IF;
@@ -95,7 +103,13 @@ BEGIN
  IF (auth.jwt()->>'role') IS DISTINCT FROM 'service_role' THEN
    RAISE EXCEPTION 'SERVICE_ROLE_REQUIRED' USING ERRCODE='42501';
  END IF;
- IF NOT EXISTS(SELECT 1 FROM public.internal_users WHERE id=p_actor AND status='ACTIVE') THEN
+ IF NOT EXISTS(
+   SELECT 1 FROM public.internal_users u
+   JOIN public.internal_user_roles ur ON ur.internal_user_id=u.id
+   JOIN public.internal_role_permissions rp ON rp.role_id=ur.role_id
+   JOIN public.internal_permissions ip ON ip.id=rp.permission_id
+   WHERE u.id=p_actor AND u.status='ACTIVE' AND ip.code='users.access.manage'
+ ) THEN
    RAISE EXCEPTION 'ACTOR_NOT_ALLOWED' USING ERRCODE='42501';
  END IF;
  SELECT environment_id,identity_id,status INTO v_env,v_identity,v_status
