@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ContractLicensingForms } from './forms';
+import { ContractReconciliation } from './reconciliation-form';
 export const dynamic = 'force-dynamic';
 export default async function ContractLicensingPage() {
   await requirePermission('contracts.manage');
@@ -38,6 +39,10 @@ export default async function ContractLicensingPage() {
         contracts={(contracts.data??[]).map(c=>({id:c.id,label:c.reference}))}
         groups={(groups.data??[]).map(g=>({id:g.id,label:g.name}))}
         products={(products.data??[]).map(p=>({id:p.id,label:p.name}))}
+      />
+      <ContractReconciliation
+        contracts={(contracts.data??[]).map(c=>({id:c.id,label:c.reference}))}
+        allowCutover={process.env.SERVICE_NAMED_SEATS_CUTOVER_ENABLED === 'true'}
       />
       <section className="space-y-3">
         <h2 className="font-semibold">Visão contratual</h2>
