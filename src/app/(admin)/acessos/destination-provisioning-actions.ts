@@ -31,12 +31,21 @@ export async function inviteDestinationIdentity(
 
   const db = createAdminClient();
   const ext = db as unknown as SupabaseClient;
+  const flag = process.env.SERVICE_DESTINATION_PROVISIONING_ENABLED;
+  if (flag !== 'true') return { error: 'Provisionamento não autorizado neste ambiente.' };
   const { data: requestId, error: prepareError } = await ext.rpc(
     'prepare_destination_invitation_atomic',
     { p_actor: internalUser.id, p_access: accessId, p_environment: environmentId },
   );
   if (prepareError || typeof requestId !== 'string' || !uuid.test(requestId))
     return { error: 'A concessão não está elegível. Verifique licença, empresa, ambiente e conexão.' };
+
+  async function requireReconciliation(reason: 'DESTINATION_AUTH_RESPONSE_UNKNOWN' |
+    'DESTINATION_AUTH_ACCOUNT_LINK_UNCONFIRMED' | 'DESTINATION_METADATA_UNAVAILABLE') {
+    await ext.rpc('mark_provisioning_reconciliation_atomic', {
+      p_actor: internalUser.id, p_request: requestId, p_reason: reason,
+    });
+  }
 
   const [operation, environment, connection, grant] = await Promise.all([
     ext.from('provisioning_operations').select('identity_id').eq('request_id', requestId).single(),
@@ -48,7 +57,10 @@ export async function inviteDestinationIdentity(
   ]);
   if (operation.error || environment.error || connection.error || grant.error ||
       !operation.data || !environment.data || !connection.data || !grant.data)
-    return { error: 'Preparação registrada, mas faltam dados para provisionar. Exige reconciliação.' };
+    {
+      await requireReconciliation('DESTINATION_METADATA_UNAVAILABLE');
+      return { error: 'Preparação registrada, mas faltam dados para provisionar. Exige reconciliação.' };
+    }
 
   const [identity, subscription] = await Promise.all([
     db.from('identities').select('email').eq('id',operation.data.identity_id).single(),
@@ -56,7 +68,10 @@ export async function inviteDestinationIdentity(
       .eq('id',grant.data.subscription_id).single(),
   ]);
   if (identity.error || subscription.error || !identity.data || !subscription.data)
-    return { error: 'Identidade ou assinatura indisponível. Exige reconciliação.' };
+    {
+      await requireReconciliation('DESTINATION_METADATA_UNAVAILABLE');
+      return { error: 'Identidade ou assinatura indisponível. Exige reconciliação.' };
+    }
 
   const intent: ProvisioningIntent = {
     requestId, operation: 'INVITE',
@@ -77,6 +92,7 @@ export async function inviteDestinationIdentity(
     );
     localAuthUserId = result.localAuthUserId;
   } catch {
+    await requireReconciliation('DESTINATION_AUTH_RESPONSE_UNKNOWN');
     return { error: 'Convite não confirmado no destino. Não repita até conciliar a operação.' };
   }
 
@@ -85,8 +101,10 @@ export async function inviteDestinationIdentity(
     p_remote_auth_user: localAuthUserId,
     p_remote_email: intent.email,
   });
-  if (finalizeError)
+  if (finalizeError) {
+    await requireReconciliation('DESTINATION_AUTH_ACCOUNT_LINK_UNCONFIRMED');
     return { error: 'Conta remota criada, mas vínculo central pendente. Exige reconciliação manual.' };
+  }
 
   revalidatePath('/acessos');
   return {
