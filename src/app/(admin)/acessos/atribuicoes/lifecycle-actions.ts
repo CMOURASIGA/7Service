@@ -55,11 +55,12 @@ export async function revokeContractRole(
   const request = instruction.safeParse(prepared);
   if (!request.success)
     return { error: 'Bloqueio central iniciado. Resposta inválida, exige reconciliação.' };
+  const payload = request.data;
 
   async function reconcile(): Promise<boolean> {
     const { error } = await db.rpc('mark_provisioning_reconciliation_atomic', {
       p_actor: internalUser.id,
-      p_request: request.data.requestId,
+      p_request: payload.requestId,
       p_reason: 'DESTINATION_PROFILE_UNVERIFIED',
     });
     return !error;
@@ -83,10 +84,10 @@ export async function revokeContractRole(
     const adapter = createSupabaseProductProvisioningAdapter(
       connection.project_url, connection.encrypted_admin_key as SealedCredential,
     );
-    const result = await verifyProductProvisioning(adapter, request.data);
+    const result = await verifyProductProvisioning(adapter, payload);
     const { error } = await db.rpc('confirm_contract_role_revocation_atomic', {
       p_actor: internalUser.id,
-      p_request: request.data.requestId,
+      p_request: payload.requestId,
       p_remote_auth: result.remoteAuthUserId,
       p_remote_company: result.remoteCompanyId,
       p_product_code: result.productCode,
