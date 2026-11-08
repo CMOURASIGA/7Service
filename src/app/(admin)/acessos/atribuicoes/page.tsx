@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ContractRoleAssignmentForm } from './form';
+import { PendingRoleProvisioningControl } from './provisioning-control';
 
 export const dynamic = 'force-dynamic';
 export default async function ContractRoleAssignmentsPage() {
@@ -75,6 +76,7 @@ export default async function ContractRoleAssignmentsPage() {
                   <th className="p-3">Empresa</th>
                   <th className="p-3">Produto e perfil</th>
                   <th className="p-3">Situação</th>
+                  <th className="p-3">Confirmação</th>
                 </tr>
               </thead>
               <tbody>
@@ -87,6 +89,11 @@ export default async function ContractRoleAssignmentsPage() {
                       <p className="text-muted text-xs">{roleMap.get(a.role_id)??a.role_id}</p>
                     </td>
                     <td className="p-3">{a.status}</td>
+                    <td className="p-3">
+                      {process.env.SERVICE_PRODUCT_PROFILE_PROVISIONING_ENABLED === 'true' && a.status === 'PENDING' ? (
+                        <PendingRoleProvisioningControl assignmentId={a.id}/>
+                      ) : <span className="text-muted text-xs">Não habilitado</span>}
+                    </td>
                   </tr>
                 ))}
               </tbody>
