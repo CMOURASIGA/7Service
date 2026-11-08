@@ -10,8 +10,13 @@ BEGIN
   IF (auth.jwt()->>'role') IS DISTINCT FROM 'service_role' THEN
     RAISE EXCEPTION 'SERVICE_ROLE_REQUIRED' USING ERRCODE='42501';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM public.internal_users
-    WHERE id=p_actor AND status='ACTIVE') THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.internal_users u
+    JOIN public.internal_user_roles ur ON ur.internal_user_id=u.id
+    JOIN public.internal_role_permissions rp ON rp.role_id=ur.role_id
+    JOIN public.internal_permissions ip ON ip.id=rp.permission_id
+    WHERE u.id=p_actor AND u.status='ACTIVE' AND ip.code='contracts.manage'
+  ) THEN
     RAISE EXCEPTION 'ACTOR_NOT_ALLOWED' USING ERRCODE='42501';
   END IF;
   IF p_license_limit IS NULL OR p_license_limit < 0 THEN
@@ -68,7 +73,13 @@ BEGIN
   IF (auth.jwt()->>'role') IS DISTINCT FROM 'service_role' THEN
     RAISE EXCEPTION 'SERVICE_ROLE_REQUIRED' USING ERRCODE='42501';
   END IF;
-  IF NOT EXISTS(SELECT 1 FROM public.internal_users WHERE id=p_actor AND status='ACTIVE') THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.internal_users u
+    JOIN public.internal_user_roles ur ON ur.internal_user_id=u.id
+    JOIN public.internal_role_permissions rp ON rp.role_id=ur.role_id
+    JOIN public.internal_permissions ip ON ip.id=rp.permission_id
+    WHERE u.id=p_actor AND u.status='ACTIVE' AND ip.code='contracts.manage'
+  ) THEN
     RAISE EXCEPTION 'ACTOR_NOT_ALLOWED' USING ERRCODE='42501';
   END IF;
   SELECT client_id INTO v_owner FROM public.contracts WHERE id=p_contract;
