@@ -53,6 +53,13 @@ BEGIN
     RAISE EXCEPTION 'DESTINATION_AUTH_OR_COMPANY_NOT_LINKED';
   END IF;
 
+  IF EXISTS (
+    SELECT 1 FROM public.provisioning_operations op
+    WHERE op.role_assignment_id=p_assignment
+      AND op.operation IN ('GRANT','REVOKE')
+      AND op.status IN ('PENDING','RUNNING','RECONCILIATION_REQUIRED')
+  ) THEN RAISE EXCEPTION 'DESTINATION_OPERATION_ALREADY_PENDING'; END IF;
+
   -- Fail closed centrally immediately. Leave nominal seat reserved.
   UPDATE public.contract_role_assignments SET status='SUSPENDED',updated_at=now()
     WHERE id=p_assignment;
@@ -187,7 +194,7 @@ BEGIN
     )
     AND NOT EXISTS (
       SELECT 1 FROM public.provisioning_operations op
-      WHERE op.role_assignment_id=r.id AND op.operation='REVOKE'
+      WHERE op.role_assignment_id=r.id AND op.operation IN ('GRANT','REVOKE')
         AND op.status IN ('PENDING','RUNNING','RECONCILIATION_REQUIRED')
     )
     AND EXISTS (
