@@ -146,12 +146,29 @@ BEGIN
   JOIN public.contract_role_assignments r ON r.id=v_assignment
   JOIN public.product_roles pr ON pr.id=r.role_id
   JOIN public.products p ON p.id=r.product_id
+  JOIN public.contracts c ON c.id=r.contract_id
+  JOIN public.contract_seat_pools pool ON pool.contract_id=c.id
+  JOIN public.contract_named_seats seat
+    ON seat.contract_id=c.id AND seat.identity_id=r.identity_id
+  JOIN public.client_memberships m
+    ON m.identity_id=r.identity_id AND m.client_id=r.company_id
+  JOIN public.identities identity ON identity.id=r.identity_id
+  JOIN public.contract_product_entitlements entitlement
+    ON entitlement.contract_id=c.id AND entitlement.product_id=r.product_id
+  JOIN public.product_environments pe ON pe.id=r.environment_id
+  JOIN public.environment_connections conn ON conn.environment_id=pe.id
   WHERE a.environment_id=v_env AND a.identity_id=v_identity
    AND a.remote_auth_user_id=p_remote_auth
    AND b.environment_id=v_env AND b.client_id=r.company_id
    AND b.remote_company_id=p_remote_company
    AND pr.code=p_role_code AND p.code=p_product_code
    AND r.status='PENDING'
+   AND c.status='ACTIVE' AND c.start_date<=current_date
+   AND (c.end_date IS NULL OR c.end_date>=current_date)
+   AND pool.enforcement_mode='ENFORCED'
+   AND seat.status IN ('RESERVED','ACTIVE')
+   AND m.status='ACTIVE' AND identity.status='ACTIVE'
+   AND pe.status='ACTIVE' AND conn.status='VERIFIED'
  ) THEN RAISE EXCEPTION 'REMOTE_PROFILE_RECEIPT_MISMATCH' USING ERRCODE='42501'; END IF;
  IF length(trim(coalesce(p_revision,''))) NOT BETWEEN 8 AND 128 THEN
   RAISE EXCEPTION 'INVALID_REMOTE_REVISION';
