@@ -61,3 +61,27 @@ export async function verifyAndSaveConnection(
   revalidatePath('/ambientes/conexoes');
   return { error: null, success: 'Conexão verificada e registrada com credencial criptografada.' };
 }
+
+const companyBindingSchema = z.object({
+  environmentId: z.string().uuid(),
+  clientId: z.string().uuid(),
+  remoteCompanyId: z.string().trim().min(1).max(128),
+});
+
+export async function bindExistingCompanyToEnvironment(
+  _previous: ConnectionState, form: FormData,
+): Promise<ConnectionState> {
+  const { internalUser } = await requirePermission('clients.manage');
+  const parsed = companyBindingSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { error: 'Informe ambiente, empresa e identificador remoto válidos.' };
+  const db = createAdminClient() as unknown as SupabaseClient;
+  const { error } = await db.rpc('bind_environment_company_atomic', {
+    p_actor: internalUser.id,
+    p_environment: parsed.data.environmentId,
+    p_client: parsed.data.clientId,
+    p_remote_company: parsed.data.remoteCompanyId,
+  });
+  if (error) return { error: 'Empresa não vinculada. Confira implantação, conexão e unicidade.' };
+  revalidatePath('/ambientes/conexoes');
+  return { error: null, success: 'Empresa vinculada à instalação com registro de auditoria.' };
+}
