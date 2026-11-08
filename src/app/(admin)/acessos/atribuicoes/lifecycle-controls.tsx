@@ -1,7 +1,9 @@
 'use client';
 
 import { useActionState } from 'react';
-import { reactivateContractRole, revokeContractRole } from './lifecycle-actions';
+import {
+  reactivateContractRole, revokeContractRole, finalizeSuspendedRoleRevocation,
+} from './lifecycle-actions';
 
 export function RoleLifecycleControls({
   assignmentId, status,
@@ -9,6 +11,9 @@ export function RoleLifecycleControls({
   const [revocation, revoke, revoking] = useActionState(revokeContractRole, { error: null });
   const [reactivation, reactivate, reactivating] = useActionState(
     reactivateContractRole, { error: null },
+  );
+  const [finalization, finalize, finalizing] = useActionState(
+    finalizeSuspendedRoleRevocation, { error: null },
   );
   if (status === 'ACTIVE' || status === 'PENDING') {
     return (
@@ -31,15 +36,28 @@ export function RoleLifecycleControls({
   }
   if (status === 'SUSPENDED') {
     return (
-      <form action={reactivate} className="flex min-w-52 flex-col gap-2">
-        <input type="hidden" name="assignmentId" value={assignmentId}/>
-        <button type="submit" disabled={reactivating}
-          className="rounded border border-blue-700 p-1 text-xs text-blue-700 disabled:opacity-50">
-          {reactivating ? 'Verificando...' : 'Solicitar reativação'}
-        </button>
-        {reactivation.error ? <p role="alert" className="text-xs text-red-700">{reactivation.error}</p> : null}
-        {reactivation.success ? <p role="status" className="text-xs">{reactivation.success}</p> : null}
-      </form>
+      <div className="flex min-w-52 flex-col gap-3">
+        <form action={reactivate} className="flex flex-col gap-2">
+          <input type="hidden" name="assignmentId" value={assignmentId}/>
+          <button type="submit" disabled={reactivating}
+            className="rounded border border-blue-700 p-1 text-xs text-blue-700 disabled:opacity-50">
+            {reactivating ? 'Verificando...' : 'Solicitar reativação'}
+          </button>
+          {reactivation.error ? <p role="alert" className="text-xs text-red-700">{reactivation.error}</p> : null}
+          {reactivation.success ? <p role="status" className="text-xs">{reactivation.success}</p> : null}
+        </form>
+        <form action={finalize} className="flex flex-col gap-2">
+          <input type="hidden" name="assignmentId" value={assignmentId}/>
+          <input name="reason" type="text" required minLength={5} maxLength={500}
+            className="rounded border p-1 text-xs" placeholder="Motivo da revogação definitiva"/>
+          <button type="submit" disabled={finalizing}
+            className="rounded border border-red-700 p-1 text-xs text-red-700 disabled:opacity-50">
+            {finalizing ? 'Verificando...' : 'Revogar definitivamente'}
+          </button>
+          {finalization.error ? <p role="alert" className="text-xs text-red-700">{finalization.error}</p> : null}
+          {finalization.success ? <p role="status" className="text-xs">{finalization.success}</p> : null}
+        </form>
+      </div>
     );
   }
   return <span className="text-xs text-slate-500">Sem ações disponíveis</span>;
