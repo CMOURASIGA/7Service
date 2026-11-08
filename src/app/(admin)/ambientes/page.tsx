@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { EnvironmentRegistry } from './registry';
@@ -51,6 +52,11 @@ export default async function AmbientesPage() {
           Banco por cliente, implantações e URLs. Um cadastro planejado não representa
           provisionamento.
         </p>
+      </div>
+      <div>
+        <Link href="/ambientes/conexoes" className="inline-flex rounded-md border px-4 py-2 text-sm font-medium text-brand-700">
+          Gerenciar conexões Supabase
+        </Link>
       </div>
       <EnvironmentRegistry
         clients={clientsResult.data ?? []}
