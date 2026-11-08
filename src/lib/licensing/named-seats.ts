@@ -27,7 +27,8 @@ export type SeatDecision =
   | { allowed: true; occupied: number; available: number; additionalSeats: 0 | 1 }
   | { allowed: false; reason: 'INVALID_POLICY' | 'OUTSIDE_CONTRACT' | 'ROLE_CONFLICT' | 'LIMIT_REACHED'; occupied: number; available: number };
 
-// Suspension preserves the nominal reservation. Only revocation releases it.\nconst occupiesSeat = (status: GrantStatus) => status !== 'REVOKED';
+// Suspension preserves the nominal reservation. Only revocation releases it.
+const occupiesSeat = (status: GrantStatus) => status !== 'REVOKED';
 
 /** One identity uses one contract seat even across products, companies and installations. */
 export function countNamedSeats(contractId: string, grants: readonly ContractSeatGrant[]): number {
