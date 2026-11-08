@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ConnectionForm } from './form';
@@ -13,7 +14,8 @@ export default async function EnvironmentConnectionsPage() {
     .select('id,environment,status,deployment_id')
     .neq('status', 'RETIRED')
     .neq('status', 'SUSPENDED');
-  const { data: connections, error: connectionsError } = await db
+  const extensionDb = db as unknown as SupabaseClient;
+  const { data: connections, error: connectionsError } = await extensionDb
     .from('environment_connections')
     .select('environment_id,project_url,status,verified_at');
   return (
