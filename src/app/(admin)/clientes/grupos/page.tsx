@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { GroupForms } from './forms';
@@ -7,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function CustomerGroupsPage() {
   await requirePermission('clients.manage');
-  const db = createAdminClient();
+  const db = createAdminClient() as unknown as SupabaseClient;
   const [groups, clients, members] = await Promise.all([
     db.from('customer_groups').select('id,name,status').order('name'),
     db.from('clients').select('id,legal_name,trade_name').eq('status','ACTIVE').order('legal_name'),
