@@ -4,6 +4,7 @@ import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ContractRoleAssignmentForm } from './form';
 import { PendingRoleProvisioningControl } from './provisioning-control';
+import { RoleLifecycleControls } from './lifecycle-controls';
 
 export const dynamic = 'force-dynamic';
 export default async function ContractRoleAssignmentsPage() {
@@ -77,6 +78,7 @@ export default async function ContractRoleAssignmentsPage() {
                   <th className="p-3">Produto e perfil</th>
                   <th className="p-3">Situação</th>
                   <th className="p-3">Confirmação</th>
+                  <th className="p-3">Suspensão e revogação</th>
                 </tr>
               </thead>
               <tbody>
@@ -92,6 +94,11 @@ export default async function ContractRoleAssignmentsPage() {
                     <td className="p-3">
                       {process.env.SERVICE_PRODUCT_PROFILE_PROVISIONING_ENABLED === 'true' && a.status === 'PENDING' ? (
                         <PendingRoleProvisioningControl assignmentId={a.id}/>
+                      ) : <span className="text-muted text-xs">Não habilitado</span>}
+                    </td>
+                    <td className="p-3">
+                      {process.env.SERVICE_PRODUCT_PROFILE_PROVISIONING_ENABLED === 'true' ? (
+                        <RoleLifecycleControls assignmentId={a.id} status={a.status} />
                       ) : <span className="text-muted text-xs">Não habilitado</span>}
                     </td>
                   </tr>
