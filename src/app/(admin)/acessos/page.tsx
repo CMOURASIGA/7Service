@@ -200,6 +200,9 @@ export default async function AccessManagementPage({
         <Link className="text-blue-700 underline" href="/acessos/provisionamento">
           Ver operações de provisionamento
         </Link>
+        <Link className="text-blue-700 underline" href="/acessos/atribuicoes">
+          Perfis por empresa e sistema
+        </Link>
         <Link className="text-blue-700 underline" href="/clientes/novo">
           Cadastrar cliente
         </Link>
