@@ -16,6 +16,7 @@ DECLARE
   v_missing integer;
   v_entitlement_missing integer;
   v_company_missing integer;
+  v_role_conflicts integer;
 BEGIN
   IF (auth.jwt()->>'role') IS DISTINCT FROM 'service_role' THEN
     RAISE EXCEPTION 'SERVICE_ROLE_REQUIRED' USING ERRCODE='42501';
@@ -94,6 +95,19 @@ BEGIN
         WHERE m.group_id=p.group_id AND m.client_id=a.client_id AND m.status='ACTIVE'
      ));
 
+  -- Legacy records can carry multiple active roles for the same person,
+  -- company and product. Do not silently choose one during migration.
+  SELECT count(*) INTO v_role_conflicts
+    FROM (
+      SELECT a.identity_id,a.client_id,s.product_id
+      FROM public.user_product_access a
+      JOIN public.subscriptions s ON s.id=a.subscription_id
+      WHERE s.contract_id=p_contract
+        AND a.status IN ('ACTIVE','PENDING','SUSPENDED')
+      GROUP BY a.identity_id,a.client_id,s.product_id
+      HAVING count(DISTINCT a.product_role_id)>1 OR count(*)>1
+    ) collisions;
+
   SELECT count(*) INTO v_missing
     FROM public.user_product_access a
     JOIN public.subscriptions s ON s.id=a.subscription_id
@@ -109,13 +123,15 @@ BEGIN
   VALUES(p_actor,'contract.named_seats_reconciled','contract',p_contract,'7service',
     jsonb_build_object('legacy_users',v_legacy,'occupied',v_occupied,'limit',v_limit,
       'missing_seats',v_missing,'missing_products',v_entitlement_missing,
-      'companies_outside_contract',v_company_missing,'mode','SHADOW'));
+      'companies_outside_contract',v_company_missing,
+      'legacy_role_conflicts',v_role_conflicts,'mode','SHADOW'));
 
   RETURN jsonb_build_object('legacy_users',v_legacy,'occupied',v_occupied,'limit',v_limit,
     'missing_seats',v_missing,'missing_products',v_entitlement_missing,
     'companies_outside_contract',v_company_missing,
+    'legacy_role_conflicts',v_role_conflicts,
     'ready',v_missing=0 AND v_entitlement_missing=0
-       AND v_company_missing=0 AND v_occupied<=v_limit);
+       AND v_company_missing=0 AND v_role_conflicts=0 AND v_occupied<=v_limit);
 END;
 $$;
 REVOKE ALL ON FUNCTION public.reconcile_contract_named_seats_atomic(uuid,uuid)
