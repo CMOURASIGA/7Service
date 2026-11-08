@@ -39,6 +39,7 @@ export function ContractReconciliation({ contracts, allowCutover }: {
           <p>Licenças faltantes: {status.summary.missingSeats}</p>
           <p>Produtos não autorizados no contrato: {status.summary.missingProducts}</p>
           <p>Empresas fora do contrato: {status.summary.outsideCompanies}</p>
+          <p>Perfis históricos conflitantes: {status.summary.conflictingRoles}</p>
           <strong>{status.summary.ready ? 'Conciliação consistente' : 'Divergências encontradas'}</strong>
         </div>
       )}
