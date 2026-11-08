@@ -12,7 +12,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE v_status text;
 BEGIN
-  IF current_setting('request.jwt.claim.role', true) IS DISTINCT FROM 'service_role' THEN
+  IF (auth.jwt() ->> 'role') IS DISTINCT FROM 'service_role' THEN
     RAISE EXCEPTION 'SERVICE_ROLE_REQUIRED' USING ERRCODE='42501';
   END IF;
   IF p_project_url <> 'https://' || p_project_ref || '.supabase.co'
