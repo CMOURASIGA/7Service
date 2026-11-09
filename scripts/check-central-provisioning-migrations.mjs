@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 
 const root = join(process.cwd(), 'supabase', 'migrations');
 const scripts = readdirSync(root)
-  .filter(name => /^20261108\d{6}_.*\.sql$/.test(name))
+  .filter(name => /^202611(08|09)\d{6}_.*\.sql$/.test(name))
   .sort();
 
 assert(scripts.length >= 8, 'Expected at least eight additive central-provisioning migrations');
