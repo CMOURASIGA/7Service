@@ -108,6 +108,19 @@ BEGIN
     SELECT 1 FROM public.contract_role_assignments r
      WHERE r.contract_id=p_contract_id AND r.identity_id=p_identity_id
        AND r.status IN ('PENDING','ACTIVE','SUSPENDED')
+  ) OR EXISTS (
+    SELECT 1 FROM public.provisioning_operations op
+     WHERE op.identity_id=p_identity_id
+       AND op.status IN ('PENDING','RUNNING','RECONCILIATION_REQUIRED')
+       AND (
+         EXISTS (SELECT 1 FROM public.contract_role_assignments r
+                 WHERE r.id=op.role_assignment_id AND r.contract_id=p_contract_id)
+         OR EXISTS (
+           SELECT 1 FROM public.user_product_access a
+           JOIN public.subscriptions s ON s.id=a.subscription_id
+           WHERE a.id=op.access_id AND s.contract_id=p_contract_id
+         )
+       )
   ) THEN
     RAISE EXCEPTION 'ACTIVE_GRANTS_STILL_EXIST';
   END IF;
