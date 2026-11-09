@@ -1,5 +1,6 @@
 'use client';
 import { useActionState } from 'react';
+import { ActionButton } from '@/components/ui/action-button';
 import { verifyAndSaveConnection } from './actions';
 
 export function ConnectionForm({
@@ -40,10 +41,9 @@ export function ConnectionForm({
       </p>
       {result.error && <p role="alert" className="text-sm text-red-700">{result.error}</p>}
       {result.success && <p role="status" className="text-sm">{result.success}</p>}
-      <button type="submit" disabled={pending || !environments.length}
-        className="rounded-md bg-blue-700 px-4 py-2 text-white disabled:opacity-50">
+      <ActionButton type="submit" disabled={pending || !environments.length}>
         {pending ? 'Validando...' : 'Testar e salvar conexão'}
-      </button>
+      </ActionButton>
     </form>
   );
 }
