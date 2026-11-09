@@ -35,10 +35,10 @@ describe('contract-scoped named licensing', () => {
     expect(evaluateNamedSeatGrant(policy, [maria, joao], { ...maria, identityId: 'ana' }))
       .toMatchObject({ allowed: false, reason: 'LIMIT_REACHED' });
   });
-  it('does not occupy seats with revoked or suspended grants', () => {
+  it('releases revoked seats but retains suspended seats', () => {
     expect(countNamedSeats('contract-a', [
       { ...maria, status: 'REVOKED' }, { ...joao, status: 'SUSPENDED' },
-    ])).toBe(0);
+    ])).toBe(1);
   });
   it('reserves seats for pending grants to prevent over-allocation', () => {
     expect(countNamedSeats('contract-a', [
