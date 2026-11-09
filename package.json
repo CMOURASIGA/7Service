@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.mts",
     "test:all": "npm run test && npm run test:integration",
-    "test:migration-safety": "node scripts/check-central-provisioning-migrations.mjs"
+    "test:migration-safety": "node scripts/check-central-provisioning-migrations.mjs",
+    "prebuild": "npm run test:migration-safety && npm run lint && npm run typecheck && npm run test"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
