@@ -1,5 +1,6 @@
 'use client';
 import { useActionState } from 'react';
+import { ActionButton } from '@/components/ui/action-button';
 import { bindExistingCompanyToEnvironment } from './actions';
 
 export function EnvironmentCompanyForm({
@@ -35,10 +36,9 @@ export function EnvironmentCompanyForm({
       </label>
       {state.error && <p role="alert" className="text-sm text-red-700">{state.error}</p>}
       {state.success && <p role="status" className="text-sm">{state.success}</p>}
-      <button disabled={pending || !environments.length || !clients.length}
-        className="rounded-md bg-blue-700 px-4 py-2 text-white disabled:opacity-50">
+      <ActionButton disabled={pending || !environments.length || !clients.length}>
         {pending ? 'Vinculando...' : 'Vincular empresa'}
-      </button>
+      </ActionButton>
     </form>
   );
 }
