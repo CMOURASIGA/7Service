@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { ActionButton } from '@/components/ui/action-button';
 import { recordEvidence, type EvidenceState } from '@/app/(admin)/ambientes/evidence-actions';
 
 export function EvidenceForm({ environments }: { environments: { id: string; label: string }[] }) {
@@ -67,12 +68,11 @@ export function EvidenceForm({ environments }: { environments: { id: string; lab
           {state.success}
         </p>
       ) : null}
-      <button
+      <ActionButton
         disabled={pending || !environments.length}
-        className="rounded bg-blue-700 px-4 py-2 text-white disabled:opacity-50"
       >
         {pending ? 'Registrando...' : 'Registrar referência não verificada'}
-      </button>
+      </ActionButton>
     </form>
   );
 }
