@@ -53,4 +53,12 @@ const connection = all.find(file => file.name.includes('connection_atomic'));
 assert(connection && connection.contents.includes('encrypted_admin_key'),
   'Connections must persist encrypted credentials, not plain keys');
 
+const legacy = all.find(file => file.name.includes('legacy_access_named_contract_guard'));
+assert(legacy, 'Legacy access bypass guard migration must exist');
+assert((legacy.contents.match(/LEGACY_ACCESS_BLOCKED_FOR_NAMED_CONTRACT/g) ?? []).length === 2,
+  'Both legacy GRANT and reactivation RPCs must refuse ENFORCED nominal contracts');
+const lifecycle = all.find(file => file.name.includes('contract_role_revocation_lifecycle'));
+assert(lifecycle && lifecycle.contents.includes('DESTINATION_OPERATION_ALREADY_PENDING'),
+  'Remote revocation must reject simultaneous grant or revoke operations');
+
 console.log(`PASS: ${scripts.length} staged provisioning migrations passed static safety checks.`);
