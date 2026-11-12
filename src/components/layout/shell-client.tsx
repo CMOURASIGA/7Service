@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 
 import type { InternalUser } from '@/types/domain';
 
@@ -41,14 +41,14 @@ export function ShellClient({
     setMobileNavOpen(false);
   }
 
+  const closeMobileNav = useCallback(() => setMobileNavOpen(false), []);
+
   function toggleCompactSidebar() {
-    setCompactSidebar(previous => {
-      const next = !previous;
-      try { window.localStorage.setItem(SIDEBAR_PREFERENCE, String(next)); } catch {
-        // Preference-only storage cannot block navigation.
-      }
-      return next;
-    });
+    const next = !compactSidebar;
+    setCompactSidebar(next);
+    try { window.localStorage.setItem(SIDEBAR_PREFERENCE, String(next)); } catch {
+      // Preference-only storage cannot block navigation.
+    }
   }
 
   return (
@@ -57,7 +57,7 @@ export function ShellClient({
       <div className="min-h-full min-w-0 md:flex md:items-stretch" data-sidebar-mode={compactSidebar ? 'compact' : 'expanded'}>
         <Sidebar
           isMobileOpen={mobileNavOpen}
-          onCloseMobile={() => setMobileNavOpen(false)}
+          onCloseMobile={closeMobileNav}
           compact={compactSidebar}
           onToggleCompact={toggleCompactSidebar}
         />
