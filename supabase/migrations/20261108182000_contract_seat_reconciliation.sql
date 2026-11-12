@@ -171,6 +171,8 @@ DECLARE
  v_occupied integer;
  v_active_grants integer;
  v_missing_installations integer;
+ v_unmapped_auth integer;
+ v_unresolved_operations integer;
 BEGIN
  IF (auth.jwt()->>'role') IS DISTINCT FROM 'service_role' THEN
    RAISE EXCEPTION 'SERVICE_ROLE_REQUIRED' USING ERRCODE='42501';
@@ -218,6 +220,52 @@ BEGIN
    );
  IF v_missing_installations>0 THEN
    RAISE EXCEPTION 'UNMAPPED_LEGACY_INSTALLATIONS: %',v_missing_installations;
+ END IF;
+
+ -- Verified deployment alone is insufficient. Every effective legacy identity
+ -- must already have a destination Auth mapping in an eligible installation.
+ -- Do not switch to ENFORCED while the original product remains unmapped.
+ SELECT count(*) INTO v_unmapped_auth
+ FROM public.user_product_access a
+ JOIN public.subscriptions s ON s.id=a.subscription_id
+ WHERE s.contract_id=p_contract
+   AND a.status IN ('ACTIVE','PENDING','SUSPENDED')
+   AND NOT EXISTS(
+     SELECT 1 FROM public.destination_auth_links auth_link
+     JOIN public.environment_company_bindings cb
+       ON cb.environment_id=auth_link.environment_id
+     JOIN public.product_environments pe ON pe.id=cb.environment_id
+     JOIN public.product_deployments pd ON pd.id=pe.deployment_id
+     JOIN public.client_deployments cd ON cd.deployment_id=pd.id
+     JOIN public.environment_connections ec ON ec.environment_id=pe.id
+     WHERE auth_link.identity_id=a.identity_id
+       AND cb.client_id=a.client_id
+       AND pd.product_id=s.product_id
+       AND cd.client_id=a.client_id AND cd.product_id=s.product_id
+       AND pe.status='ACTIVE' AND ec.status='VERIFIED'
+   );
+ IF v_unmapped_auth>0 THEN
+   RAISE EXCEPTION 'LEGACY_REMOTE_IDENTITIES_NOT_MAPPED: %',v_unmapped_auth;
+ END IF;
+
+ -- Unfinished work in the destination cannot be assumed successful.
+ SELECT count(*) INTO v_unresolved_operations
+ FROM public.provisioning_operations op
+ WHERE op.status IN ('PENDING','RUNNING','RECONCILIATION_REQUIRED')
+   AND (
+     EXISTS (
+       SELECT 1 FROM public.contract_role_assignments ra
+       WHERE ra.id=op.role_assignment_id AND ra.contract_id=p_contract
+     )
+     OR EXISTS (
+       SELECT 1 FROM public.user_product_access a
+       JOIN public.subscriptions s ON s.id=a.subscription_id
+       WHERE s.contract_id=p_contract AND a.identity_id=op.identity_id
+         AND a.status IN ('PENDING','ACTIVE','SUSPENDED')
+     )
+   );
+ IF v_unresolved_operations>0 THEN
+   RAISE EXCEPTION 'DESTINATION_OPERATIONS_UNRESOLVED: %',v_unresolved_operations;
  END IF;
 
  SELECT count(*) INTO v_occupied
