@@ -51,7 +51,7 @@ export function ShellClient({
   return (
     <div className="flex min-h-full flex-1 flex-col">
       {showDemoBanner ? <DemoModeBanner /> : null}
-      <div className="flex min-h-full min-w-0 md:items-stretch" data-sidebar-mode={compactSidebar ? 'compact' : 'expanded'}>
+      <div className="min-h-full min-w-0 md:flex md:items-stretch" data-sidebar-mode={compactSidebar ? 'compact' : 'expanded'}>
         <Sidebar
           isMobileOpen={mobileNavOpen}
           onCloseMobile={() => setMobileNavOpen(false)}
