@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import type { ComponentProps } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 
 export type IconActionKind = 'view' | 'edit' | 'danger' | 'success';
 
-const paths: Record<IconActionKind, React.ReactNode> = {
+const paths: Record<IconActionKind, ReactNode> = {
   view: <><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></>,
   edit: <><path d="M12 20h9" /><path d="m17 4 3 3-11 11-4 1 1-4L17 4Z" /></>,
   danger: <><path d="M4 7h16M10 11v6M14 11v6" /><path d="m6 7 1 14h10l1-14M9 7V4h6v3" /></>,
