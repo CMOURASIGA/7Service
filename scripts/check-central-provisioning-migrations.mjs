@@ -49,6 +49,16 @@ assert(roles && roles.contents.includes('contract_role_assignments_one_effective
 const seats = all.find(file => file.name.includes('contract_seat_reconciliation'));
 assert(seats && seats.contents.includes('RECONCILIATION_NOT_READY'),
   'Cutover must be blocked until shadow reconciliation succeeds');
+const seatAtomic = all.find(file => file.name.includes('contract_named_seat_atomic'));
+assert(seatAtomic && !/\bop\.access_id\b/.test(seatAtomic.contents),
+  'Seat release must not refer to nonexistent provisioning_operations.access_id');
+assert(seatAtomic.contents.includes('RECONCILIATION_REQUIRED'),
+  'Seat release must retain licenses while destination operations are unresolved');
+assert(seats.contents.includes('LEGACY_REMOTE_IDENTITIES_NOT_MAPPED'),
+  'Named licensing cutover must verify every legacy destination identity');
+assert(seats.contents.includes('DESTINATION_OPERATIONS_UNRESOLVED'),
+  'Named licensing cutover must refuse uncertain remote access operations');
+
 const connection = all.find(file => file.name.includes('connection_atomic'));
 assert(connection && connection.contents.includes('encrypted_admin_key'),
   'Connections must persist encrypted credentials, not plain keys');
