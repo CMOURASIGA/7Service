@@ -56,12 +56,20 @@ BEGIN
   END IF;
 
   -- Never force a released seat back into use before the license count check.
+  -- Reserve seats for both legacy grants and new role assignments.
+  -- The UNION is distinct by identity, so one person uses one contract seat.
   INSERT INTO public.contract_named_seats(contract_id,identity_id,status)
-  SELECT p_contract,a.identity_id,'RESERVED'
-    FROM public.user_product_access a
-    JOIN public.subscriptions s ON s.id=a.subscription_id
-   WHERE s.contract_id=p_contract AND a.status IN ('ACTIVE','PENDING','SUSPENDED')
-   GROUP BY a.identity_id
+  SELECT p_contract,occupied.identity_id,'RESERVED'
+    FROM (
+      SELECT a.identity_id
+        FROM public.user_product_access a
+        JOIN public.subscriptions s ON s.id=a.subscription_id
+       WHERE s.contract_id=p_contract AND a.status IN ('ACTIVE','PENDING','SUSPENDED')
+      UNION
+      SELECT r.identity_id
+        FROM public.contract_role_assignments r
+       WHERE r.contract_id=p_contract AND r.status IN ('ACTIVE','PENDING','SUSPENDED')
+    ) occupied
   ON CONFLICT(contract_id,identity_id) DO UPDATE
     SET status='RESERVED',updated_at=now()
     WHERE public.contract_named_seats.status='RELEASED';
