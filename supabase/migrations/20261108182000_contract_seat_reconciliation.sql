@@ -41,8 +41,18 @@ BEGIN
     JOIN public.subscriptions s ON s.id=a.subscription_id
    WHERE s.contract_id=p_contract AND a.status IN ('ACTIVE','PENDING','SUSPENDED');
 
-  IF v_legacy>v_limit THEN
-    RAISE EXCEPTION 'LEGACY_CONTRACT_OVER_LIMIT: % of %',v_legacy,v_limit;
+  -- The pool covers all current and historical paths, not only legacy grants.
+  IF (
+    SELECT count(*) FROM (
+      SELECT a.identity_id FROM public.user_product_access a
+      JOIN public.subscriptions s ON s.id=a.subscription_id
+      WHERE s.contract_id=p_contract AND a.status IN ('ACTIVE','PENDING','SUSPENDED')
+      UNION
+      SELECT r.identity_id FROM public.contract_role_assignments r
+      WHERE r.contract_id=p_contract AND r.status IN ('ACTIVE','PENDING','SUSPENDED')
+    ) occupied_identity
+  ) > v_limit THEN
+    RAISE EXCEPTION 'CONTRACT_OVER_NOMINAL_SEAT_LIMIT';
   END IF;
 
   -- Never force a released seat back into use before the license count check.
@@ -66,6 +76,17 @@ BEGIN
        JOIN public.subscriptions s ON s.id=a.subscription_id
        WHERE s.contract_id=p_contract AND a.identity_id=named.identity_id
          AND a.status IN ('ACTIVE','PENDING','SUSPENDED')
+     )
+     AND NOT EXISTS (
+       SELECT 1 FROM public.contract_role_assignments r
+       WHERE r.contract_id=p_contract AND r.identity_id=named.identity_id
+         AND r.status IN ('ACTIVE','PENDING','SUSPENDED')
+     )
+     AND NOT EXISTS (
+       SELECT 1 FROM public.provisioning_operations op
+       JOIN public.contract_role_assignments r ON r.id=op.role_assignment_id
+       WHERE r.contract_id=p_contract AND r.identity_id=named.identity_id
+         AND op.status IN ('PENDING','RUNNING','RECONCILIATION_REQUIRED')
      );
 
   SELECT count(*) INTO v_occupied
