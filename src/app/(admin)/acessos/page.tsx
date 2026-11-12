@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { IconActionLink } from '@/components/ui/icon-action-link';
 
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -115,7 +116,7 @@ export default async function AccessManagementPage({
   const activeClients = clients.filter((client) => client.status === 'ACTIVE');
 
   return (
-    <main className="flex flex-col gap-5">
+    <main className="flex min-w-0 flex-col gap-5">
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold">Acessos por produto</h1>
         <p className="text-sm text-slate-700">
@@ -147,7 +148,7 @@ export default async function AccessManagementPage({
           <input type="checkbox" name="historico" value="1" defaultChecked={showHistory} />
           Incluir histórico
         </label>
-        <button className="rounded bg-blue-900 px-4 py-2 text-sm font-semibold text-white">
+        <button className="min-h-10 rounded-md border border-brand-600 bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600">
           Filtrar
         </button>
       </form>
@@ -181,9 +182,8 @@ export default async function AccessManagementPage({
                 <td className="p-3">{row.status}</td>
                 <td className="p-3">{row.destination}</td>
                 <td className="p-3">
-                  <Link className="text-blue-700 underline" href={`/usuarios/${row.identityId}`}>
-                    Gerenciar
-                  </Link>
+                  <IconActionLink href={`/usuarios/${row.identityId}`} kind="edit"
+                    label={`Gerenciar acesso de ${row.name} em ${row.companyName}`} />
                 </td>
               </tr>
             ))}
@@ -196,7 +196,7 @@ export default async function AccessManagementPage({
           </p>
         ) : null}
       </div>
-      <div className="flex flex-wrap gap-3 text-sm">
+      <div className="flex flex-wrap gap-3 rounded-lg border border-border bg-white p-4 text-sm">
         <Link className="text-blue-700 underline" href="/acessos/provisionamento">
           Ver operações de provisionamento
         </Link>
