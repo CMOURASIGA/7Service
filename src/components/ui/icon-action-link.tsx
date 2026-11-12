@@ -25,7 +25,7 @@ export function IconActionLink({ href, kind, label, ...props }: {
   return (
     <Link href={href} aria-label={label} title={label} {...props}
       className={[
-        'inline-flex h-10 w-10 items-center justify-center rounded-xl border bg-white',
+        'inline-flex h-11 w-11 items-center justify-center rounded-xl border bg-white sm:h-10 sm:w-10',
         'transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
         'focus-visible:outline-brand-600 disabled:opacity-50',
         tones[kind],
