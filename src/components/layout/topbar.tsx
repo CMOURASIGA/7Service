@@ -9,12 +9,21 @@ import type { InternalUser } from '@/types/domain';
 const PAGE_TITLES: Record<string, string> = {
   '/': 'Dashboard',
   '/clientes': 'Clientes',
+  '/clientes/grupos': 'Grupos empresariais',
+  '/clientes/licencas': 'Licenças por contrato',
   '/clientes/novo': 'Novo cliente',
   '/usuarios': 'Usuários',
+  '/acessos': 'Acessos por produto',
+  '/acessos/atribuicoes': 'Perfis por empresa e sistema',
+  '/acessos/provisionamento': 'Operações de provisionamento',
+  '/ambientes': 'Ambientes',
+  '/ambientes/conexoes': 'Conexões Supabase',
   '/produtos': 'Produtos',
   '/licenciamento': 'Licenciamento',
   '/convites': 'Convites',
   '/auditoria': 'Auditoria',
+  '/suporte': 'Suporte',
+  '/ajuda': 'Ajuda',
   '/administracao/operadores': 'Administração interna',
 };
 
