@@ -64,7 +64,7 @@ export default async function AmbientesPage() {
           id: 'implantacoes',
           label: 'Implantações',
           content: (
-            <div className="space-y-5">
+            <div className="grid gap-5 xl:grid-cols-3">
               <EnvironmentRegistry
                 clients={clientsResult.data ?? []}
                 products={productsResult.data ?? []}
