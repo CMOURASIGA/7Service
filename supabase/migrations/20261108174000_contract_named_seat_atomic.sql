@@ -115,10 +115,15 @@ BEGIN
        AND (
          EXISTS (SELECT 1 FROM public.contract_role_assignments r
                  WHERE r.id=op.role_assignment_id AND r.contract_id=p_contract_id)
-         OR EXISTS (
-           SELECT 1 FROM public.user_product_access a
-           JOIN public.subscriptions s ON s.id=a.subscription_id
-           WHERE a.id=op.access_id AND s.contract_id=p_contract_id
+         OR (
+           op.role_assignment_id IS NULL
+           AND EXISTS (
+             SELECT 1 FROM public.user_product_access a
+             JOIN public.subscriptions s ON s.id=a.subscription_id
+             WHERE a.identity_id=op.identity_id
+               AND s.contract_id=p_contract_id
+               AND a.status IN ('ACTIVE','PENDING','SUSPENDED','REVOKED')
+           )
          )
        )
   ) THEN
