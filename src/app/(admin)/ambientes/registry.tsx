@@ -34,7 +34,7 @@ export function EnvironmentRegistry({
   );
   const input = 'rounded-md border px-3 py-2 text-sm';
   return (
-    <section className="grid gap-5 lg:grid-cols-2">
+    <section className="grid gap-5 lg:grid-cols-2 xl:col-span-2">
       <form action={createAction} className="flex flex-col gap-3 rounded-lg border p-5">
         <h2 className="font-semibold">Vincular implantação dedicada</h2>
         <p className="text-muted text-xs">
