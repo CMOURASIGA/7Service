@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 
 import { BRAND_LOGO_URL, BRAND_NAME, BRAND_SUBTITLE, COMPANY_NAME } from '@/lib/brand';
 
@@ -110,12 +110,26 @@ function NavIcon({ name }: { name: IconName }) {
 export function Sidebar({
   isMobileOpen,
   onCloseMobile,
+  compact,
+  onToggleCompact,
 }: {
   isMobileOpen: boolean;
   onCloseMobile: () => void;
+  compact: boolean;
+  onToggleCompact: () => void;
 }) {
   const pathname = usePathname();
   const sections = Array.from(new Set(NAV_ITEMS.map((item) => item.section)));
+  const mobileCloseRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!isMobileOpen) return;
+    mobileCloseRef.current?.focus();
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') onCloseMobile();
+    }
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [isMobileOpen, onCloseMobile]);
 
   return (
     <>
@@ -131,6 +145,7 @@ export function Sidebar({
         className={[
           'sidebar-shell overflow-y-auto border-white/15 md:min-h-screen md:self-stretch md:border-r',
           isMobileOpen ? 'is-open' : '',
+          compact ? 'sidebar-shell-compact' : '',
         ].join(' ')}
       >
         <div className="sidebar-brand-panel relative">
@@ -141,12 +156,25 @@ export function Sidebar({
           <button
             type="button"
             onClick={onCloseMobile}
+            ref={mobileCloseRef}
             className="sidebar-close absolute top-6 right-6 md:hidden"
             aria-label="Fechar menu"
           >
             ×
           </button>
         </div>
+        <button type="button"
+          aria-label={compact ? "Expandir menu lateral" : "Recolher menu lateral"}
+          aria-expanded={!compact}
+          title={compact ? "Expandir menu" : "Recolher menu"}
+          onClick={onToggleCompact}
+          className="sidebar-desktop-toggle mx-auto mt-3 hidden min-h-10 items-center justify-center gap-2 rounded-lg border border-white/30 px-2 text-xs font-semibold text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:flex"
+        >
+          <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d={compact ? "M8 5l7 7-7 7" : "M16 5l-7 7 7 7"} />
+          </svg>
+          <span className="sidebar-expand-label">Recolher menu</span>
+        </button>
         <div className="sidebar-product relative">
           <p className="sidebar-product-name">{BRAND_NAME}</p>
           <p className="sidebar-product-subtitle">{BRAND_SUBTITLE}</p>
@@ -166,6 +194,8 @@ export function Sidebar({
                       key={item.href}
                       href={item.href}
                       title={item.label}
+                      aria-label={item.label}
+                      onClick={onCloseMobile}
                       aria-current={isActive ? 'page' : undefined}
                       className={[
                         'sidebar-nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
@@ -173,7 +203,7 @@ export function Sidebar({
                       ].join(' ')}
                     >
                       <NavIcon name={item.icon} />
-                      <span>{item.label}</span>
+                      <span className="sidebar-nav-text">{item.label}</span>
                     </Link>
                   );
                 })}
