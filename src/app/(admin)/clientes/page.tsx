@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { IconActionLink } from '@/components/ui/icon-action-link';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { CLIENT_STATUS_LABEL } from '@/lib/status-labels';
 import { requirePermission } from '@/lib/auth/session';
@@ -57,14 +58,14 @@ export default async function ClientsPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-foreground text-xl font-semibold">Clientes</h1>
           <p className="text-muted text-sm">Cadastro completo, sem exclusão física</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link href="/clientes/licencas"
-            className="rounded-md border px-4 py-2 text-sm font-medium text-brand-700">
+            className="inline-flex min-h-10 items-center rounded-md border border-brand-600 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600">
             Licenças por contrato
           </Link>
           <Link href="/clientes/grupos"
@@ -73,20 +74,20 @@ export default async function ClientsPage({
           </Link>
         <Link
           href="/clientes/novo"
-          className="bg-brand-600 hover:bg-brand-700 rounded-md px-4 py-2 text-sm font-medium text-white"
+          className="inline-flex min-h-10 items-center rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600"
         >
           Novo cliente
         </Link>
         </div>
       </div>
 
-      <form className="flex gap-2" action="/clientes">
+      <form className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-white p-3" action="/clientes">
         <input
           type="search"
           name="q"
           defaultValue={params.q}
           placeholder="Buscar por razão social, nome fantasia, CPF/CNPJ, e-mail ou contato"
-          className="border-border focus:border-brand-600 focus:ring-brand-100 w-full max-w-md rounded-md border px-3 py-2 text-sm outline-none focus:ring-2"
+          className="border-border focus:border-brand-600 focus:ring-brand-100 min-w-48 flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2"
         />
         <select
           name="status"
@@ -101,7 +102,7 @@ export default async function ClientsPage({
         </select>
         <button
           type="submit"
-          className="border-border rounded-md border px-4 py-2 text-sm font-medium hover:bg-slate-50"
+          className="min-h-10 rounded-md border border-brand-600 bg-white px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600"
         >
           Filtrar
         </button>
@@ -123,6 +124,7 @@ export default async function ClientsPage({
                 <th className="px-4 py-2 font-medium">Usuários ativos</th>
                 <th className="px-4 py-2 font-medium">Status</th>
                 <th className="px-4 py-2 font-medium">Início</th>
+                <th className="px-4 py-2 font-medium">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -160,6 +162,9 @@ export default async function ClientsPage({
                     </td>
                     <td className="text-muted px-4 py-2">
                       {new Date(client.relationship_start_date).toLocaleDateString('pt-BR')}
+                    </td>
+                    <td className="px-4 py-2">
+                      <IconActionLink href={`/clientes/${client.id}`} kind="view" label={`Visualizar ficha de ${client.trade_name || client.legal_name}`} />
                     </td>
                   </tr>
                 );
