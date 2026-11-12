@@ -26,11 +26,14 @@ export function ShellClient({
   const [renderedPathname, setRenderedPathname] = useState(pathname);
 
   useEffect(() => {
-    try {
-      setCompactSidebar(window.localStorage.getItem(SIDEBAR_PREFERENCE) === 'true');
-    } catch {
-      // Private browsing/storage errors fall back to the predictable expanded shell.
-    }
+    const handle = window.requestAnimationFrame(() => {
+      try {
+        setCompactSidebar(window.localStorage.getItem(SIDEBAR_PREFERENCE) === 'true');
+      } catch {
+        // Private browsing/storage errors fall back to the predictable expanded shell.
+      }
+    });
+    return () => window.cancelAnimationFrame(handle);
   }, []);
 
   if (pathname !== renderedPathname) {
