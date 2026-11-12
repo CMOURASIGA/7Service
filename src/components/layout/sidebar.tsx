@@ -188,13 +188,14 @@ export function Sidebar({
               <div className="flex flex-col gap-1">
                 {NAV_ITEMS.filter((item) => item.section === section).map((item) => {
                   const isActive =
-                    item.href === '/' ? pathname === item.href : pathname.startsWith(item.href);
+                    item.href === '/' ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + '/');
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
                       title={item.label}
                       aria-label={item.label}
+                      data-tooltip={item.label}
                       onClick={onCloseMobile}
                       aria-current={isActive ? 'page' : undefined}
                       className={[
