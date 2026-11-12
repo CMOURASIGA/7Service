@@ -2,7 +2,7 @@
 
 **Data:** 12/11/2026  
 **Branch:** `develop`  
-**Situação:** implementado em código; **não homologado visualmente nem liberado para produção**.  
+**Situação:** homologação funcional de UX aprovada pelo responsável em 12/11/2026, commit `2f719bd`; testes especializados e liberação de produção ainda pendentes.  
 **Referências:** [UX-NAV-01](https://github.com/CMOURASIGA/componentes_consult_services/blob/main/propostas/UX-NAV-01-sidebar-adaptativa-tabs.md), [RT-017](https://github.com/CMOURASIGA/componentes_consult_services/blob/main/padroes/RT-017-tabs-navegacao-contextual.md), [UX-ICON-03](https://github.com/CMOURASIGA/componentes_consult_services/blob/main/padroes/UX-ICON-03-acoes-crud-equilibrado.md).
 
 ## Escopo realizado
@@ -25,7 +25,7 @@
 - Sem alteração no 7Commander nem no projeto 7Components por dependência técnica: referências de padrões são documentais.
 - Sem publicação manual em produção nem aprovação de merge para `main`.
 
-## Homologação pendente
+## Homologação funcional aprovada e verificações remanescentes
 
 1. Abrir páginas internas com sidebar expandida e compacta em desktop.
 2. Confirmar que a coluna de conteúdo efetivamente cresce (alvos teóricos: sidebar de 256px para 72px; ganho nominal 184px, **ainda não medido visualmente**).
@@ -43,3 +43,11 @@
 - Ações críticas de banco ou revogação não foram migradas para ícones automaticamente: continuam exigindo confirmação explícita e revisão de contexto.
 - A sidebar compacta exibe as rotas existentes como ícones; agrupamentos e favoritos personalizados ficam fora do piloto até validação operacional.
 - Falta revisar outras áreas extensas individualmente; não aplicar tabs indiscriminadamente a cada formulário.
+
+## Evidência de aceite do responsável | 12/11/2026
+
+O responsável confirmou a validação dos cinco grupos do checklist funcional para o preview da `develop`, commit `2f719bd613fdea6195d2c1866e33f88b0a00cd45`, sem registrar defeitos: **menu lateral, navegação, Ambientes, botões/ícones e responsividade**.
+
+**Resultado:** UX funcional aprovada para a versão identificada. O aceite não cobre automaticamente alterações posteriores, rotas não percorridas, acessibilidade com leitor de tela, testes formais de segurança, migrações ou provisionamento. Itens 2, 3, 4, 7 e 9 da lista acima permanecem sujeitos às evidências especializadas respectivas, quando não demonstradas pelo checklist simples.
+
+**Próximo gate:** preservar o aceite de UX e executar os testes técnicos antes de qualquer promoção a `main`. 
