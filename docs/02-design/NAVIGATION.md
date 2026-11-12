@@ -46,3 +46,8 @@ Ações destrutivas ou de segurança devem informar impacto antes da confirmaç�
 A estrutura alvo de menus e: Dashboard; Clientes; Produtos; Usuarios e Acessos; Ambientes; Licenciamento; Suporte; Auditoria; Administracao. Convites e Contratos permanecem como rotinas contextuais, podendo manter rotas tecnicas ja implementadas.
 
 A **Ficha do Cliente** passa a ser a area operacional principal, com abas Visao geral, Contratos, Produtos, Usuarios, Ambientes e Historico. Acoes sempre condicionadas ao operador autorizado. Referencia normativa: `docs/SPEC_07_ENVIRONMENTS_AND_FRONTEND.md`.
+
+
+## UX-NAV-01 | Evolução em desenvolvimento, sem homologação
+
+Sidebar adaptativa (logo, ícones no modo compacto, expansão com reflow do conteúdo) e abas contextuais são uma **única entrega** para desenvolvimento na `develop`, preservando a navegação e os controles existentes. Ver [handoff técnico](UX-NAV-01_SIDEBAR_TABS_HANDOFF_20261112.md) e [issue de execução](https://github.com/CMOURASIGA/7Service/issues/5). A especificação da biblioteca está no [7Components](https://github.com/CMOURASIGA/componentes_consult_services/blob/main/propostas/UX-NAV-01-sidebar-adaptativa-tabs.md), como proposta não adotada.
