@@ -51,3 +51,32 @@ O responsável confirmou a validação dos cinco grupos do checklist funcional p
 **Resultado:** UX funcional aprovada para a versão identificada. O aceite não cobre automaticamente alterações posteriores, rotas não percorridas, acessibilidade com leitor de tela, testes formais de segurança, migrações ou provisionamento. Itens 2, 3, 4, 7 e 9 da lista acima permanecem sujeitos às evidências especializadas respectivas, quando não demonstradas pelo checklist simples.
 
 **Próximo gate:** preservar o aceite de UX e executar os testes técnicos antes de qualquer promoção a `main`. 
+
+
+## Homologação visual recebida e refinamentos finais em 12/11/2026
+
+**Aceite do responsável:** cinco frentes de UX validadas no SHA `2f719bd`, com capturas
+da sidebar expandida/compacta, Clientes e Ambientes. O aceite é **visual, com
+ressalvas**; não certifica segurança, leitores de tela ou backend.
+
+**Refinamentos registrados em develop após o aceite:**
+
+- O menu mantém `title` e `aria-label` nos ícones compactos, adiciona
+  `data-tooltip` descritivo e evita selecionar rotas com prefixo semelhante.
+- O cabeçalho apresenta corretamente os nomes de rotas como Ambientes,
+  Conexões, Licenças por contrato e Acessos. O selo não afirma mais saúde
+  operacional apenas pela presença de configuração do Supabase.
+- Na aba Implantações, os três formulários aparecem em colunas no desktop
+  amplo, retornando a layout responsivo em telas menores.
+- Acessibilidade flutuante: origem do widget ainda não identificada no
+  código auditado; não ocultar, remover nem deslocar um recurso assistivo
+  sem localizar sua integração e conferir usuários afetados.
+
+**Gates restantes:** lint/typecheck/testes/build do SHA final e inspeção
+de desktop/mobile para os refinamentos acima. Sem aceite de produção.
+
+**Pendências funcionais separadas deste UX:** migrações de grupos,
+assentos nominais, conexões e atribuições; reconciliação da base legada;
+testes de autorização e provisionamento no produto de destino. Preview
+e produção usam a mesma base Supabase, portanto não executar DDL em
+produção como substituto de testes controlados.
