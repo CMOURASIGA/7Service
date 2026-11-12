@@ -49,8 +49,19 @@ assert(roles && roles.contents.includes('contract_role_assignments_one_effective
 const seats = all.find(file => file.name.includes('contract_seat_reconciliation'));
 assert(seats && seats.contents.includes('RECONCILIATION_NOT_READY'),
   'Cutover must be blocked until shadow reconciliation succeeds');
-assert(/INSERT INTO public\.contract_named_seats[\s\S]*?UNION[\s\S]*?FROM public\.contract_role_assignments r[\s\S]*?ON CONFLICT/.test(seats.contents),
-  'SHADOW backfill must reserve one contract seat for both legacy and new active assignments');
+// The source is a UNION in a derived table; its final FROM follows the UNION.
+// Check the actual backfill statement rather than requiring an invalid SQL order.
+const backfillStart = seats.contents.indexOf('INSERT INTO public.contract_named_seats');
+const backfillEnd = seats.contents.indexOf('ON CONFLICT(contract_id,identity_id)', backfillStart);
+assert(backfillStart >= 0 && backfillEnd > backfillStart,
+  'SHADOW backfill INSERT and conflict handling must exist');
+const backfill = seats.contents.slice(backfillStart, backfillEnd);
+assert(/\bUNION\b/.test(backfill) &&
+       backfill.includes('FROM public.user_product_access a') &&
+       backfill.includes('FROM public.contract_role_assignments r') &&
+       backfill.includes('a.status IN (\'ACTIVE\',\'PENDING\',\'SUSPENDED\')') &&
+       backfill.includes('r.status IN (\'ACTIVE\',\'PENDING\',\'SUSPENDED\')'),
+  'SHADOW backfill must reserve one distinct contract seat per active legacy/new identity');
 const seatAtomic = all.find(file => file.name.includes('contract_named_seat_atomic'));
 assert(seatAtomic && !/\bop\.access_id\b/.test(seatAtomic.contents),
   'Seat release must not refer to nonexistent provisioning_operations.access_id');
