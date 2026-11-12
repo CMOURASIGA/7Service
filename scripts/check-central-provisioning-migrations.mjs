@@ -49,7 +49,7 @@ assert(roles && roles.contents.includes('contract_role_assignments_one_effective
 const seats = all.find(file => file.name.includes('contract_seat_reconciliation'));
 assert(seats && seats.contents.includes('RECONCILIATION_NOT_READY'),
   'Cutover must be blocked until shadow reconciliation succeeds');
-assert(/INSERT INTO public\\.contract_named_seats[\\s\\S]*?UNION[\\s\\S]*?FROM public\\.contract_role_assignments r[\\s\\S]*?ON CONFLICT/.test(seats.contents),
+assert(/INSERT INTO public\.contract_named_seats[\s\S]*?UNION[\s\S]*?FROM public\.contract_role_assignments r[\s\S]*?ON CONFLICT/.test(seats.contents),
   'SHADOW backfill must reserve one contract seat for both legacy and new active assignments');
 const seatAtomic = all.find(file => file.name.includes('contract_named_seat_atomic'));
 assert(seatAtomic && !/\bop\.access_id\b/.test(seatAtomic.contents),
