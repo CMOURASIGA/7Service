@@ -13,7 +13,7 @@ export function ExistingDeploymentCompanyForm({
     attachCompanyToExistingDeployment,{error:null},
   );
   return (
-    <form action={submit} className="flex max-w-3xl flex-col gap-3 rounded-lg border p-5">
+    <form action={submit} className="flex min-w-0 flex-col gap-3 rounded-lg border p-5">
       <h2 className="font-semibold">Adicionar empresa a uma implantação existente</h2>
       <p className="text-muted text-sm">
         Permite que empresas contratadas do mesmo grupo compartilhem a instalação,
