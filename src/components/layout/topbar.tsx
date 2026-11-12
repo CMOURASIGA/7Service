@@ -91,7 +91,7 @@ export function Topbar({
           }
         >
           <span className={`h-2 w-2 rounded-full ${configured ? 'bg-success' : 'bg-warning'}`} />
-          {configured ? 'Operacional' : 'Modo demonstração'}
+          {configured ? 'Ambiente configurado' : 'Modo demonstração'}
         </span>
         <span className="text-muted hidden text-[13px] md:inline">
           {user.firstName} {user.lastName} · {user.roleCodes.join(', ')}
