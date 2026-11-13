@@ -63,3 +63,11 @@ end $$;
 grant anon, authenticated, service_role to test_runner;
 
 grant usage on schema public, auth, storage to anon, authenticated, service_role;
+
+-- Supabase's auth.jwt() reads verified claims injected by PostgREST.
+-- In this disposable PostgreSQL harness the role is set by connectAs().
+CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb
+LANGUAGE sql STABLE
+AS $$
+  SELECT jsonb_build_object('role', current_user);
+$$;
