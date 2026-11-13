@@ -267,3 +267,151 @@ afterAll(async () => {
   // Sem drop explícito do banco de teste aqui: o próximo `beforeAll`
   // (próxima execução da suíte) já recria do zero via resetTestDatabase().
 });
+
+
+describe('QA-DB-01: modelo nominal em PostgreSQL descartável', () => {
+  const CONTRACT_A = 'ca000000-0000-0000-0000-000000000001';
+  const IDENTITY_A = 'ea000000-0000-0000-0000-000000000001';
+  const PRODUCT = 'c0000000-0000-0000-0000-000000000001';
+  const ACTOR = '10000000-0000-0000-0000-0000000000a1';
+
+  it('não expõe tabelas ou RPCs privilegiadas a anon e authenticated', async () => {
+    const db = await connectAs('service_role');
+    try {
+      const tables = [
+        'customer_groups',
+        'contract_seat_pools',
+        'contract_named_seats',
+        'environment_connections',
+        'provisioning_operations',
+        'contract_role_assignments',
+      ];
+      for (const table of tables) {
+        const result = await db.query(
+          `select has_table_privilege('anon', $1, 'SELECT') as anon_read,
+                  has_table_privilege('authenticated', $1, 'INSERT') as user_write`,
+          [`public.${table}`],
+        );
+        expect(result.rows[0]).toEqual({ anon_read: false, user_write: false });
+      }
+      const rpc = await db.query(
+        `select has_function_privilege(
+          'authenticated', 'public.reserve_contract_named_seat_atomic(uuid,uuid,uuid,uuid)', 'EXECUTE'
+        ) as user_execute`,
+      );
+      expect(rpc.rows[0].user_execute).toBe(false);
+    } finally {
+      await close(db);
+    }
+  });
+
+  it('reconcilia concessão legada no SHADOW sem duplicar assentos', async () => {
+    const db = await connectAs('service_role');
+    await db.query('begin');
+    try {
+      await db.query(
+        `insert into public.contract_seat_pools(contract_id,license_limit,enforcement_mode)
+         values ($1,1,'SHADOW')`,
+        [CONTRACT_A],
+      );
+      await db.query(
+        `insert into public.contract_product_entitlements(contract_id,product_id)
+         values($1,$2)`,
+        [CONTRACT_A, PRODUCT],
+      );
+      const initial = await db.query(
+        'select public.reconcile_contract_named_seats_atomic($1,$2) as result',
+        [ACTOR, CONTRACT_A],
+      );
+      expect(initial.rows[0].result.occupied).toBe(1);
+      expect(initial.rows[0].result.missing_seats).toBe(0);
+      expect(initial.rows[0].result.ready).toBe(true);
+
+      const repeated = await db.query(
+        'select public.reconcile_contract_named_seats_atomic($1,$2) as result',
+        [ACTOR, CONTRACT_A],
+      );
+      expect(repeated.rows[0].result.occupied).toBe(1);
+      const seat = await db.query(
+        'select identity_id,status from public.contract_named_seats where contract_id=$1',
+        [CONTRACT_A],
+      );
+      expect(seat.rowCount).toBe(1);
+      expect(seat.rows[0]).toMatchObject({ identity_id: IDENTITY_A, status: 'RESERVED' });
+    } finally {
+      await db.query('rollback');
+      await close(db);
+    }
+  });
+
+  it('reserva uma licença existente e rejeita uma segunda pessoa quando o limite foi atingido', async () => {
+    const db = await connectAs('service_role');
+    await db.query('begin');
+    try {
+      const OTHER = 'ec000000-0000-0000-0000-000000000002';
+      await db.query(
+        `insert into public.contract_seat_pools(contract_id,license_limit,enforcement_mode)
+         values($1,1,'ENFORCED')`,
+        [CONTRACT_A],
+      );
+      await db.query(
+        `insert into public.contract_product_entitlements(contract_id,product_id)
+         values($1,$2)`,
+        [CONTRACT_A, PRODUCT],
+      );
+      await db.query(
+        `insert into public.contract_named_seats(contract_id,identity_id,status)
+         values($1,$2,'RESERVED')`,
+        [CONTRACT_A, IDENTITY_A],
+      );
+      const original = await db.query(
+        'select public.reserve_contract_named_seat_atomic($1,$2,$3,$4) as result',
+        [CONTRACT_A, IDENTITY_A, CLIENT_A, PRODUCT],
+      );
+      expect(original.rows[0].result).toBe('ALREADY_LICENSED');
+      await db.query(
+        `insert into public.identities(id,client_id,first_name,last_name,email,status)
+         values($1,$2,'QA','Assento','qa-seat-2@example.invalid','ACTIVE')`,
+        [OTHER, CLIENT_A],
+      );
+      await db.query(
+        `insert into public.client_memberships(identity_id,client_id,status)
+         values($1,$2,'ACTIVE')`,
+        [OTHER, CLIENT_A],
+      );
+      await expect(
+        db.query('select public.reserve_contract_named_seat_atomic($1,$2,$3,$4)', [
+          CONTRACT_A, OTHER, CLIENT_A, PRODUCT,
+        ]),
+      ).rejects.toThrow(/CONTRACT_LICENSE_LIMIT_REACHED/);
+    } finally {
+      await db.query('rollback');
+      await close(db);
+    }
+  });
+
+  it('impede liberar uma licença enquanto existe concessão legada ativa', async () => {
+    const db = await connectAs('service_role');
+    await db.query('begin');
+    try {
+      await db.query(
+        `insert into public.contract_seat_pools(contract_id,license_limit,enforcement_mode)
+         values($1,1,'SHADOW')`,
+        [CONTRACT_A],
+      );
+      await db.query(
+        `insert into public.contract_named_seats(contract_id,identity_id,status)
+         values($1,$2,'RESERVED')`,
+        [CONTRACT_A, IDENTITY_A],
+      );
+      await expect(
+        db.query('select public.release_contract_named_seat_atomic($1,$2)', [
+          CONTRACT_A, IDENTITY_A,
+        ]),
+      ).rejects.toThrow(/ACTIVE_GRANTS_STILL_EXIST/);
+    } finally {
+      await db.query('rollback');
+      await close(db);
+    }
+  });
+});
