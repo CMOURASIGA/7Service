@@ -69,5 +69,5 @@ grant usage on schema public, auth, storage to anon, authenticated, service_role
 CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb
 LANGUAGE sql STABLE
 AS $$
-  SELECT jsonb_build_object('role', current_user);
+  SELECT jsonb_build_object('role', current_setting('request.jwt.claim.role', true));
 $$;
