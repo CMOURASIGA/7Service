@@ -268,7 +268,6 @@ afterAll(async () => {
   // (próxima execução da suíte) já recria do zero via resetTestDatabase().
 });
 
-
 describe('QA-DB-01: modelo nominal em PostgreSQL descartável', () => {
   const CONTRACT_A = 'ca000000-0000-0000-0000-000000000001';
   const IDENTITY_A = 'ea000000-0000-0000-0000-000000000001';
@@ -381,7 +380,10 @@ describe('QA-DB-01: modelo nominal em PostgreSQL descartável', () => {
       );
       await expect(
         db.query('select public.reserve_contract_named_seat_atomic($1,$2,$3,$4)', [
-          CONTRACT_A, OTHER, CLIENT_A, PRODUCT,
+          CONTRACT_A,
+          OTHER,
+          CLIENT_A,
+          PRODUCT,
         ]),
       ).rejects.toThrow(/CONTRACT_LICENSE_LIMIT_REACHED/);
     } finally {
@@ -406,7 +408,8 @@ describe('QA-DB-01: modelo nominal em PostgreSQL descartável', () => {
       );
       await expect(
         db.query('select public.release_contract_named_seat_atomic($1,$2)', [
-          CONTRACT_A, IDENTITY_A,
+          CONTRACT_A,
+          IDENTITY_A,
         ]),
       ).rejects.toThrow(/ACTIVE_GRANTS_STILL_EXIST/);
     } finally {
