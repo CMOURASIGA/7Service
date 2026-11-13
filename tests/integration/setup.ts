@@ -57,11 +57,20 @@ export async function resetTestDatabase(): Promise<void> {
     await db.query(await readFile(path.join(fixturesDir, 'supabase-stubs.sql'), 'utf8'));
 
     const migrationFiles = (await readdir(migrationsDir)).filter((f) => f.endsWith('.sql')).sort();
+    // Supabase's baseline public-schema grants exist BEFORE the new additive
+    // migration explicitly revokes access to privileged new relations.
+    // Applying blanket grants AFTER all migrations would undo their REVOKEs.
+    let baselineGrantsApplied = false;
     for (const file of migrationFiles) {
+      if (!baselineGrantsApplied && file >= '20261108173500_central_provisioning_additive.sql') {
+        await db.query(await readFile(path.join(fixturesDir, 'grants.sql'), 'utf8'));
+        baselineGrantsApplied = true;
+      }
       await db.query(await readFile(path.join(migrationsDir, file), 'utf8'));
     }
-
-    await db.query(await readFile(path.join(fixturesDir, 'grants.sql'), 'utf8'));
+    if (!baselineGrantsApplied) {
+      await db.query(await readFile(path.join(fixturesDir, 'grants.sql'), 'utf8'));
+    }
     await db.query(await readFile(path.join(fixturesDir, 'seed.sql'), 'utf8'));
   } finally {
     await db.end();
@@ -87,5 +96,6 @@ export async function connectAs(role: SupabaseRole, authUserSub?: string): Promi
   await client.connect();
   await client.query(`set role ${role}`);
   await client.query(`select set_config('request.jwt.claim.sub', $1, false)`, [authUserSub ?? '']);
+  await client.query(`select set_config('request.jwt.claim.role', $1, false)`, [role]);
   return client;
 }
