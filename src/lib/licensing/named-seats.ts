@@ -25,7 +25,12 @@ export interface ContractSeatPolicy {
 
 export type SeatDecision =
   | { allowed: true; occupied: number; available: number; additionalSeats: 0 | 1 }
-  | { allowed: false; reason: 'INVALID_POLICY' | 'OUTSIDE_CONTRACT' | 'ROLE_CONFLICT' | 'LIMIT_REACHED'; occupied: number; available: number };
+  | {
+      allowed: false;
+      reason: 'INVALID_POLICY' | 'OUTSIDE_CONTRACT' | 'ROLE_CONFLICT' | 'LIMIT_REACHED';
+      occupied: number;
+      available: number;
+    };
 
 // Suspension preserves the nominal reservation. Only revocation releases it.
 const occupiesSeat = (status: GrantStatus) => status !== 'REVOKED';
@@ -33,7 +38,8 @@ const occupiesSeat = (status: GrantStatus) => status !== 'REVOKED';
 /** One identity uses one contract seat even across products, companies and installations. */
 export function countNamedSeats(contractId: string, grants: readonly ContractSeatGrant[]): number {
   return new Set(
-    grants.filter((grant) => grant.contractId === contractId && occupiesSeat(grant.status))
+    grants
+      .filter((grant) => grant.contractId === contractId && occupiesSeat(grant.status))
       .map((grant) => grant.identityId),
   ).size;
 }
@@ -50,30 +56,38 @@ export function evaluateNamedSeatGrant(
 ): SeatDecision {
   const occupied = countNamedSeats(policy.contractId, existing);
   const available = Math.max(0, policy.licenseLimit - occupied);
-  const deny = (reason: Exclude<SeatDecision, { allowed: true }>['reason']): SeatDecision =>
-    ({ allowed: false, reason, occupied, available });
+  const deny = (reason: Exclude<SeatDecision, { allowed: true }>['reason']): SeatDecision => ({
+    allowed: false,
+    reason,
+    occupied,
+    available,
+  });
 
   if (!Number.isSafeInteger(policy.licenseLimit) || policy.licenseLimit < 0 || !policy.contractId)
     return deny('INVALID_POLICY');
-  if (requested.contractId !== policy.contractId ||
-      !policy.allowedProductIds.includes(requested.productId) ||
-      !policy.allowedCompanyIds.includes(requested.companyId))
+  if (
+    requested.contractId !== policy.contractId ||
+    !policy.allowedProductIds.includes(requested.productId) ||
+    !policy.allowedCompanyIds.includes(requested.companyId)
+  )
     return deny('OUTSIDE_CONTRACT');
 
-  const conflict = existing.some((grant) =>
-    grant.contractId === requested.contractId &&
-    grant.identityId === requested.identityId &&
-    grant.productId === requested.productId &&
-    grant.companyId === requested.companyId &&
-    grant.installationId === requested.installationId &&
-    occupiesSeat(grant.status),
+  const conflict = existing.some(
+    (grant) =>
+      grant.contractId === requested.contractId &&
+      grant.identityId === requested.identityId &&
+      grant.productId === requested.productId &&
+      grant.companyId === requested.companyId &&
+      grant.installationId === requested.installationId &&
+      occupiesSeat(grant.status),
   );
   if (conflict) return deny('ROLE_CONFLICT');
 
-  const alreadyLicensed = existing.some((grant) =>
-    grant.contractId === requested.contractId &&
-    grant.identityId === requested.identityId &&
-    occupiesSeat(grant.status),
+  const alreadyLicensed = existing.some(
+    (grant) =>
+      grant.contractId === requested.contractId &&
+      grant.identityId === requested.identityId &&
+      occupiesSeat(grant.status),
   );
   const additionalSeats: 0 | 1 = occupiesSeat(requested.status) && !alreadyLicensed ? 1 : 0;
   if (additionalSeats > available) return deny('LIMIT_REACHED');

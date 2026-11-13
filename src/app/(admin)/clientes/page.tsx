@@ -64,24 +64,31 @@ export default async function ClientsPage({
           <p className="text-muted text-sm">Cadastro completo, sem exclusão física</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link href="/clientes/licencas"
-            className="inline-flex min-h-10 items-center rounded-md border border-brand-600 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600">
+          <Link
+            href="/clientes/licencas"
+            className="border-brand-600 text-brand-700 hover:bg-brand-50 focus-visible:outline-brand-600 inline-flex min-h-10 items-center rounded-md border px-4 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2"
+          >
             Licenças por contrato
           </Link>
-          <Link href="/clientes/grupos"
-            className="rounded-md border px-4 py-2 text-sm font-medium text-brand-700">
+          <Link
+            href="/clientes/grupos"
+            className="text-brand-700 rounded-md border px-4 py-2 text-sm font-medium"
+          >
             Grupos empresariais
           </Link>
-        <Link
-          href="/clientes/novo"
-          className="inline-flex min-h-10 items-center rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600"
-        >
-          Novo cliente
-        </Link>
+          <Link
+            href="/clientes/novo"
+            className="bg-brand-600 hover:bg-brand-700 focus-visible:outline-brand-600 inline-flex min-h-10 items-center rounded-md px-4 py-2 text-sm font-medium text-white focus-visible:outline focus-visible:outline-2"
+          >
+            Novo cliente
+          </Link>
         </div>
       </div>
 
-      <form className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-white p-3" action="/clientes">
+      <form
+        className="border-border flex flex-wrap items-end gap-3 rounded-lg border bg-white p-3"
+        action="/clientes"
+      >
         <input
           type="search"
           name="q"
@@ -102,7 +109,7 @@ export default async function ClientsPage({
         </select>
         <button
           type="submit"
-          className="min-h-10 rounded-md border border-brand-600 bg-white px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600"
+          className="border-brand-600 text-brand-700 hover:bg-brand-50 focus-visible:outline-brand-600 min-h-10 rounded-md border bg-white px-4 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2"
         >
           Filtrar
         </button>
@@ -164,7 +171,11 @@ export default async function ClientsPage({
                       {new Date(client.relationship_start_date).toLocaleDateString('pt-BR')}
                     </td>
                     <td className="px-4 py-2">
-                      <IconActionLink href={`/clientes/${client.id}`} kind="view" label={`Visualizar ficha de ${client.trade_name || client.legal_name}`} />
+                      <IconActionLink
+                        href={`/clientes/${client.id}`}
+                        kind="view"
+                        label={`Visualizar ficha de ${client.trade_name || client.legal_name}`}
+                      />
                     </td>
                   </tr>
                 );

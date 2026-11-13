@@ -14,10 +14,21 @@ export type SealedCredential = string & { readonly __sealedCredential: unique sy
 
 export function validateSupabaseProjectUrl(input: string): string {
   let url: URL;
-  try { url = new URL(input); } catch { throw new Error('INVALID_SUPABASE_URL'); }
-  if (url.protocol !== 'https:' || url.username || url.password || url.port ||
-      url.pathname !== '/' || url.search || url.hash ||
-      !/^[a-z0-9-]+\.supabase\.co$/.test(url.hostname)) {
+  try {
+    url = new URL(input);
+  } catch {
+    throw new Error('INVALID_SUPABASE_URL');
+  }
+  if (
+    url.protocol !== 'https:' ||
+    url.username ||
+    url.password ||
+    url.port ||
+    url.pathname !== '/' ||
+    url.search ||
+    url.hash ||
+    !/^[a-z0-9-]+\.supabase\.co$/.test(url.hostname)
+  ) {
     throw new Error('INVALID_SUPABASE_URL');
   }
   return url.origin;
@@ -37,8 +48,12 @@ export function sealConnectionSecret(secret: string): SealedCredential {
   const nonce = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', encryptionKey(), nonce);
   const payload = Buffer.concat([cipher.update(secret, 'utf8'), cipher.final()]);
-  return ['v1', nonce.toString('base64url'), cipher.getAuthTag().toString('base64url'),
-    payload.toString('base64url')].join('.') as SealedCredential;
+  return [
+    'v1',
+    nonce.toString('base64url'),
+    cipher.getAuthTag().toString('base64url'),
+    payload.toString('base64url'),
+  ].join('.') as SealedCredential;
 }
 
 export function unsealConnectionSecret(encrypted: SealedCredential): string {
@@ -51,15 +66,25 @@ export function unsealConnectionSecret(encrypted: SealedCredential): string {
     const decipher = createDecipheriv('aes-256-gcm', encryptionKey(), nonce);
     decipher.setAuthTag(tag);
     return Buffer.concat([
-      decipher.update(Buffer.from(chunks[3], 'base64url')), decipher.final(),
+      decipher.update(Buffer.from(chunks[3], 'base64url')),
+      decipher.final(),
     ]).toString('utf8');
-  } catch { throw new Error('INVALID_SEALED_SECRET'); }
+  } catch {
+    throw new Error('INVALID_SEALED_SECRET');
+  }
 }
 
 /** Never expose this client or its auth credentials in a client component. */
-export function destinationAdminClient(projectUrl: string, encryptedKey: SealedCredential): SupabaseClient {
-  return createClient(validateSupabaseProjectUrl(projectUrl), unsealConnectionSecret(encryptedKey), {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: { headers: { 'x-7service-integration': 'server' } },
-  });
+export function destinationAdminClient(
+  projectUrl: string,
+  encryptedKey: SealedCredential,
+): SupabaseClient {
+  return createClient(
+    validateSupabaseProjectUrl(projectUrl),
+    unsealConnectionSecret(encryptedKey),
+    {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { 'x-7service-integration': 'server' } },
+    },
+  );
 }

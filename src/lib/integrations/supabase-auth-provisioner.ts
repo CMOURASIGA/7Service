@@ -27,8 +27,7 @@ export async function executeAuthProvisioning(
   const { data, error } = await client.auth.admin.getUserById(remoteId);
   if (error || !data.user || data.user.email?.toLowerCase() !== intent.email)
     throw new Error('DESTINATION_AUTH_IDENTITY_MISMATCH');
-  if (intent.operation === 'VERIFY')
-    return { status: 'VERIFIED', localAuthUserId: remoteId };
+  if (intent.operation === 'VERIFY') return { status: 'VERIFIED', localAuthUserId: remoteId };
 
   // This sends a message through the destination project's Auth service.
   // A successful API call is not proof of inbox delivery.

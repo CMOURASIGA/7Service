@@ -30,12 +30,14 @@ export function verifyProductProvisioningReceipt(
   receipt: ProductProvisioningReceipt,
 ): boolean {
   if (!receipt.revision || !/^[a-zA-Z0-9:_-]{8,128}$/.test(receipt.revision)) return false;
-  if (receipt.requestId !== request.requestId ||
+  if (
+    receipt.requestId !== request.requestId ||
     receipt.remoteAuthUserId !== request.remoteAuthUserId ||
     receipt.remoteCompanyId !== request.remoteCompanyId ||
-    receipt.productCode !== request.productCode) return false;
-  if (request.action === 'REVOKE')
-    return receipt.effective === false && receipt.roleCode === null;
+    receipt.productCode !== request.productCode
+  )
+    return false;
+  if (request.action === 'REVOKE') return receipt.effective === false && receipt.roleCode === null;
   return receipt.effective === true && receipt.roleCode === request.roleCode;
 }
 

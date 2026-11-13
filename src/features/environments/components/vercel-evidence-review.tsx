@@ -9,10 +9,7 @@ export function VercelEvidenceReview({ evidenceId }: { evidenceId: string }) {
   return (
     <form action={action} className="mt-2 flex flex-col gap-2">
       <input type="hidden" name="evidenceId" value={evidenceId} />
-      <ActionButton
-        disabled={pending}
-        variant="secondary" size="sm"
-      >
+      <ActionButton disabled={pending} variant="secondary" size="sm">
         {pending ? 'Consultando Vercel...' : 'Verificar deployment Vercel'}
       </ActionButton>
       {state.error ? (

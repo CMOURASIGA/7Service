@@ -68,9 +68,7 @@ export function EvidenceForm({ environments }: { environments: { id: string; lab
           {state.success}
         </p>
       ) : null}
-      <ActionButton
-        disabled={pending || !environments.length}
-      >
+      <ActionButton disabled={pending || !environments.length}>
         {pending ? 'Registrando...' : 'Registrar referência não verificada'}
       </ActionButton>
     </form>

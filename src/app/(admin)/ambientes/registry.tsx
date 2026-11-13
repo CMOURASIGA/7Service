@@ -80,9 +80,7 @@ export function EnvironmentRegistry({
             {deploymentState.success}
           </p>
         ) : null}
-        <ActionButton
-          disabled={deploymentPending || !clients.length || !products.length}
-        >
+        <ActionButton disabled={deploymentPending || !clients.length || !products.length}>
           Cadastrar implantação
         </ActionButton>
       </form>
@@ -133,9 +131,7 @@ export function EnvironmentRegistry({
             {environmentState.success}
           </p>
         ) : null}
-        <ActionButton
-          disabled={environmentPending || !deployments.length}
-        >
+        <ActionButton disabled={environmentPending || !deployments.length}>
           Registrar ambiente
         </ActionButton>
       </form>

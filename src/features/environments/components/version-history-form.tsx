@@ -68,10 +68,7 @@ export function VersionHistoryForm({
           {state.success}
         </p>
       ) : null}
-      <ActionButton
-        type="submit"
-        disabled={pending || !environments.length}
-      >
+      <ActionButton type="submit" disabled={pending || !environments.length}>
         {pending ? 'Salvando...' : 'Registrar versão'}
       </ActionButton>
     </form>

@@ -58,10 +58,7 @@ export function EnvironmentLifecycleControls({ environment }: { environment: Env
           >
             <input type="hidden" name="environmentId" value={environment.id} />
             <input type="hidden" name="action" value="RETIRE" />
-            <ActionButton
-              disabled={pending}
-              variant="danger"
-            >
+            <ActionButton disabled={pending} variant="danger">
               Encerrar
             </ActionButton>
           </form>
@@ -97,10 +94,7 @@ export function EnvironmentLifecycleControls({ environment }: { environment: Env
               defaultValue={environment.database_resource_ref ?? ''}
             />
           </label>
-          <ActionButton
-            disabled={pending}
-            className="sm:col-span-2"
-          >
+          <ActionButton disabled={pending} className="sm:col-span-2">
             {pending ? 'Salvando...' : 'Salvar alterações'}
           </ActionButton>
         </form>

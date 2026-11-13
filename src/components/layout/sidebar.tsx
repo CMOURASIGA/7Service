@@ -163,15 +163,25 @@ export function Sidebar({
             ×
           </button>
         </div>
-        <button type="button"
-          aria-label={compact ? "Expandir menu lateral" : "Recolher menu lateral"}
+        <button
+          type="button"
+          aria-label={compact ? 'Expandir menu lateral' : 'Recolher menu lateral'}
           aria-expanded={!compact}
-          title={compact ? "Expandir menu" : "Recolher menu"}
+          title={compact ? 'Expandir menu' : 'Recolher menu'}
           onClick={onToggleCompact}
           className="sidebar-desktop-toggle mx-auto mt-3 hidden min-h-10 items-center justify-center gap-2 rounded-lg border border-white/30 px-2 text-xs font-semibold text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:flex"
         >
-          <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d={compact ? "M8 5l7 7-7 7" : "M16 5l-7 7 7 7"} />
+          <svg
+            aria-hidden="true"
+            className="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d={compact ? 'M8 5l7 7-7 7' : 'M16 5l-7 7 7 7'} />
           </svg>
           <span className="sidebar-expand-label">Recolher menu</span>
         </button>
@@ -188,7 +198,9 @@ export function Sidebar({
               <div className="flex flex-col gap-1">
                 {NAV_ITEMS.filter((item) => item.section === section).map((item) => {
                   const isActive =
-                    item.href === '/' ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + '/');
+                    item.href === '/'
+                      ? pathname === item.href
+                      : pathname === item.href || pathname.startsWith(item.href + '/');
                   return (
                     <Link
                       key={item.href}

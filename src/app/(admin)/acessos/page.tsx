@@ -148,7 +148,7 @@ export default async function AccessManagementPage({
           <input type="checkbox" name="historico" value="1" defaultChecked={showHistory} />
           Incluir histórico
         </label>
-        <button className="min-h-10 rounded-md border border-brand-600 bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600">
+        <button className="border-brand-600 bg-brand-600 hover:bg-brand-700 focus-visible:outline-brand-600 min-h-10 rounded-md border px-4 py-2 text-sm font-medium text-white focus-visible:outline focus-visible:outline-2">
           Filtrar
         </button>
       </form>
@@ -182,8 +182,11 @@ export default async function AccessManagementPage({
                 <td className="p-3">{row.status}</td>
                 <td className="p-3">{row.destination}</td>
                 <td className="p-3">
-                  <IconActionLink href={`/usuarios/${row.identityId}`} kind="edit"
-                    label={`Gerenciar acesso de ${row.name} em ${row.companyName}`} />
+                  <IconActionLink
+                    href={`/usuarios/${row.identityId}`}
+                    kind="edit"
+                    label={`Gerenciar acesso de ${row.name} em ${row.companyName}`}
+                  />
                 </td>
               </tr>
             ))}
@@ -196,7 +199,7 @@ export default async function AccessManagementPage({
           </p>
         ) : null}
       </div>
-      <div className="flex flex-wrap gap-3 rounded-lg border border-border bg-white p-4 text-sm">
+      <div className="border-border flex flex-wrap gap-3 rounded-lg border bg-white p-4 text-sm">
         <Link className="text-blue-700 underline" href="/acessos/provisionamento">
           Ver operações de provisionamento
         </Link>

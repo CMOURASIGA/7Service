@@ -35,7 +35,9 @@ export async function reconcileContractSeats(
     p_contract: contractId,
   });
   if (error || !data || typeof data !== 'object' || Array.isArray(data))
-    return { error: 'Não foi possível conciliar as licenças. Verifique o contrato e as migrações.' };
+    return {
+      error: 'Não foi possível conciliar as licenças. Verifique o contrato e as migrações.',
+    };
 
   const value = data as Record<string, unknown>;
   const number = (key: string) => Number(value[key] ?? 0);
@@ -75,7 +77,8 @@ export async function activateContractSeats(
     p_actor: internalUser.id,
     p_contract: contractId,
   });
-  if (error) return { error: 'Não foi possível ativar: existe divergência ou contrato inelegível.' };
+  if (error)
+    return { error: 'Não foi possível ativar: existe divergência ou contrato inelegível.' };
   revalidatePath('/clientes/licencas');
   return { error: null, success: 'Controle nominal ativado para o contrato selecionado.' };
 }

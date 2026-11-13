@@ -10,14 +10,16 @@ const group = z.object({ name: z.string().trim().min(3).max(160) });
 const membership = z.object({ groupId: z.string().uuid(), clientId: z.string().uuid() });
 
 export async function createCustomerGroup(
-  _previous: GroupFormState, form: FormData,
+  _previous: GroupFormState,
+  form: FormData,
 ): Promise<GroupFormState> {
   const { internalUser } = await requirePermission('clients.manage');
   const parsed = group.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: 'Informe um nome de grupo válido.' };
   const extensionDb = createAdminClient() as unknown as SupabaseClient;
   const { data, error } = await extensionDb.rpc('create_customer_group_atomic', {
-    p_actor: internalUser.id, p_name: parsed.data.name,
+    p_actor: internalUser.id,
+    p_name: parsed.data.name,
   });
   if (error || !data) return { error: 'Não foi possível criar o grupo. Verifique a migração.' };
   revalidatePath('/clientes/grupos');
@@ -25,7 +27,8 @@ export async function createCustomerGroup(
 }
 
 export async function addCompanyToGroup(
-  _previous: GroupFormState, form: FormData,
+  _previous: GroupFormState,
+  form: FormData,
 ): Promise<GroupFormState> {
   const { internalUser } = await requirePermission('clients.manage');
   const parsed = membership.safeParse(Object.fromEntries(form));

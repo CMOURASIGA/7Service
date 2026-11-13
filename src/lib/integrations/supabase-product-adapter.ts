@@ -23,8 +23,10 @@ import type {
  */
 
 type RpcResult = { data: unknown; error: { message: string } | null };
-type RpcTransport = (method: string, args: { p_payload: Record<string, string> }) =>
-  Promise<RpcResult>;
+type RpcTransport = (
+  method: string,
+  args: { p_payload: Record<string, string> },
+) => Promise<RpcResult>;
 
 function toPayload(request: ProductProvisioningRequest): Record<string, string> {
   return {
@@ -44,13 +46,15 @@ export function decodeProvisioningReceipt(value: unknown): ProductProvisioningRe
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new Error('INVALID_PRODUCT_PROVISIONING_RECEIPT');
   const row = value as Record<string, unknown>;
-  if (typeof row.request_id !== 'string' ||
-      typeof row.remote_auth_user_id !== 'string' ||
-      typeof row.remote_company_id !== 'string' ||
-      typeof row.product_code !== 'string' ||
-      !(typeof row.role_code === 'string' || row.role_code === null) ||
-      typeof row.effective !== 'boolean' ||
-      typeof row.revision !== 'string') {
+  if (
+    typeof row.request_id !== 'string' ||
+    typeof row.remote_auth_user_id !== 'string' ||
+    typeof row.remote_company_id !== 'string' ||
+    typeof row.product_code !== 'string' ||
+    !(typeof row.role_code === 'string' || row.role_code === null) ||
+    typeof row.effective !== 'boolean' ||
+    typeof row.revision !== 'string'
+  ) {
     throw new Error('INVALID_PRODUCT_PROVISIONING_RECEIPT');
   }
   return {
@@ -71,8 +75,8 @@ export function createRpcProductProvisioningAdapter(rpc: RpcTransport): ProductP
     return decodeProvisioningReceipt(data);
   }
   return {
-    apply: request => invoke('service_apply_profile_v1', request),
-    readEffectiveAccess: request => invoke('service_read_profile_v1', request),
+    apply: (request) => invoke('service_apply_profile_v1', request),
+    readEffectiveAccess: (request) => invoke('service_read_profile_v1', request),
   };
 }
 

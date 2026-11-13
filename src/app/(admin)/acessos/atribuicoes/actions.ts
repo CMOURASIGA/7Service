@@ -26,7 +26,8 @@ export async function requestContractRoleAssignment(
 ): Promise<RoleAssignmentFormState> {
   const { internalUser } = await requirePermission('users.access.manage');
   const input = schema.safeParse(Object.fromEntries(form));
-  if (!input.success) return { error: 'Selecione contrato, usuário, empresa, produto, ambiente e perfil válidos.' };
+  if (!input.success)
+    return { error: 'Selecione contrato, usuário, empresa, produto, ambiente e perfil válidos.' };
   const db = createAdminClient() as unknown as SupabaseClient;
   const { data, error } = await db.rpc('assign_contract_role_atomic', {
     p_actor: internalUser.id,
@@ -39,10 +40,15 @@ export async function requestContractRoleAssignment(
   });
   if (error || typeof data !== 'string') {
     return {
-      error: 'Atribuição recusada. Verifique a vigência do contrato, licença, vínculo, perfil e ambiente. O controle nominal precisa estar homologado.',
+      error:
+        'Atribuição recusada. Verifique a vigência do contrato, licença, vínculo, perfil e ambiente. O controle nominal precisa estar homologado.',
     };
   }
   revalidatePath('/acessos/atribuicoes');
   revalidatePath('/acessos');
-  return { error: null, success: 'Solicitação registrada como pendente. O perfil só será efetivo após confirmação no produto.' };
+  return {
+    error: null,
+    success:
+      'Solicitação registrada como pendente. O perfil só será efetivo após confirmação no produto.',
+  };
 }

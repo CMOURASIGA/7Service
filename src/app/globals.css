@@ -234,14 +234,15 @@ body {
   }
 }
 
-
 /* UX-NAV-01 | Sidebar desktop adaptativa no 7Service.
  * O container continua no fluxo de layout: nenhum overlay no desktop.
  * A faixa mobile mantém o drawer existente e suas permissões.
  */
 @media (min-width: 768px) {
   .sidebar-shell {
-    transition: width 190ms ease, flex-basis 190ms ease;
+    transition:
+      width 190ms ease,
+      flex-basis 190ms ease;
     min-width: 0;
   }
   .sidebar-shell.sidebar-shell-compact {

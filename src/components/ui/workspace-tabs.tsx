@@ -12,13 +12,19 @@ export interface WorkspaceTab {
  * One active panel at a time. Inactive panels stay mounted so switching tabs
  * never clears in-progress form fields or server-action feedback.
  */
-export function WorkspaceTabs({ tabs, label = 'Seções da página' }: {
+export function WorkspaceTabs({
+  tabs,
+  label = 'Seções da página',
+}: {
   tabs: WorkspaceTab[];
   label?: string;
 }) {
   const [selected, setSelected] = useState(tabs[0]?.id ?? '');
   const prefix = useId().replace(/:/g, '');
-  const index = Math.max(0, tabs.findIndex(tab => tab.id === selected));
+  const index = Math.max(
+    0,
+    tabs.findIndex((tab) => tab.id === selected),
+  );
 
   function handleKey(event: KeyboardEvent<HTMLButtonElement>, current: number) {
     let next = current;
@@ -29,7 +35,8 @@ export function WorkspaceTabs({ tabs, label = 'Seções da página' }: {
     else return;
     event.preventDefault();
     setSelected(tabs[next].id);
-    const target = event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next];
+    const target =
+      event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next];
     target?.focus();
   }
 
@@ -40,7 +47,10 @@ export function WorkspaceTabs({ tabs, label = 'Seções da página' }: {
       <div className="overflow-x-auto border-b border-slate-200" aria-label={label}>
         <div role="tablist" aria-label={label} className="flex min-w-max gap-1">
           {tabs.map((tab, i) => (
-            <button key={tab.id} type="button" role="tab"
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
               id={`${prefix}-tab-${tab.id}`}
               aria-controls={`${prefix}-panel-${tab.id}`}
               aria-selected={index === i}
@@ -48,7 +58,7 @@ export function WorkspaceTabs({ tabs, label = 'Seções da página' }: {
               onClick={() => setSelected(tab.id)}
               onKeyDown={(event) => handleKey(event, i)}
               className={
-                'min-h-11 whitespace-nowrap rounded-t-md border border-b-0 px-4 py-2.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-700 ' +
+                'min-h-11 rounded-t-md border border-b-0 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-700 ' +
                 (index === i
                   ? 'border-slate-300 bg-white text-blue-900 shadow-[inset_0_3px_0_0_#07559b]'
                   : 'border-transparent bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-blue-900')
@@ -60,7 +70,8 @@ export function WorkspaceTabs({ tabs, label = 'Seções da página' }: {
         </div>
       </div>
       {tabs.map((tab, i) => (
-        <section key={tab.id}
+        <section
+          key={tab.id}
           role="tabpanel"
           id={`${prefix}-panel-${tab.id}`}
           aria-labelledby={`${prefix}-tab-${tab.id}`}

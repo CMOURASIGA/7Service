@@ -21,12 +21,23 @@ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validateProvisioningIntent(input: ProvisioningIntent): ProvisioningIntent {
-  for (const key of ['requestId', 'centralIdentityId', 'contractId', 'companyId',
-    'productId', 'deploymentId', 'environmentId'] as const) {
+  for (const key of [
+    'requestId',
+    'centralIdentityId',
+    'contractId',
+    'companyId',
+    'productId',
+    'deploymentId',
+    'environmentId',
+  ] as const) {
     if (!uuid.test(input[key])) throw new Error('INVALID_PROVISIONING_ID');
   }
-  if (!email.test(input.email) || input.email !== input.email.toLowerCase() ||
-      input.email.length > 254) throw new Error('INVALID_PROVISIONING_EMAIL');
+  if (
+    !email.test(input.email) ||
+    input.email !== input.email.toLowerCase() ||
+    input.email.length > 254
+  )
+    throw new Error('INVALID_PROVISIONING_EMAIL');
   if (input.localAuthUserId && !uuid.test(input.localAuthUserId))
     throw new Error('INVALID_REMOTE_AUTH_ID');
   if (input.operation === 'VERIFY' && !input.localAuthUserId)
