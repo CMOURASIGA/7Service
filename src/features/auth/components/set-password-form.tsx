@@ -131,10 +131,15 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
       setSaving(false);
       return;
     }
+    if (mode === 'invite') {
+      // Keep the verified customer session and open the restricted product
+      // catalog. No administrative access and no product entitlement inferred.
+      router.replace('/meus-sistemas');
+      router.refresh();
+      return;
+    }
     await supabase.auth.signOut();
-    // Customer invitations must not land on the internal admin login.
-    // Authentication succeeded, but product provisioning remains independent.
-    router.replace(mode === 'invite' ? '/ativacao-concluida' : '/login?password_updated=1');
+    router.replace('/login?password_updated=1');
     router.refresh();
   }
 
