@@ -132,7 +132,9 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
       return;
     }
     await supabase.auth.signOut();
-    router.replace('/login?password_updated=1');
+    // Customer invitations must not land on the internal admin login.
+    // Authentication succeeded, but product provisioning remains independent.
+    router.replace(mode === 'invite' ? '/ativacao-concluida' : '/login?password_updated=1');
     router.refresh();
   }
 
