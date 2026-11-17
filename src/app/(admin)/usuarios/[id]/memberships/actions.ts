@@ -53,15 +53,22 @@ export async function setMembershipStatusAction(
     if (product.error)
       throw new Error('Vínculo central atualizado. Verificação do Commander pendente.');
     if (!product.data) return;
-    const subscriptions = await db.from('subscriptions').select('id')
-      .eq('client_id', previous.client_id).eq('product_id', product.data.id);
+    const subscriptions = await db
+      .from('subscriptions')
+      .select('id')
+      .eq('client_id', previous.client_id)
+      .eq('product_id', product.data.id);
     if (subscriptions.error)
       throw new Error('Vínculo central atualizado. Verificação do Commander pendente.');
     const ids = (subscriptions.data ?? []).map((item) => item.id);
     if (!ids.length) return;
-    const grants = await db.from('user_product_access').select('id')
-      .eq('identity_id', identityId).eq('client_id', previous.client_id)
-      .in('subscription_id', ids).limit(1);
+    const grants = await db
+      .from('user_product_access')
+      .select('id')
+      .eq('identity_id', identityId)
+      .eq('client_id', previous.client_id)
+      .in('subscription_id', ids)
+      .limit(1);
     if (grants.error)
       throw new Error('Vínculo central atualizado. Verificação do Commander pendente.');
     if (!grants.data?.length) return;
@@ -72,7 +79,9 @@ export async function setMembershipStatusAction(
     });
     if (!sync.confirmed) {
       // The central authorization already denies access, but remote readback is pending.
-      throw new Error('Vínculo central atualizado. Revogação no Commander pendente de confirmação.');
+      throw new Error(
+        'Vínculo central atualizado. Revogação no Commander pendente de confirmação.',
+      );
     }
   }
 }
@@ -88,30 +97,42 @@ export async function retryCommanderRevocationAction(
 ) {
   await requirePermission('users.access.manage');
   const db = createAdminClient();
-  const membership = await db.from('client_memberships').select('status')
-    .eq('identity_id', identityId).eq('client_id', clientId).maybeSingle();
+  const membership = await db
+    .from('client_memberships')
+    .select('status')
+    .eq('identity_id', identityId)
+    .eq('client_id', clientId)
+    .maybeSingle();
   if (membership.error || !membership.data) throw new Error('Vínculo central não encontrado.');
   if (membership.data.status === 'ACTIVE') {
-    const product = await db.from('products').select('id')
-      .eq('code', 'COMMANDER7').maybeSingle();
+    const product = await db.from('products').select('id').eq('code', 'COMMANDER7').maybeSingle();
     if (product.error || !product.data) throw new Error('Produto Commander indisponível.');
-    const subscriptions = await db.from('subscriptions').select('id')
-      .eq('client_id', clientId).eq('product_id', product.data.id);
+    const subscriptions = await db
+      .from('subscriptions')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('product_id', product.data.id);
     if (subscriptions.error) throw new Error('Assinaturas indisponíveis.');
     const ids = (subscriptions.data ?? []).map((item) => item.id);
     if (ids.length) {
-      const stillActive = await db.from('user_product_access').select('id')
-        .eq('identity_id', identityId).eq('client_id', clientId)
-        .eq('status', 'ACTIVE').in('subscription_id', ids).limit(1);
+      const stillActive = await db
+        .from('user_product_access')
+        .select('id')
+        .eq('identity_id', identityId)
+        .eq('client_id', clientId)
+        .eq('status', 'ACTIVE')
+        .in('subscription_id', ids)
+        .limit(1);
       if (stillActive.error) throw new Error('Verificação central indisponível.');
       if (stillActive.data?.length)
         throw new Error('Acesso central ainda ativo. A suspensão remota foi impedida.');
     }
   }
   const sync = await syncCommanderRevocation({
-    identityId, clientId, productCode: 'COMMANDER7',
+    identityId,
+    clientId,
+    productCode: 'COMMANDER7',
   });
-  if (!sync.confirmed)
-    throw new Error('Suspensão no Commander ainda pendente de confirmação.');
+  if (!sync.confirmed) throw new Error('Suspensão no Commander ainda pendente de confirmação.');
   revalidatePath('/usuarios/' + identityId);
 }

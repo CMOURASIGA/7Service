@@ -12,10 +12,7 @@ import {
 } from '@/features/access/components/grant-access-form';
 import { EnvironmentGrantForm } from '@/features/access/components/environment-grant-form';
 import { revokeEnvironmentAction } from './ambientes/actions';
-import {
-  setMembershipStatusAction,
-  retryCommanderRevocationAction,
-} from './memberships/actions';
+import { setMembershipStatusAction, retryCommanderRevocationAction } from './memberships/actions';
 import type { Product, Subscription, ProductRole } from '@/types/domain';
 import { IDENTITY_STATUS_LABEL, ACCESS_STATUS_LABEL } from '@/lib/status-labels';
 import {
