@@ -29,6 +29,6 @@ Usar variáveis secretas de servidor; nunca `NEXT_PUBLIC_`, logs, artefatos nem 
 4. Confirmar registro local de `suspended` e auditoria no Commander, e acesso API negado com sessão previamente aberta.
 5. Testar falha/timeout do destino: o 7Service informa **pendente de confirmação**; não volta a autorizar o acesso central.
 6. Comprovar autorização central e RLS/PostgREST impedindo leitura/gravação no destino.
-7. Homologar retry e conciliação manual para eventos pendentes; automação de fila e reativação fazem parte de trabalho posterior, **não estão implementadas**.
+7. Homologar o botão de sincronização manual disponível nos detalhes do usuário quando o vínculo ou concessão está suspenso/revogado. O servidor verifica novamente o estado central antes de suspender o vínculo local. Fila automática de retries e reativação fazem parte de trabalho posterior, **não estão implementadas**.
 
 **Estado:** implementação de código em develop, sem secrets ou sincronização remota real habilitados, sem mudanças na main ou bancos.
