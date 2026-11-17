@@ -4,6 +4,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { NewIdentityForm } from '@/features/identities/components/new-identity-form';
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { IDENTITY_STATUS_LABEL } from '@/lib/status-labels';
 
 export const metadata = {
@@ -41,6 +42,40 @@ export default async function IdentitiesPage({
     .order('legal_name');
   if (clientsError) throw new Error('Falha ao consultar empresas');
   if (error) throw new Error('Falha ao consultar identidades');
+  // License availability is informative on the form. The atomic database RPC
+  // rechecks it under subscription row lock on every actual grant.
+  const adminDb = createAdminClient();
+  const [subscriptionsResult, productsResult, rolesResult, grantsResult] = await Promise.all([
+    adminDb
+      .from('subscriptions')
+      .select('id,client_id,product_id,license_limit')
+      .eq('status', 'ACTIVE'),
+    adminDb.from('products').select('id,name').eq('status', 'ACTIVE'),
+    adminDb.from('product_roles').select('id,product_id,code,name').eq('status', 'ACTIVE'),
+    adminDb
+      .from('user_product_access')
+      .select('subscription_id,status')
+      .in('status', ['ACTIVE', 'PENDING']),
+  ]);
+  if (
+    [subscriptionsResult, productsResult, rolesResult, grantsResult].some((result) => result.error)
+  ) {
+    throw new Error('Falha ao verificar o limite de licenças dos produtos.');
+  }
+  const productsById = new Map((productsResult.data ?? []).map((item) => [item.id, item]));
+  const onboardingProducts = (subscriptionsResult.data ?? [])
+    .filter((item) => productsById.has(item.product_id))
+    .map((item) => ({
+      clientId: item.client_id,
+      subscriptionId: item.id,
+      productName: productsById.get(item.product_id)!.name,
+      licenseLimit: item.license_limit,
+      licensesUsed: (grantsResult.data ?? []).filter((grant) => grant.subscription_id === item.id)
+        .length,
+      roles: (rolesResult.data ?? [])
+        .filter((role) => role.product_id === item.product_id)
+        .map((role) => ({ id: role.id, code: role.code, name: role.name })),
+    }));
 
   return (
     <div className="flex flex-col gap-4">
@@ -51,7 +86,7 @@ export default async function IdentitiesPage({
         </p>
       </div>
 
-      <NewIdentityForm clients={clients ?? []} />
+      <NewIdentityForm clients={clients ?? []} products={onboardingProducts} />
       <form className="flex flex-wrap gap-2" action="/usuarios">
         <input
           type="search"
