@@ -63,3 +63,42 @@ export async function setMembershipStatusAction(
     }
   }
 }
+
+/**
+ * Operator-driven retry when the central change succeeded but the destination
+ * was offline. Never suspend a Commander member while central access is valid.
+ */
+export async function retryCommanderRevocationAction(
+  identityId: string,
+  clientId: string,
+  _form: FormData,
+) {
+  await requirePermission('users.access.manage');
+  const db = createAdminClient();
+  const membership = await db.from('client_memberships').select('status')
+    .eq('identity_id', identityId).eq('client_id', clientId).maybeSingle();
+  if (membership.error || !membership.data) throw new Error('Vínculo central não encontrado.');
+  if (membership.data.status === 'ACTIVE') {
+    const product = await db.from('products').select('id')
+      .eq('code', 'COMMANDER7').maybeSingle();
+    if (product.error || !product.data) throw new Error('Produto Commander indisponível.');
+    const subscriptions = await db.from('subscriptions').select('id')
+      .eq('client_id', clientId).eq('product_id', product.data.id);
+    if (subscriptions.error) throw new Error('Assinaturas indisponíveis.');
+    const ids = (subscriptions.data ?? []).map((item) => item.id);
+    if (ids.length) {
+      const stillActive = await db.from('user_product_access').select('id')
+        .eq('identity_id', identityId).eq('client_id', clientId)
+        .eq('status', 'ACTIVE').in('subscription_id', ids).limit(1);
+      if (stillActive.error) throw new Error('Verificação central indisponível.');
+      if (stillActive.data?.length)
+        throw new Error('Acesso central ainda ativo. A suspensão remota foi impedida.');
+    }
+  }
+  const sync = await syncCommanderRevocation({
+    identityId, clientId, productCode: 'COMMANDER7',
+  });
+  if (!sync.confirmed)
+    throw new Error('Suspensão no Commander ainda pendente de confirmação.');
+  revalidatePath('/usuarios/' + identityId);
+}
