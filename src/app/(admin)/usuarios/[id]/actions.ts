@@ -2,6 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { syncCommanderRevocation } from '@/lib/integrations/commander-revocation';
 
 export interface GrantAccessFormState {
   error: string | null;
@@ -38,7 +39,20 @@ async function changeStatus(
   reason: string | null,
 ) {
   const { internalUser } = await requirePermission('users.access.manage');
-  const { error } = await createAdminClient().rpc('change_product_access_status_atomic', {
+  const db = createAdminClient();
+  // Identify the target before changing the central authorization.
+  const previous = await db.from('user_product_access')
+    .select('client_id,subscription_id').eq('id', accessId)
+    .eq('identity_id', identityId).maybeSingle();
+  if (previous.error || !previous.data) throw new Error('Concessão não encontrada.');
+  const subscription = await db.from('subscriptions')
+    .select('product_id').eq('id', previous.data.subscription_id).single();
+  if (subscription.error || !subscription.data) throw new Error('Assinatura indisponível.');
+  const product = await db.from('products')
+    .select('code').eq('id', subscription.data.product_id).single();
+  if (product.error || !product.data) throw new Error('Produto indisponível.');
+
+  const { error } = await db.rpc('change_product_access_status_atomic', {
     p_actor: internalUser.id,
     p_access: accessId,
     p_identity: identityId,
@@ -47,6 +61,29 @@ async function changeStatus(
   });
   if (error) throw new Error('Não foi possível alterar o acesso e registrar a auditoria.');
   revalidatePath('/usuarios/' + identityId);
+
+  if (status === 'ACTIVE' || product.data.code !== 'COMMANDER7') return;
+  // An identity may have more than one subscription for the same product and
+  // company. Do not suspend the local member while any grant remains active.
+  const sameProduct = await db.from('subscriptions').select('id')
+    .eq('client_id', previous.data.client_id).eq('product_id', subscription.data.product_id);
+  if (sameProduct.error) throw new Error('Acesso central alterado. Reconciliação pendente.');
+  const subscriptionIds = (sameProduct.data ?? []).map((item) => item.id);
+  if (subscriptionIds.length) {
+    const remaining = await db.from('user_product_access').select('id')
+      .eq('identity_id', identityId).eq('client_id', previous.data.client_id)
+      .eq('status', 'ACTIVE').in('subscription_id', subscriptionIds).limit(1);
+    if (remaining.error) throw new Error('Acesso central alterado. Reconciliação pendente.');
+    if (remaining.data?.length) return;
+  }
+  const sync = await syncCommanderRevocation({
+    identityId,
+    clientId: previous.data.client_id,
+    productCode: 'COMMANDER7',
+  });
+  if (!sync.confirmed) {
+    throw new Error('Acesso central revogado. Suspensão no Commander pendente de confirmação.');
+  }
 }
 export async function suspendAccessAction(accessId: string, identityId: string, form: FormData) {
   return changeStatus(
