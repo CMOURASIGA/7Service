@@ -12,7 +12,10 @@ import {
 } from '@/features/access/components/grant-access-form';
 import { EnvironmentGrantForm } from '@/features/access/components/environment-grant-form';
 import { revokeEnvironmentAction } from './ambientes/actions';
-import { setMembershipStatusAction } from './memberships/actions';
+import {
+  setMembershipStatusAction,
+  retryCommanderRevocationAction,
+} from './memberships/actions';
 import type { Product, Subscription, ProductRole } from '@/types/domain';
 import { IDENTITY_STATUS_LABEL, ACCESS_STATUS_LABEL } from '@/lib/status-labels';
 import {
@@ -237,6 +240,14 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                       />
                     </>
                   ) : null}
+                  {m.status !== 'ACTIVE' ? (
+                    <ConfirmAction
+                      triggerLabel="Sincronizar bloqueio no Commander"
+                      impactMessage="Verifica a revogação central e solicita novamente a suspensão apenas nesta empresa no Commander."
+                      action={retryCommanderRevocationAction.bind(null, id, m.client_id)}
+                      confirmLabel="Sincronizar"
+                    />
+                  ) : null}
                   {m.status === 'SUSPENDED' ? (
                     <ConfirmAction
                       triggerLabel="Reativar nesta empresa"
@@ -312,6 +323,14 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                         action={reactivateAccessAction.bind(null, a.id, id)}
                         impactMessage="Reativa acesso, sujeito a vigencia da assinatura."
                         confirmLabel="Reativar"
+                      />
+                    ) : null}
+                    {a.status !== 'ACTIVE' && a.subscriptions?.products?.name === '7Commander' ? (
+                      <ConfirmAction
+                        triggerLabel="Sincronizar bloqueio no Commander"
+                        impactMessage="A suspensão local só é feita se não existir outra concessão central ativa para este produto e empresa."
+                        action={retryCommanderRevocationAction.bind(null, id, a.client_id)}
+                        confirmLabel="Sincronizar"
                       />
                     ) : null}
                     {a.status !== 'REVOKED' ? (
