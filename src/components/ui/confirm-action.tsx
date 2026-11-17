@@ -19,7 +19,9 @@ export function ConfirmAction({
 }: {
   triggerLabel: string;
   impactMessage: string;
-  action: (formData: FormData) =>
+  action: (
+    formData: FormData,
+  ) =>
     | void
     | { error?: string | null; success?: string }
     | Promise<void | { error?: string | null; success?: string }>;
@@ -50,8 +52,16 @@ export function ConfirmAction({
   return (
     <div className="border-border rounded-md border bg-slate-50 p-3">
       <p className="text-foreground mb-2 text-sm">{impactMessage}</p>
-      {feedback?.error ? <p role="alert" className="mb-2 text-sm text-red-700">{feedback.error}</p> : null}
-      {feedback?.success ? <p role="status" className="mb-2 text-sm text-green-800">{feedback.success}</p> : null}
+      {feedback?.error ? (
+        <p role="alert" className="mb-2 text-sm text-red-700">
+          {feedback.error}
+        </p>
+      ) : null}
+      {feedback?.success ? (
+        <p role="status" className="mb-2 text-sm text-green-800">
+          {feedback.success}
+        </p>
+      ) : null}
       <form
         action={async (formData) => {
           setFeedback(null);
@@ -66,7 +76,10 @@ export function ConfirmAction({
             }
             setOpen(false);
           } catch {
-            setFeedback({ error: 'Não foi possível concluir a ação. Confira a situação do usuário antes de tentar novamente.' });
+            setFeedback({
+              error:
+                'Não foi possível concluir a ação. Confira a situação do usuário antes de tentar novamente.',
+            });
           }
         }}
         className="flex flex-col gap-2"
