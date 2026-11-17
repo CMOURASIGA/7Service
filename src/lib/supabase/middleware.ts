@@ -45,6 +45,7 @@ export async function updateSession(request: NextRequest) {
   const isAuthRoute = request.nextUrl.pathname === '/login';
   const isPublicAuthFlow =
     request.nextUrl.pathname === '/aceitar-convite' ||
+    request.nextUrl.pathname === '/ativacao-concluida' ||
     request.nextUrl.pathname === '/esqueci-senha' ||
     request.nextUrl.pathname === '/redefinir-senha' ||
     request.nextUrl.pathname === '/auth/confirm' ||
