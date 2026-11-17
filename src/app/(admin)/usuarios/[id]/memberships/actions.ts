@@ -49,17 +49,30 @@ export async function setMembershipStatusAction(
   revalidatePath('/usuarios/' + identityId);
   revalidatePath('/clientes/' + previous.client_id);
   if (status !== 'ACTIVE') {
+    const product = await db.from('products').select('id').eq('code', 'COMMANDER7').maybeSingle();
+    if (product.error)
+      throw new Error('Vínculo central atualizado. Verificação do Commander pendente.');
+    if (!product.data) return;
+    const subscriptions = await db.from('subscriptions').select('id')
+      .eq('client_id', previous.client_id).eq('product_id', product.data.id);
+    if (subscriptions.error)
+      throw new Error('Vínculo central atualizado. Verificação do Commander pendente.');
+    const ids = (subscriptions.data ?? []).map((item) => item.id);
+    if (!ids.length) return;
+    const grants = await db.from('user_product_access').select('id')
+      .eq('identity_id', identityId).eq('client_id', previous.client_id)
+      .in('subscription_id', ids).limit(1);
+    if (grants.error)
+      throw new Error('Vínculo central atualizado. Verificação do Commander pendente.');
+    if (!grants.data?.length) return;
     const sync = await syncCommanderRevocation({
       identityId,
       clientId: previous.client_id,
       productCode: 'COMMANDER7',
     });
     if (!sync.confirmed) {
-      // Never report destination success when only the central change completed.
-      // The central authorization decision already denies the revoked membership.
-      throw new Error(
-        'Vínculo central atualizado. Revogação no Commander pendente de confirmação.',
-      );
+      // The central authorization already denies access, but remote readback is pending.
+      throw new Error('Vínculo central atualizado. Revogação no Commander pendente de confirmação.');
     }
   }
 }
