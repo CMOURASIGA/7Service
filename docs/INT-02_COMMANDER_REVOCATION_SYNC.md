@@ -32,3 +32,11 @@ Usar variáveis secretas de servidor; nunca `NEXT_PUBLIC_`, logs, artefatos nem 
 7. Homologar o botão de sincronização manual disponível nos detalhes do usuário quando o vínculo ou concessão está suspenso/revogado. O servidor verifica novamente o estado central antes de suspender o vínculo local. Fila automática de retries e reativação fazem parte de trabalho posterior, **não estão implementadas**.
 
 **Estado:** implementação de código em develop, sem secrets ou sincronização remota real habilitados, sem mudanças na main ou bancos.
+
+## Homologação de 17/11/2026
+
+- A usuária Bianca estava com vínculo e concessão centrais `REVOKED` e membro local `suspended` no Commander. A tentativa de sincronização pelo botão da Preview lançou exceção com digest `3658865917`.
+- Logs Vercel confirmaram `Suspensão no Commander ainda pendente de confirmação` no Server Action. O problema era agravado pelo `ConfirmAction` que não capturava rejeições.
+- O inventário de variáveis Vercel identificou ausência de `SERVICE_COMMANDER_REVOCATION_URL`, `SERVICE_COMMANDER_REVOCATION_SECRET` e `SERVICE_7SERVICE_REVOCATION_SECRET` nos projetos correspondentes. **Sem essas variáveis, não há chamada remota bem-sucedida.**
+- A tela passou a capturar erros de execução, e a sincronização manual agora devolve resultado estruturado e mensagem específica para integração ausente ou destino sem confirmação.
+- A UI corrigida não representa aprovação E2E. Permanecem pendentes o segredo protegido, roteamento de Preview do Commander sob Deployment Protection, teste real, sessão antiga e RLS.
