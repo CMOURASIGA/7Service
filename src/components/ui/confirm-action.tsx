@@ -19,12 +19,16 @@ export function ConfirmAction({
 }: {
   triggerLabel: string;
   impactMessage: string;
-  action: (formData: FormData) => void | Promise<void>;
+  action: (formData: FormData) =>
+    | void
+    | { error?: string | null; success?: string }
+    | Promise<void | { error?: string | null; success?: string }>;
   requireReason?: boolean;
   confirmLabel?: string;
   tone?: 'default' | 'danger';
 }) {
   const [open, setOpen] = useState(false);
+  const [feedback, setFeedback] = useState<{ error?: string; success?: string } | null>(null);
 
   const buttonClass =
     tone === 'danger'
@@ -46,10 +50,24 @@ export function ConfirmAction({
   return (
     <div className="border-border rounded-md border bg-slate-50 p-3">
       <p className="text-foreground mb-2 text-sm">{impactMessage}</p>
+      {feedback?.error ? <p role="alert" className="mb-2 text-sm text-red-700">{feedback.error}</p> : null}
+      {feedback?.success ? <p role="status" className="mb-2 text-sm text-green-800">{feedback.success}</p> : null}
       <form
         action={async (formData) => {
-          await action(formData);
-          setOpen(false);
+          setFeedback(null);
+          try {
+            const result = await action(formData);
+            if (result && typeof result === 'object' && result.error) {
+              setFeedback({ error: result.error });
+              return;
+            }
+            if (result && typeof result === 'object' && result.success) {
+              setFeedback({ success: result.success });
+            }
+            setOpen(false);
+          } catch {
+            setFeedback({ error: 'Não foi possível concluir a ação. Confira a situação do usuário antes de tentar novamente.' });
+          }
         }}
         className="flex flex-col gap-2"
       >
