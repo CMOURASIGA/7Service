@@ -41,15 +41,24 @@ async function changeStatus(
   const { internalUser } = await requirePermission('users.access.manage');
   const db = createAdminClient();
   // Identify the target before changing the central authorization.
-  const previous = await db.from('user_product_access')
-    .select('client_id,subscription_id').eq('id', accessId)
-    .eq('identity_id', identityId).maybeSingle();
+  const previous = await db
+    .from('user_product_access')
+    .select('client_id,subscription_id')
+    .eq('id', accessId)
+    .eq('identity_id', identityId)
+    .maybeSingle();
   if (previous.error || !previous.data) throw new Error('Concessão não encontrada.');
-  const subscription = await db.from('subscriptions')
-    .select('product_id').eq('id', previous.data.subscription_id).single();
+  const subscription = await db
+    .from('subscriptions')
+    .select('product_id')
+    .eq('id', previous.data.subscription_id)
+    .single();
   if (subscription.error || !subscription.data) throw new Error('Assinatura indisponível.');
-  const product = await db.from('products')
-    .select('code').eq('id', subscription.data.product_id).single();
+  const product = await db
+    .from('products')
+    .select('code')
+    .eq('id', subscription.data.product_id)
+    .single();
   if (product.error || !product.data) throw new Error('Produto indisponível.');
 
   const { error } = await db.rpc('change_product_access_status_atomic', {
@@ -65,14 +74,22 @@ async function changeStatus(
   if (status === 'ACTIVE' || product.data.code !== 'COMMANDER7') return;
   // An identity may have more than one subscription for the same product and
   // company. Do not suspend the local member while any grant remains active.
-  const sameProduct = await db.from('subscriptions').select('id')
-    .eq('client_id', previous.data.client_id).eq('product_id', subscription.data.product_id);
+  const sameProduct = await db
+    .from('subscriptions')
+    .select('id')
+    .eq('client_id', previous.data.client_id)
+    .eq('product_id', subscription.data.product_id);
   if (sameProduct.error) throw new Error('Acesso central alterado. Reconciliação pendente.');
   const subscriptionIds = (sameProduct.data ?? []).map((item) => item.id);
   if (subscriptionIds.length) {
-    const remaining = await db.from('user_product_access').select('id')
-      .eq('identity_id', identityId).eq('client_id', previous.data.client_id)
-      .eq('status', 'ACTIVE').in('subscription_id', subscriptionIds).limit(1);
+    const remaining = await db
+      .from('user_product_access')
+      .select('id')
+      .eq('identity_id', identityId)
+      .eq('client_id', previous.data.client_id)
+      .eq('status', 'ACTIVE')
+      .in('subscription_id', subscriptionIds)
+      .limit(1);
     if (remaining.error) throw new Error('Acesso central alterado. Reconciliação pendente.');
     if (remaining.data?.length) return;
   }

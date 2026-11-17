@@ -57,7 +57,9 @@ export async function setMembershipStatusAction(
     if (!sync.confirmed) {
       // Never report destination success when only the central change completed.
       // The central authorization decision already denies the revoked membership.
-      throw new Error('Vínculo central atualizado. Revogação no Commander pendente de confirmação.');
+      throw new Error(
+        'Vínculo central atualizado. Revogação no Commander pendente de confirmação.',
+      );
     }
   }
 }

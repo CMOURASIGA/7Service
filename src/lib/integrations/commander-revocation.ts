@@ -8,8 +8,7 @@ type RevocationScope = {
 };
 
 export type RevocationSyncResult =
-  | { confirmed: true }
-  | { confirmed: false; reason: 'NOT_CONFIGURED' | 'UNCONFIRMED' };
+  { confirmed: true } | { confirmed: false; reason: 'NOT_CONFIGURED' | 'UNCONFIRMED' };
 
 /**
  * Only sends a restricted, signed *revocation* intent. The Commander
@@ -33,7 +32,8 @@ export async function syncCommanderRevocation(
       url.search ||
       url.hash ||
       url.pathname !== '/api/integrations/7service/revocation'
-    ) return { confirmed: false, reason: 'NOT_CONFIGURED' };
+    )
+      return { confirmed: false, reason: 'NOT_CONFIGURED' };
 
     const timestamp = String(Date.now());
     const body = JSON.stringify({
@@ -61,12 +61,8 @@ export async function syncCommanderRevocation(
     if (!response.ok || !response.headers.get('content-type')?.includes('application/json'))
       return { confirmed: false, reason: 'UNCONFIRMED' };
     const result: unknown = await response.json();
-    if (
-      result &&
-      typeof result === 'object' &&
-      'confirmed' in result &&
-      result.confirmed === true
-    ) return { confirmed: true };
+    if (result && typeof result === 'object' && 'confirmed' in result && result.confirmed === true)
+      return { confirmed: true };
   } catch {
     // Central authorization remains revoked even if destination is unavailable.
   }
