@@ -35,30 +35,34 @@ const commander = createClient(required('COMMANDER_URL'), required('COMMANDER_RO
 });
 
 async function main() {
-  const identity = await service.from('identities')
-    .select('id,email,status,auth_user_id').eq('id', centralId).single();
+  const identity = await service
+    .from('identities')
+    .select('id,email,status,auth_user_id')
+    .eq('id', centralId)
+    .single();
   if (identity.error || identity.data.email.toLowerCase() !== email)
     throw new Error('Target identity mismatch, aborting');
 
   const [memberships, grants, invitations, localLinks, localAccounts] = await Promise.all([
-    service.from('client_memberships').select('id,client_id')
-      .eq('identity_id', centralId),
-    service.from('user_product_access').select('id,client_id')
-      .eq('identity_id', centralId),
+    service.from('client_memberships').select('id,client_id').eq('identity_id', centralId),
+    service.from('user_product_access').select('id,client_id').eq('identity_id', centralId),
     service.from('invitations').select('id').eq('identity_id', centralId),
-    commander.from('central_identity_user_links').select('id')
-      .eq('central_identity_id', centralId),
-    commander.from('organization_members')
-      .select('user_id,organization_id').eq('organization_id',
-        'bce0fe84-eb14-4e9d-9815-1cb22cde3e5a'),
+    commander.from('central_identity_user_links').select('id').eq('central_identity_id', centralId),
+    commander
+      .from('organization_members')
+      .select('user_id,organization_id')
+      .eq('organization_id', 'bce0fe84-eb14-4e9d-9815-1cb22cde3e5a'),
   ]);
   if ([memberships, grants, invitations, localLinks, localAccounts].some((v) => v.error))
     throw new Error('Cannot verify every identity dependency');
-  if ((memberships.data ?? []).some((v) => v.client_id !== clientId) ||
-      (grants.data ?? []).some((v) => v.client_id !== clientId) ||
-      (localLinks.data ?? []).length)
+  if (
+    (memberships.data ?? []).some((v) => v.client_id !== clientId) ||
+    (grants.data ?? []).some((v) => v.client_id !== clientId) ||
+    (localLinks.data ?? []).length
+  )
     throw new Error('Identity is linked outside the expected company or already provisioned');
-  if (!identity.data.auth_user_id) throw new Error('Auth account missing, manual reconciliation required');
+  if (!identity.data.auth_user_id)
+    throw new Error('Auth account missing, manual reconciliation required');
 
   const localAuth = await commander.auth.admin.listUsers({ page: 1, perPage: 1000 });
   if (localAuth.error) throw new Error('Cannot validate destination Auth accounts');
@@ -81,17 +85,24 @@ async function main() {
   const deleted = await service.auth.admin.deleteUser(identity.data.auth_user_id);
   if (deleted.error) throw new Error('AUTH_DELETE_FAILED');
 
-  const removeGrants = await service.from('user_product_access')
-    .delete().eq('identity_id', centralId);
+  const removeGrants = await service
+    .from('user_product_access')
+    .delete()
+    .eq('identity_id', centralId);
   if (removeGrants.error) throw new Error('GRANT_PURGE_FAILED_AFTER_AUTH_DELETE');
 
-  const removeMemberships = await service.from('client_memberships')
-    .delete().eq('identity_id', centralId);
+  const removeMemberships = await service
+    .from('client_memberships')
+    .delete()
+    .eq('identity_id', centralId);
   if (removeMemberships.error) throw new Error('MEMBERSHIP_PURGE_FAILED_AFTER_AUTH_DELETE');
 
   // Invitations cascade from the identity; the audit history is retained.
-  const removeIdentity = await service.from('identities')
-    .delete().eq('id', centralId).eq('email', email);
+  const removeIdentity = await service
+    .from('identities')
+    .delete()
+    .eq('id', centralId)
+    .eq('email', email);
   if (removeIdentity.error) throw new Error('IDENTITY_PURGE_FAILED_AFTER_AUTH_DELETE');
 
   const check = await service.from('identities').select('id').eq('id', centralId);

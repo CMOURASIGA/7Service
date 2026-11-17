@@ -6,7 +6,13 @@ const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf
 
 test('client navigation is separated into five tabs', () => {
   const page = read('src/app/(admin)/clientes/[id]/page.tsx');
-  for (const label of ['Dados cadastrais', 'Contratos', 'Produtos', 'Usuários', 'Funcionalidades']) {
+  for (const label of [
+    'Dados cadastrais',
+    'Contratos',
+    'Produtos',
+    'Usuários',
+    'Funcionalidades',
+  ]) {
     assert.ok(page.includes(label));
   }
   assert.match(page, /activeTab === 'dados'/);

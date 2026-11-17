@@ -14,9 +14,11 @@ export default async function CustomerApplicationsPage() {
   // The identity mapping is anchored in the verified server Auth UID,
   // never a URL, an email typed by the browser, or editable JWT metadata.
   const db = createAdminClient();
-  const identityResult = await db.from('identities')
+  const identityResult = await db
+    .from('identities')
     .select('id,first_name,last_name,status')
-    .eq('auth_user_id', data.user.id).maybeSingle();
+    .eq('auth_user_id', data.user.id)
+    .maybeSingle();
   if (identityResult.error || !identityResult.data) {
     return (
       <main className="mx-auto max-w-3xl space-y-4 p-6">
@@ -36,12 +38,16 @@ export default async function CustomerApplicationsPage() {
   }
 
   const [membershipResult, grantResult] = await Promise.all([
-    db.from('client_memberships')
+    db
+      .from('client_memberships')
       .select('client_id,status')
-      .eq('identity_id', identity.id).eq('status', 'ACTIVE'),
-    db.from('user_product_access')
+      .eq('identity_id', identity.id)
+      .eq('status', 'ACTIVE'),
+    db
+      .from('user_product_access')
       .select('client_id,subscription_id,product_role_id,status')
-      .eq('identity_id', identity.id).in('status', ['ACTIVE', 'PENDING']),
+      .eq('identity_id', identity.id)
+      .in('status', ['ACTIVE', 'PENDING']),
   ]);
   if (membershipResult.error || grantResult.error) {
     throw new Error('Não foi possível consultar seus acessos.');
@@ -55,9 +61,10 @@ export default async function CustomerApplicationsPage() {
       ? db.from('clients').select('id,trade_name,legal_name,status').in('id', clientIdList)
       : Promise.resolve({ data: [], error: null }),
     subscriptionIds.length
-      ? db.from('subscriptions')
-        .select('id,product_id,status,start_date,end_date,grace_days')
-        .in('id', subscriptionIds)
+      ? db
+          .from('subscriptions')
+          .select('id,product_id,status,start_date,end_date,grace_days')
+          .in('id', subscriptionIds)
       : Promise.resolve({ data: [], error: null }),
     db.from('product_roles').select('id,name'),
   ]);
@@ -80,39 +87,50 @@ export default async function CustomerApplicationsPage() {
     const subscription = subscriptions.get(grant.subscription_id);
     const product = subscription ? products.get(subscription.product_id) : null;
     const expiresAt = subscription?.end_date
-      ? new Date(new Date(subscription.end_date + 'T00:00:00Z').getTime() +
-        subscription.grace_days * 86400000).toISOString().slice(0, 10)
+      ? new Date(
+          new Date(subscription.end_date + 'T00:00:00Z').getTime() +
+            subscription.grace_days * 86400000,
+        )
+          .toISOString()
+          .slice(0, 10)
       : null;
-    if (!company || !subscription || !product ||
-        company.status !== 'ACTIVE' || subscription.status !== 'ACTIVE' ||
-        product.status !== 'ACTIVE' || subscription.start_date > today ||
-        (expiresAt !== null && today > expiresAt)) return [];
-    return [{
-      company: company.trade_name || company.legal_name,
-      product: product.name,
-      role: roles.get(grant.product_role_id) || 'Perfil não identificado',
-      status: grant.status,
-    }];
+    if (
+      !company ||
+      !subscription ||
+      !product ||
+      company.status !== 'ACTIVE' ||
+      subscription.status !== 'ACTIVE' ||
+      product.status !== 'ACTIVE' ||
+      subscription.start_date > today ||
+      (expiresAt !== null && today > expiresAt)
+    )
+      return [];
+    return [
+      {
+        company: company.trade_name || company.legal_name,
+        product: product.name,
+        role: roles.get(grant.product_role_id) || 'Perfil não identificado',
+        status: grant.status,
+      },
+    ];
   });
 
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-5 p-6">
       <header className="space-y-2">
         <p className="text-sm text-slate-600">7Service | Área do usuário</p>
-        <h1 className="text-2xl font-semibold">
-          Olá, {identity.first_name}!
-        </h1>
+        <h1 className="text-2xl font-semibold">Olá, {identity.first_name}!</h1>
         <p className="text-sm text-slate-600">
-          Aqui você acompanha os produtos concedidos às suas empresas.
-          O acesso somente será liberado após confirmação técnica no sistema de destino.
+          Aqui você acompanha os produtos concedidos às suas empresas. O acesso somente será
+          liberado após confirmação técnica no sistema de destino.
         </p>
       </header>
       {visible.length === 0 ? (
         <section className="rounded-lg border p-5">
           <h2 className="font-semibold">Nenhum sistema disponível</h2>
           <p className="mt-2 text-sm text-slate-600">
-            Sua identidade está ativa, mas ainda não há produtos concedidos e válidos.
-            Consulte o administrador da sua empresa.
+            Sua identidade está ativa, mas ainda não há produtos concedidos e válidos. Consulte o
+            administrador da sua empresa.
           </p>
         </section>
       ) : (
@@ -127,7 +145,11 @@ export default async function CustomerApplicationsPage() {
                   ? 'Licença reservada. Aguardando ativação e provisionamento.'
                   : 'Autorização central ativa. Provisionamento no produto não verificado.'}
               </p>
-              <button type="button" disabled className="mt-3 w-full rounded border p-2 text-sm opacity-60">
+              <button
+                type="button"
+                disabled
+                className="mt-3 w-full rounded border p-2 text-sm opacity-60"
+              >
                 Acesso pendente de confirmação
               </button>
             </section>

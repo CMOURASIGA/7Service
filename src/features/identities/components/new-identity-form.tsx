@@ -65,7 +65,9 @@ export function NewIdentityForm({
           }}
           className="rounded border p-2"
         >
-          <option value="" disabled>Selecione a empresa</option>
+          <option value="" disabled>
+            Selecione a empresa
+          </option>
           {clients.map((item) => (
             <option key={item.id} value={item.id}>
               {item.trade_name || item.legal_name}
@@ -73,12 +75,12 @@ export function NewIdentityForm({
           ))}
         </select>
       </label>
-      <div className="sm:col-span-2 rounded-md border bg-slate-50 p-3">
+      <div className="rounded-md border bg-slate-50 p-3 sm:col-span-2">
         <p className="mb-2 text-sm font-semibold">Autorização de produto</p>
         <p className="mb-3 text-xs text-slate-600">
-          Selecione um produto contratado. A licença é reservada ao cadastrar a pessoa,
-          inclusive enquanto o convite estiver pendente. Outros produtos podem ser
-          concedidos depois no cadastro da identidade.
+          Selecione um produto contratado. A licença é reservada ao cadastrar a pessoa, inclusive
+          enquanto o convite estiver pendente. Outros produtos podem ser concedidos depois no
+          cadastro da identidade.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-sm">
@@ -96,7 +98,8 @@ export function NewIdentityForm({
               <option value="">Sem produto inicial</option>
               {available.map((item) => (
                 <option key={item.subscriptionId} value={item.subscriptionId}>
-                  {item.productName} ({Math.max(0, item.licenseLimit - item.licensesUsed)} disponíveis)
+                  {item.productName} ({Math.max(0, item.licenseLimit - item.licensesUsed)}{' '}
+                  disponíveis)
                 </option>
               ))}
             </select>
@@ -113,7 +116,9 @@ export function NewIdentityForm({
             >
               <option value="">Selecione o perfil</option>
               {selected?.roles.map((item) => (
-                <option key={item.id} value={item.id}>{item.name}</option>
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
               ))}
             </select>
           </label>
@@ -129,10 +134,14 @@ export function NewIdentityForm({
         ) : null}
       </div>
       {state.error ? (
-        <p role="alert" className="text-sm text-red-700 sm:col-span-2">{state.error}</p>
+        <p role="alert" className="text-sm text-red-700 sm:col-span-2">
+          {state.error}
+        </p>
       ) : null}
       {state.success ? (
-        <p role="status" className="text-sm sm:col-span-2">{state.success}</p>
+        <p role="status" className="text-sm sm:col-span-2">
+          {state.success}
+        </p>
       ) : null}
       <button
         type="submit"

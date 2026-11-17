@@ -42,16 +42,21 @@ export async function createIdentityMembershipAction(
   }
   if (subscriptionId) {
     const [subscription, role] = await Promise.all([
-      db.from('subscriptions')
+      db
+        .from('subscriptions')
         .select('id,client_id,product_id,status')
-        .eq('id', subscriptionId).eq('client_id', clientId).maybeSingle(),
-      db.from('product_roles')
-        .select('id,product_id,status').eq('id', productRoleId).maybeSingle(),
+        .eq('id', subscriptionId)
+        .eq('client_id', clientId)
+        .maybeSingle(),
+      db.from('product_roles').select('id,product_id,status').eq('id', productRoleId).maybeSingle(),
     ]);
-    if (subscription.error || role.error ||
-        subscription.data?.status !== 'ACTIVE' ||
-        role.data?.status !== 'ACTIVE' ||
-        subscription.data.product_id !== role.data.product_id) {
+    if (
+      subscription.error ||
+      role.error ||
+      subscription.data?.status !== 'ACTIVE' ||
+      role.data?.status !== 'ACTIVE' ||
+      subscription.data.product_id !== role.data.product_id
+    ) {
       return { error: 'Produto ou perfil não pertence à assinatura ativa desta empresa.' };
     }
   }
@@ -133,16 +138,21 @@ export async function createIdentityMembershipAction(
   // subscription row lock. PENDING grants reserve seats before activation.
   // If the license ceiling is reached, no invitation is sent.
   if (subscriptionId && productRoleId) {
-    const existingGrant = await db.from('user_product_access')
+    const existingGrant = await db
+      .from('user_product_access')
       .select('id,product_role_id,status')
-      .eq('identity_id', identity.id).eq('subscription_id', subscriptionId).maybeSingle();
+      .eq('identity_id', identity.id)
+      .eq('subscription_id', subscriptionId)
+      .maybeSingle();
     if (existingGrant.error) {
       return { error: 'Não foi possível verificar concessões existentes.' };
     }
     if (existingGrant.data) {
       // Retrying an invitation must not duplicate reserved seats.
-      if (existingGrant.data.product_role_id !== productRoleId ||
-          !['ACTIVE', 'PENDING'].includes(existingGrant.data.status)) {
+      if (
+        existingGrant.data.product_role_id !== productRoleId ||
+        !['ACTIVE', 'PENDING'].includes(existingGrant.data.status)
+      ) {
         return { error: 'Já existe uma concessão diferente. Gerencie o acesso na identidade.' };
       }
     } else {
@@ -154,7 +164,8 @@ export async function createIdentityMembershipAction(
       });
       if (grant.error) {
         return {
-          error: 'Vínculo empresarial registrado, mas não foi possível reservar a licença. Verifique o limite e as concessões antes de reenviar convite.',
+          error:
+            'Vínculo empresarial registrado, mas não foi possível reservar a licença. Verifique o limite e as concessões antes de reenviar convite.',
         };
       }
     }

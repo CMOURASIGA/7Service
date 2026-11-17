@@ -34,8 +34,8 @@ export default function CustomerLoginPage() {
       <form onSubmit={enter} className="flex w-full max-w-md flex-col gap-4 rounded-lg border p-7">
         <h1 className="text-xl font-semibold">Entrar no Meu Portal</h1>
         <p className="text-sm text-slate-600">
-          Utilize a identidade e a senha que ativou no 7Service.
-          O portal mostra somente os produtos autorizados para suas empresas.
+          Utilize a identidade e a senha que ativou no 7Service. O portal mostra somente os produtos
+          autorizados para suas empresas.
         </p>
         <label className="flex flex-col gap-1 text-sm">
           E-mail
@@ -59,8 +59,16 @@ export default function CustomerLoginPage() {
             className="rounded border p-2"
           />
         </label>
-        {error ? <p role="alert" className="text-sm text-red-700">{error}</p> : null}
-        <button type="submit" disabled={pending} className="rounded bg-blue-700 p-2 text-white disabled:opacity-60">
+        {error ? (
+          <p role="alert" className="text-sm text-red-700">
+            {error}
+          </p>
+        ) : null}
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded bg-blue-700 p-2 text-white disabled:opacity-60"
+        >
           {pending ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
