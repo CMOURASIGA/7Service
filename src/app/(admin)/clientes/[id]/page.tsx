@@ -22,9 +22,17 @@ import {
 import type { Client, ClientAddress, ClientStatus, Contract, Product } from '@/types/domain';
 
 export const dynamic = 'force-dynamic';
-export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ClientDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ aba?: string }>;
+}) {
   await requirePermission('clients.view');
   const { id } = await params;
+  const { aba } = await searchParams;
+  const activeTab = ['dados', 'contratos', 'produtos', 'usuarios', 'funcionalidades'].includes(aba ?? '') ? aba : 'dados';
   const db = createAdminClient();
   const { data: row, error } = await db.from('clients').select('*').eq('id', id).maybeSingle();
   if (error) throw new Error('Falha ao consultar cliente');
@@ -183,6 +191,25 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           />
         ) : null}
       </div>
+      <nav aria-label="Seções do cliente" className="flex flex-wrap gap-2 border-b pb-3">
+        {([
+          ['dados', 'Dados cadastrais'],
+          ['contratos', 'Contratos'],
+          ['produtos', 'Produtos'],
+          ['usuarios', 'Usuários'],
+          ['funcionalidades', 'Funcionalidades'],
+        ] as const).map(([value, label]) => (
+          <Link
+            key={value}
+            href={`/clientes/${id}?aba=${value}`}
+            aria-current={activeTab === value ? 'page' : undefined}
+            className={`rounded-md border px-3 py-2 text-sm ${activeTab === value ? 'border-blue-700 bg-blue-700 text-white' : 'hover:bg-slate-50'}`}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
+      {activeTab === 'dados' ? (
       <section className="rounded-lg border p-5">
         <h2 className="mb-4 font-semibold">Dados cadastrais</h2>
         <ClientForm
@@ -191,10 +218,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           submitLabel="Salvar alteracoes"
         />
       </section>
-      <ClientFeaturesPanel clientId={id} />
+      ) : null}
+      {activeTab === 'contratos' ? (
       <section className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-lg border p-5">
-          <h2 className="mb-2 font-semibold">Contratos</h2>
+        <div className="rounded-lg border p-5">          <h2 className="mb-2 font-semibold">Contratos</h2>
           <ContractForm action={createContractAction.bind(null, id)} />
           {!contracts.data?.length ? (
             <p className="text-muted text-sm">Nenhum contrato registrado.</p>
@@ -231,8 +258,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             </ul>
           )}
         </div>
-        <div className="rounded-lg border p-5">
-          <h2 className="mb-2 font-semibold">Produtos contratados</h2>
+      </section>
+      ) : null}
+      {activeTab === 'produtos' ? (
+      <section className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-lg border p-5">          <h2 className="mb-2 font-semibold">Produtos contratados</h2>
           <SubscriptionForm
             action={createSubscriptionAction.bind(null, id)}
             contracts={contractOptions}
@@ -251,8 +281,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             </ul>
           )}
         </div>
-        <div className="rounded-lg border p-5">
-          <h2 className="mb-2 font-semibold">Usuarios vinculados</h2>
+      </section>
+      ) : null}
+      {activeTab === 'usuarios' ? (
+      <section className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-lg border p-5">          <h2 className="mb-2 font-semibold">Usuarios vinculados</h2>
           {!memberships.data?.length ? (
             <p className="text-muted text-sm">Nenhuma identidade vinculada.</p>
           ) : (
@@ -266,6 +299,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           )}
         </div>
       </section>
+      ) : null}
+      {activeTab === 'funcionalidades' ? (
+      <ClientFeaturesPanel clientId={id} />
+      ) : null}
     </main>
   );
 }
