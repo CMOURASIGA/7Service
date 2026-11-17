@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { syncCommanderRevocation } from '@/lib/integrations/commander-revocation';
 
 export async function setMembershipStatusAction(
   identityId: string,
@@ -46,4 +47,16 @@ export async function setMembershipStatusAction(
   if (auditError) throw new Error('Vínculo atualizado, mas registro de auditoria indisponível.');
   revalidatePath('/usuarios/' + identityId);
   revalidatePath('/clientes/' + previous.client_id);
+  if (status !== 'ACTIVE') {
+    const sync = await syncCommanderRevocation({
+      identityId,
+      clientId: previous.client_id,
+      productCode: 'COMMANDER7',
+    });
+    if (!sync.confirmed) {
+      // Never report destination success when only the central change completed.
+      // The central authorization decision already denies the revoked membership.
+      throw new Error('Vínculo central atualizado. Revogação no Commander pendente de confirmação.');
+    }
+  }
 }
