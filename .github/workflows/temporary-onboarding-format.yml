@@ -1,0 +1,57 @@
+name: Temporary formatting for onboarding branch
+on:
+  push:
+    branches:
+      - feat/7service-onboarding-portal-20261117
+    paths:
+      - .github/workflows/temporary-onboarding-format.yml
+permissions:
+  contents: write
+jobs:
+  format:
+    if: github.repository == 'CMOURASIGA/7Service'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/7service-onboarding-portal-20261117
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install exact dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Apply repository formatting to onboarding changes only
+        run: |
+          npx prettier --write \
+            'src/app/(admin)/clientes/[id]/page.tsx' \
+            'src/app/(admin)/usuarios/page.tsx' \
+            'src/app/(admin)/usuarios/actions.ts' \
+            'src/features/identities/components/new-identity-form.tsx' \
+            'src/app/entrar/page.tsx' \
+            'src/app/meus-sistemas/page.tsx' \
+            'src/features/auth/components/set-password-form.tsx' \
+            'src/lib/supabase/middleware.ts' \
+            'src/app/ativacao-concluida/page.tsx' \
+            'tests/customer-invite-completion.test.mjs' \
+            'tests/onboarding-subscription-portal.test.mjs' \
+            'scripts/reset-cristiano-onboarding.ts'
+      - name: Commit formatted code
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- \
+            'src/app/(admin)/clientes/[id]/page.tsx' \
+            'src/app/(admin)/usuarios/page.tsx' \
+            'src/app/(admin)/usuarios/actions.ts' \
+            'src/features/identities/components/new-identity-form.tsx' \
+            'src/app/entrar/page.tsx' \
+            'src/app/meus-sistemas/page.tsx' \
+            'src/features/auth/components/set-password-form.tsx' \
+            'src/lib/supabase/middleware.ts' \
+            'src/app/ativacao-concluida/page.tsx' \
+            'tests/customer-invite-completion.test.mjs' \
+            'tests/onboarding-subscription-portal.test.mjs' \
+            'scripts/reset-cristiano-onboarding.ts'
+          git diff --cached --quiet || { git commit -m "style: format onboarding changes with Prettier"; git push; }
