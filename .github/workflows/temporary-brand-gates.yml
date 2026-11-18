@@ -1,0 +1,37 @@
+name: Temporary 7Service branding gates
+on:
+  push:
+    branches:
+      - chore/brand-access-management-service-20261118
+    paths:
+      - .github/workflows/temporary-brand-gates.yml
+permissions:
+  contents: write
+jobs:
+  brand:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chore/brand-access-management-service-20261118
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Prettier for modified source
+        run: |
+          git diff --name-only -z origin/develop...HEAD -- '*.tsx' '*.ts' '*.jsx' '*.js' | xargs -0 -r npx prettier --write
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -u
+          git diff --cached --quiet || { git commit -m "style: apply project Prettier to rebranded UI"; git push; }
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
