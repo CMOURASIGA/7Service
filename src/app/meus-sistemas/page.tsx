@@ -109,7 +109,7 @@ export default async function CustomerApplicationsPage() {
     return [
       {
         company: company.trade_name || company.legal_name,
-        product: product.name,
+        product: product.code === 'COMMANDER7' ? 'Commander' : product.name,
         productCode: product.code,
         role: roles.get(grant.product_role_id) || 'Perfil não identificado',
         status: grant.status,
