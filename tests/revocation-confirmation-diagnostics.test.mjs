@@ -12,12 +12,16 @@ test('revocation confirmation distinguishes protected preview, rejected JSON, an
     'DESTINATION_PROTECTED',
     'DESTINATION_REJECTED',
     'DESTINATION_UNAVAILABLE',
+    'DESTINATION_TIMEOUT',
+    'DESTINATION_REDIRECT',
     'UNCONFIRMED',
   ]) {
     assert.match(sender, new RegExp(reason));
     assert.match(action, new RegExp(reason));
   }
   assert.match(sender, /response\.headers\.get\('content-type'\)/);
+  assert.match(sender, /AbortSignal\.timeout\(15000\)/);
+  assert.match(sender, /redirect: 'manual'/);
   assert.match(sender, /'confirmed' in result && result\.confirmed === true/);
   assert.match(action, /A revogação central permanece efetiva/);
   assert.doesNotMatch(sender, /operation: 'GRANT'/);
