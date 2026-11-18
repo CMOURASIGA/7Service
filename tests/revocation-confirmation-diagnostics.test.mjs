@@ -8,8 +8,11 @@ test('revocation confirmation distinguishes protected preview, rejected JSON, an
   const sender = read('src/lib/integrations/commander-revocation.ts');
   const action = read('src/app/(admin)/usuarios/[id]/memberships/actions.ts');
   for (const reason of [
-    'NOT_CONFIGURED', 'DESTINATION_PROTECTED', 'DESTINATION_REJECTED',
-    'DESTINATION_UNAVAILABLE', 'UNCONFIRMED',
+    'NOT_CONFIGURED',
+    'DESTINATION_PROTECTED',
+    'DESTINATION_REJECTED',
+    'DESTINATION_UNAVAILABLE',
+    'UNCONFIRMED',
   ]) {
     assert.match(sender, new RegExp(reason));
     assert.match(action, new RegExp(reason));
