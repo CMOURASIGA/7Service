@@ -1,0 +1,36 @@
+name: Temporary format invite identity gate
+on:
+  push:
+    branches:
+      - fix/invite-session-identity-gate-20261118
+    paths:
+      - .github/workflows/temporary-format-invite-gate.yml
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/invite-session-identity-gate-20261118
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: |
+          npx prettier --write \
+            'src/app/api/auth/invite-eligibility/route.ts' \
+            'src/features/auth/components/set-password-form.tsx' \
+            'tests/invite-session-identity-gate.test.mjs'
+      - name: Commit formatted changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- \
+            'src/app/api/auth/invite-eligibility/route.ts' \
+            'src/features/auth/components/set-password-form.tsx' \
+            'tests/invite-session-identity-gate.test.mjs'
+          git diff --cached --quiet || { git commit -m "style: format invite identity guard"; git push; }
