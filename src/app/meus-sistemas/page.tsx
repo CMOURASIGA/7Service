@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { CommanderLaunchButton } from '@/features/portal/components/commander-launch-button';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Meus sistemas - 7Service' };
@@ -73,7 +74,7 @@ export default async function CustomerApplicationsPage() {
   }
   const productIds = [...new Set((subscriptionResult.data ?? []).map((item) => item.product_id))];
   const productResult = productIds.length
-    ? await db.from('products').select('id,name,status').in('id', productIds)
+    ? await db.from('products').select('id,name,code,status').in('id', productIds)
     : { data: [], error: null };
   if (productResult.error) throw new Error('Produtos indisponíveis.');
 
@@ -109,6 +110,7 @@ export default async function CustomerApplicationsPage() {
       {
         company: company.trade_name || company.legal_name,
         product: product.name,
+        productCode: product.code,
         role: roles.get(grant.product_role_id) || 'Perfil não identificado',
         status: grant.status,
       },
@@ -186,18 +188,25 @@ export default async function CustomerApplicationsPage() {
                   <p className="rounded-md bg-slate-50 p-3 text-sm leading-5 text-slate-700">
                     {item.status === 'PENDING'
                       ? 'Licença reservada. O acesso ao produto depende da ativação da conta e da autorização técnica.'
-                      : 'A autorização no 7Service está ativa. A conexão com o produto ainda não foi verificada por este portal. Isso não significa que sua conta no produto esteja bloqueada.'}
+                      : 'A autorização no 7Service está ativa. Sua autorização central está ativa. Ao abrir o produto pelo portal, o sistema validará a identidade e as permissões no destino antes de liberar o acesso.'}
                   </p>
                 </div>
                 <div className="mt-4">
-                  <button
-                    type="button"
-                    disabled
-                    title="Abertura por login único depende de confirmação técnica do produto"
-                    className="w-full cursor-not-allowed rounded-lg border border-slate-300 bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-600"
-                  >
-                    Acesso pelo portal em preparação
-                  </button>
+                  {item.productCode === 'COMMANDER7' &&
+                  item.status === 'ACTIVE' &&
+                  process.env.NEXT_PUBLIC_COMMANDER_SSO_ORIGIN ? (
+                    <CommanderLaunchButton
+                      targetOrigin={process.env.NEXT_PUBLIC_COMMANDER_SSO_ORIGIN}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full cursor-not-allowed rounded-lg border border-slate-300 bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-600"
+                    >
+                      Acesso pelo portal em preparação
+                    </button>
+                  )}
                 </div>
               </article>
             ))}
