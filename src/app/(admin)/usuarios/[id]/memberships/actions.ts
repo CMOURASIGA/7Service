@@ -90,6 +90,7 @@ export async function setMembershipStatusAction(
  * Operator-driven retry when the central change succeeded but the destination
  * was offline. Never suspend a Commander member while central access is valid.
  */
+// prettier-ignore
 export async function retryCommanderRevocationAction(
   identityId: string,
   clientId: string,
