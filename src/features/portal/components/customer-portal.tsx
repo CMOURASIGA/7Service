@@ -22,7 +22,10 @@ function useGreeting() {
   const [greeting, setGreeting] = useState('Olá');
   useEffect(() => {
     const hour = new Date().getHours();
-    setGreeting(hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite');
+    const frame = window.requestAnimationFrame(() => {
+      setGreeting(hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite');
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
   return greeting;
 }
@@ -50,7 +53,10 @@ export function CustomerPortal({
 
   useEffect(() => {
     // Local preference only. Server-side grants remain the access authority.
-    setLast(window.localStorage.getItem('consult-portal-last-product'));
+    const frame = window.requestAnimationFrame(() => {
+      setLast(window.localStorage.getItem('consult-portal-last-product'));
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
   useEffect(() => {
     const handle = (event: KeyboardEvent) => {
