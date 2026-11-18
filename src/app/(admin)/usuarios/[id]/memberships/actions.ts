@@ -142,11 +142,20 @@ export async function retryCommanderRevocationAction(
     productCode: 'COMMANDER7',
   });
   if (!sync.confirmed) {
+    const feedback: Record<typeof sync.reason, string> = {
+      NOT_CONFIGURED:
+        'Integração de revogação não configurada. A suspensão remota não foi confirmada.',
+      DESTINATION_PROTECTED:
+        'A proteção da Preview impediu uma resposta JSON do Commander. Verifique o bypass de automação na Vercel.',
+      DESTINATION_REJECTED:
+        'O Commander recebeu a chamada, mas não confirmou a suspensão. Verifique autenticação HMAC, mapeamentos e auditoria no destino.',
+      DESTINATION_UNAVAILABLE:
+        'O Commander não respondeu à chamada de sincronização. Verifique URL, rede e timeout.',
+      UNCONFIRMED:
+        'O Commander respondeu, mas não confirmou o bloqueio com confirmed=true.',
+    };
     return {
-      error:
-        sync.reason === 'NOT_CONFIGURED'
-          ? 'O vínculo central está revogado, mas a sincronização automática com o Commander ainda não está configurada. A suspensão remota não foi confirmada.'
-          : 'O vínculo central está revogado. O Commander não confirmou o bloqueio. Verifique a integração antes de tentar novamente.',
+      error: 'A revogação central permanece efetiva. ' + feedback[sync.reason],
     };
   }
   revalidatePath('/usuarios/' + identityId);
