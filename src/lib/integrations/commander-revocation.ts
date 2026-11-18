@@ -8,7 +8,16 @@ type RevocationScope = {
 };
 
 export type RevocationSyncResult =
-  { confirmed: true } | { confirmed: false; reason: 'NOT_CONFIGURED' | 'DESTINATION_PROTECTED' | 'DESTINATION_REJECTED' | 'DESTINATION_UNAVAILABLE' | 'UNCONFIRMED' };
+  | { confirmed: true }
+  | {
+      confirmed: false;
+      reason:
+        | 'NOT_CONFIGURED'
+        | 'DESTINATION_PROTECTED'
+        | 'DESTINATION_REJECTED'
+        | 'DESTINATION_UNAVAILABLE'
+        | 'UNCONFIRMED';
+    };
 
 /**
  * Only sends a restricted, signed *revocation* intent. The Commander
