@@ -143,16 +143,11 @@ export async function retryCommanderRevocationAction(
   });
   if (!sync.confirmed) {
     const feedback: Record<typeof sync.reason, string> = {
-      NOT_CONFIGURED:
-        'Integração de revogação não configurada. A suspensão remota não foi confirmada.',
-      DESTINATION_PROTECTED:
-        'A proteção da Preview impediu uma resposta JSON do Commander. Verifique o bypass de automação na Vercel.',
-      DESTINATION_REJECTED:
-        'O Commander recebeu a chamada, mas não confirmou a suspensão. Verifique autenticação HMAC, mapeamentos e auditoria no destino.',
-      DESTINATION_UNAVAILABLE:
-        'O Commander não respondeu à chamada de sincronização. Verifique URL, rede e timeout.',
-      UNCONFIRMED:
-        'O Commander respondeu, mas não confirmou o bloqueio com confirmed=true.',
+      NOT_CONFIGURED: 'Integração não configurada. Suspensão remota não confirmada.',
+      DESTINATION_PROTECTED: 'Proteção da Preview impediu resposta JSON. Verifique o bypass na Vercel.',
+      DESTINATION_REJECTED: 'Destino rejeitou a solicitação. Verifique HMAC, vínculos e auditoria.',
+      DESTINATION_UNAVAILABLE: 'Commander indisponível. Verifique URL, rede e timeout.',
+      UNCONFIRMED: 'Commander respondeu sem confirmar o bloqueio.',
     };
     return {
       error: 'A revogação central permanece efetiva. ' + feedback[sync.reason],
