@@ -21,3 +21,10 @@ test('suspended identity cannot create partial membership or reserve license', (
   assert.match(recovery, /identity\.suspension_reviewed_for_invitation/);
   assert.match(recovery, /requirePermission\('users\.manage'\)/);
 });
+
+test('failed new license grant compensates fresh company membership and identity', () => {
+  const action = read('src/app/(admin)/usuarios/actions.ts');
+  assert.match(action, /if \(createdMembership\)/);
+  assert.match(action, /if \(createdIdentity && !compensationFailed\)/);
+  assert.match(action, /Nenhum convite foi enviado/);
+});
