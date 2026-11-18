@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { StatusBadge } from '@/components/ui/status-badge';
+import { WorkspaceTabs } from '@/components/ui/workspace-tabs';
 import { NewIdentityForm } from '@/features/identities/components/new-identity-form';
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
@@ -86,7 +87,14 @@ export default async function IdentitiesPage({
         </p>
       </div>
 
-      <NewIdentityForm clients={clients ?? []} products={onboardingProducts} />
+      <WorkspaceTabs
+        label="Gestão de usuários"
+        tabs={[
+          { id: 'novo', label: 'Cadastrar usuário', content: (
+            <NewIdentityForm clients={clients ?? []} products={onboardingProducts} />
+          ) },
+          { id: 'consultar', label: 'Consultar usuários', content: (
+            <div className="space-y-4">
       <form className="flex flex-wrap gap-2" action="/usuarios">
         <input
           type="search"
@@ -159,6 +167,10 @@ export default async function IdentitiesPage({
           </tbody>
         </table>
       </div>
+            </div>
+          ) },
+        ]}
+      />
     </div>
   );
 }
