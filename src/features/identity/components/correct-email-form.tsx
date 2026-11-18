@@ -19,8 +19,8 @@ export function CorrectPendingEmailForm({
     >
       <h2 className="font-semibold">Corrigir e-mail antes da ativação</h2>
       <p className="mt-1 text-sm text-slate-700">
-        Corrige o endereço no 7Service e no provedor de autenticação, sem criar outra pessoa. A
-        conta precisa estar com convite pendente e nunca ter sido utilizada.
+        Corrige o endereço no Access Management Service e no provedor de autenticação, sem criar
+        outra pessoa. A conta precisa estar com convite pendente e nunca ter sido utilizada.
       </p>
       <label htmlFor="correct-email" className="mt-3 block text-sm font-medium">
         Novo e-mail

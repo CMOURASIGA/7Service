@@ -4,7 +4,7 @@ import {
   verifyProductProvisioningReceipt,
 } from './product-provisioning-contract';
 
-/** Authorization state in 7Service and observed state in the destination are separate facts. */
+/** Authorization state in Access Management Service and observed state in the destination are separate facts. */
 export interface ReconciliationSnapshot {
   centralGrantActive: boolean;
   contractActive: boolean;

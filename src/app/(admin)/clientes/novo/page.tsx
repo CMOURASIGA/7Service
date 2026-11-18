@@ -3,7 +3,7 @@ import { ClientForm } from '@/features/clients/components/client-form';
 import { createClientAction } from '../actions';
 
 export const metadata = {
-  title: 'Novo cliente - 7Service',
+  title: 'Novo cliente - Access Management Service',
 };
 
 export default function NewClientPage() {

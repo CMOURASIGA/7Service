@@ -1,3 +1,4 @@
+import { displayProductName } from '@/lib/product-display-name';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requirePermission } from '@/lib/auth/session';
@@ -33,7 +34,7 @@ export default async function ProductDetail({ params }: { params: Promise<{ id: 
         Produtos
       </Link>
       <div>
-        <h1 className="text-xl font-semibold">{product.data.name}</h1>
+        <h1 className="text-xl font-semibold">{displayProductName(product.data.name)}</h1>
         <p className="text-muted text-sm">
           {product.data.code} · {product.data.status}
         </p>

@@ -1,5 +1,5 @@
 /**
- * Validates a 7Service-approved, destination-specific provisioning instruction.
+ * Validates a Access Management Service-approved, destination-specific provisioning instruction.
  * This is a validation boundary, not an authorization grant. The server must
  * authorize actor, contract, product and company before constructing an intent.
  */

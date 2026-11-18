@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { requirePermission } from '@/lib/auth/session';
 
 export const metadata = {
-  title: 'Ajuda e implantação - 7Service',
+  title: 'Ajuda e implantação - Access Management Service',
 };
 
 type Step = {
@@ -59,7 +59,7 @@ const customerSteps: Step[] = [
   {
     title: 'Verificar provisionamento no produto',
     description:
-      'No sistema contratado, confirme a conta de autenticação, o vínculo com a identidade central, a empresa e as permissões locais, quando exigidos por sua integração. O 7Service não provisiona automaticamente todos os sistemas.',
+      'No sistema contratado, confirme a conta de autenticação, o vínculo com a identidade central, a empresa e as permissões locais, quando exigidos por sua integração. O Access Management Service não provisiona automaticamente todos os sistemas.',
   },
   {
     title: 'Validar login e permissões',
@@ -77,7 +77,7 @@ const colleagueSteps: Step[] = [
   {
     title: 'Distinguir perfil interno e acesso ao produto',
     description:
-      'SUPER_ADMIN no 7Service é administração interna; não equivale automaticamente a uma licença ou acesso em outro produto.',
+      'SUPER_ADMIN no Access Management Service é administração interna; não equivale automaticamente a uma licença ou acesso em outro produto.',
     href: '/administracao/operadores',
     linkLabel: 'Administração interna',
   },
@@ -143,10 +143,11 @@ export default async function HelpPage() {
       <section className="rounded-xl border border-blue-200 bg-blue-50 p-5">
         <h2 className="font-semibold text-blue-950">Antes de começar</h2>
         <p className="mt-2 text-sm text-blue-950">
-          O 7Service controla identidades, empresas, assinaturas e concessões de acesso aos produtos
-          da Consult Services. Cada sistema contratado pode manter autenticação, organizações e
-          permissões próprias. Cadastrar uma pessoa no 7Service não garante, isoladamente, o acesso
-          ao produto. É necessário conferir a concessão e a integração específica de cada sistema.
+          O Access Management Service controla identidades, empresas, assinaturas e concessões de
+          acesso aos produtos da Consult Services. Cada sistema contratado pode manter autenticação,
+          organizações e permissões próprias. Cadastrar uma pessoa no Access Management Service não
+          garante, isoladamente, o acesso ao produto. É necessário conferir a concessão e a
+          integração específica de cada sistema.
         </p>
       </section>
       <Procedure
@@ -173,7 +174,7 @@ export default async function HelpPage() {
         <p className="mt-2 text-sm text-amber-950">
           Cadastrar qualquer produto no catálogo não implanta automaticamente a aplicação nem
           habilita login central. Confira o provisionamento e os requisitos técnicos de cada produto
-          antes de liberar clientes. Exemplos: 7Commander e 7Clinic.
+          antes de liberar clientes. Exemplos: Commander e 7Clinic.
         </p>
       </section>
     </main>

@@ -1,3 +1,4 @@
+import { displayProductName } from '@/lib/product-display-name';
 import Link from 'next/link';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { requirePermission } from '@/lib/auth/session';
@@ -26,7 +27,9 @@ export default async function ContractLicensingPage() {
         <p role="alert">Migrações de licenciamento ainda não aplicadas neste ambiente.</p>
       </main>
     );
-  const productNames = new Map((products.data ?? []).map((p) => [p.id, p.name]));
+  const productNames = new Map(
+    (products.data ?? []).map((p) => [p.id, displayProductName(p.name)]),
+  );
   const contractsById = new Map((contracts.data ?? []).map((c) => [c.id, c.reference]));
   return (
     <main className="flex flex-col gap-6">
@@ -43,7 +46,10 @@ export default async function ContractLicensingPage() {
       <ContractLicensingForms
         contracts={(contracts.data ?? []).map((c) => ({ id: c.id, label: c.reference }))}
         groups={(groups.data ?? []).map((g) => ({ id: g.id, label: g.name }))}
-        products={(products.data ?? []).map((p) => ({ id: p.id, label: p.name }))}
+        products={(products.data ?? []).map((p) => ({
+          id: p.id,
+          label: displayProductName(p.name),
+        }))}
       />
       <ContractReconciliation
         contracts={(contracts.data ?? []).map((c) => ({ id: c.id, label: c.reference }))}

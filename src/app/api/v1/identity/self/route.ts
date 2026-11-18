@@ -11,7 +11,7 @@ function denial(status: number) {
 }
 
 /**
- * The verified caller learns only the ID of their own active 7Service identity.
+ * The verified caller learns only the ID of their own active Access Management Service identity.
  * It never returns organizations, customer identities, roles or entitlements.
  * Product and tenant grants are checked independently by /authorization/decision.
  */

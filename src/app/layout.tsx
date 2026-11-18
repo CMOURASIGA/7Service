@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: '7Service',
+  title: 'Access Management Service',
   description: 'Painel administrativo interno da Consult Services',
 };
 

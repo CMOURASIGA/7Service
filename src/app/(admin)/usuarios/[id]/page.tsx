@@ -1,3 +1,4 @@
+import { displayProductName } from '@/lib/product-display-name';
 import Link from 'next/link';
 import { customerProductEntryUrl } from '@/lib/integrations/customer-entry-link';
 import { notFound } from 'next/navigation';
@@ -129,7 +130,10 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
       id: a.id,
       clientId: a.client_id,
       productId: a.subscriptions?.product_id ?? '',
-      label: (a.subscriptions?.products?.name ?? 'Produto') + ' / ' + a.client_id.slice(0, 8),
+      label:
+        displayProductName(a.subscriptions?.products?.name ?? 'Produto') +
+        ' / ' +
+        a.client_id.slice(0, 8),
     }));
   const links = clientIds.length
     ? await db
@@ -288,7 +292,9 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                 <li key={a.id} className="rounded border p-3">
                   <div className="mb-2 flex justify-between gap-2">
                     <div className="space-y-1">
-                      <span>{a.subscriptions?.products?.name || a.subscription_id}</span>
+                      <span>
+                        {displayProductName(a.subscriptions?.products?.name) || a.subscription_id}
+                      </span>
                       {(() => {
                         const destination = customerProductEntryUrl(
                           a.client_id,
@@ -316,16 +322,16 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                         </p>
                       ) : a.status === 'SUSPENDED' ? (
                         <p className="text-muted text-xs">
-                          Licença suspensa no 7Service. As consultas no produto são bloqueadas pelo
-                          controle central. A sincronização técnica no Commander pode exigir
-                          confirmação.
+                          Licença suspensa no Access Management Service. As consultas no produto são
+                          bloqueadas pelo controle central. A sincronização técnica no Commander
+                          pode exigir confirmação.
                         </p>
                       ) : a.status === 'REVOKED' ? (
                         <p className="text-muted text-xs">
-                          Licença revogada definitivamente no 7Service. O Commander deve negar novas
-                          consultas mesmo com sessão aberta. O vínculo técnico local precisa de
-                          confirmação separada. Uma nova concessão exige procedimento administrativo
-                          próprio.
+                          Licença revogada definitivamente no Access Management Service. O Commander
+                          deve negar novas consultas mesmo com sessão aberta. O vínculo técnico
+                          local precisa de confirmação separada. Uma nova concessão exige
+                          procedimento administrativo próprio.
                         </p>
                       ) : a.status === 'EXPIRED' ? (
                         <p className="text-muted text-xs">
@@ -356,10 +362,10 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                       />
                     ) : null}
                     {(a.status === 'SUSPENDED' || a.status === 'REVOKED') &&
-                    a.subscriptions?.products?.name === '7Commander' ? (
+                    ['Commander', '7Commander'].includes(a.subscriptions?.products?.name ?? '') ? (
                       <ConfirmAction
                         triggerLabel="Sincronizar bloqueio no Commander"
-                        impactMessage="Confirma a suspensão técnica no Commander. O bloqueio de consultas já é obrigatório pelo 7Service e a sincronização não substitui a revogação central."
+                        impactMessage="Confirma a suspensão técnica no Commander. O bloqueio de consultas já é obrigatório pelo Access Management Service e a sincronização não substitui a revogação central."
                         action={retryCommanderRevocationAction.bind(null, id, a.client_id)}
                         confirmLabel="Sincronizar"
                       />

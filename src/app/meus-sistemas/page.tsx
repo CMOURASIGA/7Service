@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { CommanderLaunchButton } from '@/features/portal/components/commander-launch-button';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Meus sistemas - 7Service' };
+export const metadata = { title: 'Meus sistemas - Access Management Service' };
 
 export default async function CustomerApplicationsPage() {
   const auth = await createClient();
@@ -109,7 +109,7 @@ export default async function CustomerApplicationsPage() {
     return [
       {
         company: company.trade_name || company.legal_name,
-        product: product.name,
+        product: product.code === 'COMMANDER7' ? 'Commander' : product.name,
         productCode: product.code,
         role: roles.get(grant.product_role_id) || 'Perfil não identificado',
         status: grant.status,
@@ -124,12 +124,13 @@ export default async function CustomerApplicationsPage() {
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="space-y-2">
             <p className="text-xs font-semibold tracking-[0.18em] text-blue-200 uppercase">
-              7Service | Meu Portal
+              Access Management Service | Meu Portal
             </p>
             <h1 className="text-2xl font-semibold sm:text-3xl">Olá, {identity.first_name}!</h1>
             <p className="max-w-2xl text-sm leading-6 text-blue-100">
               Consulte os produtos concedidos pelas suas empresas. Seu login é centralizado no
-              7Service e as permissões são verificadas individualmente em cada sistema.
+              Access Management Service e as permissões são verificadas individualmente em cada
+              sistema.
             </p>
           </div>
           <div className="rounded-xl border border-white/20 bg-white/10 p-4 text-right">
@@ -188,7 +189,7 @@ export default async function CustomerApplicationsPage() {
                   <p className="rounded-md bg-slate-50 p-3 text-sm leading-5 text-slate-700">
                     {item.status === 'PENDING'
                       ? 'Licença reservada. O acesso ao produto depende da ativação da conta e da autorização técnica.'
-                      : 'A autorização no 7Service está ativa. Sua autorização central está ativa. Ao abrir o produto pelo portal, o sistema validará a identidade e as permissões no destino antes de liberar o acesso.'}
+                      : 'A autorização no Access Management Service está ativa. Sua autorização central está ativa. Ao abrir o produto pelo portal, o sistema validará a identidade e as permissões no destino antes de liberar o acesso.'}
                   </p>
                 </div>
                 <div className="mt-4">
@@ -215,9 +216,9 @@ export default async function CustomerApplicationsPage() {
       </section>
       <footer className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
         <p>
-          O 7Service administra sua identidade e suas licenças. A entrada direta em cada sistema
-          será liberada após confirmar a integração de autenticação e as permissões do produto. Você
-          não precisa criar outra senha.
+          O Access Management Service administra sua identidade e suas licenças. A entrada direta em
+          cada sistema será liberada após confirmar a integração de autenticação e as permissões do
+          produto. Você não precisa criar outra senha.
         </p>
         <Link href="/entrar" className="mt-2 inline-block font-medium text-blue-700 underline">
           Voltar à entrada do portal

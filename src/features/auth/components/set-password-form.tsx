@@ -243,7 +243,7 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
         </p>
       ) : null}
       <p className="text-sm text-gray-600">
-        Crie uma senha de pelo menos 12 caracteres para seu acesso ao 7Service.
+        Crie uma senha de pelo menos 12 caracteres para seu acesso ao Access Management Service.
       </p>
       <label className="flex flex-col gap-1 text-sm">
         Nova senha
