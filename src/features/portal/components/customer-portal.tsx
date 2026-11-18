@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import { WorkspaceTabs } from '@/components/ui/workspace-tabs';
 import { CommanderLaunchButton } from '@/features/portal/components/commander-launch-button';
 
@@ -11,6 +12,39 @@ export type PortalSystem = {
   role: string;
   status: 'ACTIVE' | 'PENDING' | 'REVOKED';
 };
+
+/** Product marks are distinct from the tenant's whitelabel brand.
+ * The Commander mark is copied unchanged from its own app/icon.tsx source.
+ * Unknown products use a neutral application glyph, never a made-up initial.
+ */
+function ProductIcon({ productCode, productName }: { productCode: string; productName: string }) {
+  if (productCode === 'COMMANDER7') {
+    return (
+      <Image
+        src="/product-icons/commander.svg"
+        alt={'Ícone do ' + productName}
+        width={48}
+        height={48}
+        className="size-12 rounded-xl bg-white object-contain"
+        unoptimized
+      />
+    );
+  }
+  return (
+    <span
+      role="img"
+      aria-label={'Ícone genérico de ' + productName}
+      className="flex size-12 items-center justify-center rounded-xl bg-brand-100 text-brand-700"
+    >
+      <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1.3" />
+        <rect x="14" y="3" width="7" height="7" rx="1.3" />
+        <rect x="3" y="14" width="7" height="7" rx="1.3" />
+        <rect x="14" y="14" width="7" height="7" rx="1.3" />
+      </svg>
+    </span>
+  );
+}
 
 function stateOf(system: PortalSystem) {
   if (system.status === 'REVOKED') return 'Acesso revogado';
@@ -122,9 +156,7 @@ export function CustomerPortal({
       >
         <div className="space-y-3">
           <div className="flex items-start justify-between gap-3">
-            <div aria-hidden="true" className="flex size-12 items-center justify-center rounded-xl bg-brand-100 text-brand-700">
-              <span className="text-xl font-semibold">{item.product.slice(0, 1)}</span>
-            </div>
+            <ProductIcon productCode={item.productCode} productName={item.product} />
             <span
               className={
                 'rounded-full px-3 py-1 text-xs font-semibold ' +
@@ -211,7 +243,10 @@ export function CustomerPortal({
           {featured ? (
             <>
               <p className="text-xs font-semibold tracking-wider text-muted uppercase">Sistema em destaque</p>
-              <h2 className="mt-2 text-2xl font-semibold">{featured.product}</h2>
+              <div className="mt-3 flex items-center gap-3">
+                <ProductIcon productCode={featured.productCode} productName={featured.product} />
+                <h2 className="text-2xl font-semibold">{featured.product}</h2>
+              </div>
               <p className="mt-2 text-sm text-muted">{featured.company} · {featured.role}</p>
               <p className="my-4 text-sm text-success">Pronto para entrar</p>
               {launch(featured)}
