@@ -76,6 +76,18 @@ export async function syncCommanderRevocation(
       signal: AbortSignal.timeout(15000),
     });
     if (response.status >= 300 && response.status < 400) {
+      // Record only a safe classification, never the redirect URL or bypass token.
+      const location = response.headers.get('location');
+      const redirectHost = location ? new URL(location, url).hostname : '';
+      const isVercelAuth =
+        redirectHost === 'vercel.com' ||
+        redirectHost.endsWith('.vercel.com') ||
+        redirectHost === 'vercel.app' ||
+        redirectHost.endsWith('.vercel.app');
+      console.warn('[revocation-sync] destination redirected', {
+        status: response.status,
+        destination: isVercelAuth ? 'vercel-authentication' : 'other',
+      });
       return { confirmed: false, reason: 'DESTINATION_REDIRECT' };
     }
     // A Vercel authentication page is HTML, not the signed JSON response.
