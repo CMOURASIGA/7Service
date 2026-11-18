@@ -120,8 +120,8 @@ export default async function AccessManagementPage({
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold">Acessos por produto</h1>
         <p className="text-sm text-slate-700">
-          Visão central de identidades, empresas, produtos e concessões. A autorização no Access Management Service
-          não comprova sozinha o provisionamento no produto de destino.
+          Visão central de identidades, empresas, produtos e concessões. A autorização no Access
+          Management Service não comprova sozinha o provisionamento no produto de destino.
         </p>
       </header>
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">

@@ -316,16 +316,16 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                         </p>
                       ) : a.status === 'SUSPENDED' ? (
                         <p className="text-muted text-xs">
-                          Licença suspensa no Access Management Service. As consultas no produto são bloqueadas pelo
-                          controle central. A sincronização técnica no Commander pode exigir
-                          confirmação.
+                          Licença suspensa no Access Management Service. As consultas no produto são
+                          bloqueadas pelo controle central. A sincronização técnica no Commander
+                          pode exigir confirmação.
                         </p>
                       ) : a.status === 'REVOKED' ? (
                         <p className="text-muted text-xs">
-                          Licença revogada definitivamente no Access Management Service. O Commander deve negar novas
-                          consultas mesmo com sessão aberta. O vínculo técnico local precisa de
-                          confirmação separada. Uma nova concessão exige procedimento administrativo
-                          próprio.
+                          Licença revogada definitivamente no Access Management Service. O Commander
+                          deve negar novas consultas mesmo com sessão aberta. O vínculo técnico
+                          local precisa de confirmação separada. Uma nova concessão exige
+                          procedimento administrativo próprio.
                         </p>
                       ) : a.status === 'EXPIRED' ? (
                         <p className="text-muted text-xs">

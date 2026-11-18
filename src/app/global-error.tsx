@@ -25,7 +25,9 @@ export default function GlobalError({
   return (
     <html lang="pt-BR">
       <body className="flex min-h-screen flex-col items-center justify-center gap-3 bg-white p-8 text-center">
-        <h1 className="text-lg font-semibold text-slate-900">Access Management Service indisponível</h1>
+        <h1 className="text-lg font-semibold text-slate-900">
+          Access Management Service indisponível
+        </h1>
         <p className="max-w-md text-sm text-slate-600">
           Não foi possível carregar a aplicação. Tente novamente em instantes.
         </p>

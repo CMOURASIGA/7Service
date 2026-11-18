@@ -72,8 +72,8 @@ export default function ClientIntegrationsPage({
         Gerenciar vínculos de sistemas
       </Link>
       <p className="text-sm text-gray-600">
-        Situação de assinatura e limite de licenças no Access Management Service. A ativação técnica em cada sistema
-        é independente.
+        Situação de assinatura e limite de licenças no Access Management Service. A ativação técnica
+        em cada sistema é independente.
       </p>
       <button
         type="button"

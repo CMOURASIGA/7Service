@@ -8,8 +8,8 @@ export default function ActivationCompletedPage() {
       <section className="w-full max-w-md space-y-4 rounded-lg border p-7">
         <h1 className="text-xl font-semibold">Senha cadastrada com sucesso</h1>
         <p className="text-sm">
-          Sua identidade foi ativada no Access Management Service. Este portal possui uma área administrativa
-          exclusiva para operadores internos.
+          Sua identidade foi ativada no Access Management Service. Este portal possui uma área
+          administrativa exclusiva para operadores internos.
         </p>
         <p className="text-sm">
           Para utilizar um produto contratado, acesse o endereço informado pelo administrador da sua

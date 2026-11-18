@@ -15,8 +15,8 @@ export function ConnectionForm({
       <h2 className="font-semibold">Conectar Supabase existente</h2>
       <p className="text-muted text-sm">
         Informe uma conexão para um ambiente já cadastrado. A credencial é enviada somente para a
-        operação de servidor, verificada no Auth e armazenada criptografada. O Access Management Service não cria
-        bancos.
+        operação de servidor, verificada no Auth e armazenada criptografada. O Access Management
+        Service não cria bancos.
       </p>
       <label className="flex flex-col gap-1 text-sm">
         Ambiente

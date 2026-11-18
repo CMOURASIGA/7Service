@@ -129,7 +129,8 @@ export default async function CustomerApplicationsPage() {
             <h1 className="text-2xl font-semibold sm:text-3xl">Olá, {identity.first_name}!</h1>
             <p className="max-w-2xl text-sm leading-6 text-blue-100">
               Consulte os produtos concedidos pelas suas empresas. Seu login é centralizado no
-              Access Management Service e as permissões são verificadas individualmente em cada sistema.
+              Access Management Service e as permissões são verificadas individualmente em cada
+              sistema.
             </p>
           </div>
           <div className="rounded-xl border border-white/20 bg-white/10 p-4 text-right">
@@ -215,9 +216,9 @@ export default async function CustomerApplicationsPage() {
       </section>
       <footer className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
         <p>
-          O Access Management Service administra sua identidade e suas licenças. A entrada direta em cada sistema
-          será liberada após confirmar a integração de autenticação e as permissões do produto. Você
-          não precisa criar outra senha.
+          O Access Management Service administra sua identidade e suas licenças. A entrada direta em
+          cada sistema será liberada após confirmar a integração de autenticação e as permissões do
+          produto. Você não precisa criar outra senha.
         </p>
         <Link href="/entrar" className="mt-2 inline-block font-medium text-blue-700 underline">
           Voltar à entrada do portal

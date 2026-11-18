@@ -143,10 +143,11 @@ export default async function HelpPage() {
       <section className="rounded-xl border border-blue-200 bg-blue-50 p-5">
         <h2 className="font-semibold text-blue-950">Antes de começar</h2>
         <p className="mt-2 text-sm text-blue-950">
-          O Access Management Service controla identidades, empresas, assinaturas e concessões de acesso aos produtos
-          da Consult Services. Cada sistema contratado pode manter autenticação, organizações e
-          permissões próprias. Cadastrar uma pessoa no Access Management Service não garante, isoladamente, o acesso
-          ao produto. É necessário conferir a concessão e a integração específica de cada sistema.
+          O Access Management Service controla identidades, empresas, assinaturas e concessões de
+          acesso aos produtos da Consult Services. Cada sistema contratado pode manter autenticação,
+          organizações e permissões próprias. Cadastrar uma pessoa no Access Management Service não
+          garante, isoladamente, o acesso ao produto. É necessário conferir a concessão e a
+          integração específica de cada sistema.
         </p>
       </section>
       <Procedure

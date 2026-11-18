@@ -31,7 +31,10 @@ export async function getCurrentSession(): Promise<CurrentSession> {
     .eq('status', 'ACTIVE')
     .maybeSingle();
   if (error || !operator) {
-    throw new AppError('FORBIDDEN', 'Usuário não autorizado a administrar o Access Management Service.');
+    throw new AppError(
+      'FORBIDDEN',
+      'Usuário não autorizado a administrar o Access Management Service.',
+    );
   }
   const { data: assigned, error: roleError } = await supabase
     .from('internal_user_roles')
