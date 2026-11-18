@@ -16,6 +16,8 @@ export type RevocationSyncResult =
         | 'DESTINATION_PROTECTED'
         | 'DESTINATION_REJECTED'
         | 'DESTINATION_UNAVAILABLE'
+        | 'DESTINATION_TIMEOUT'
+        | 'DESTINATION_REDIRECT'
         | 'UNCONFIRMED';
     };
 
@@ -70,9 +72,12 @@ export async function syncCommanderRevocation(
       headers,
       body,
       cache: 'no-store',
-      redirect: 'error',
-      signal: AbortSignal.timeout(5000),
+      redirect: 'manual',
+      signal: AbortSignal.timeout(15000),
     });
+    if (response.status >= 300 && response.status < 400) {
+      return { confirmed: false, reason: 'DESTINATION_REDIRECT' };
+    }
     // A Vercel authentication page is HTML, not the signed JSON response.
     // Distinguish that failure from a valid application-level rejection.
     const jsonResponse = response.headers.get('content-type')?.includes('application/json');
@@ -85,8 +90,11 @@ export async function syncCommanderRevocation(
     const result: unknown = await response.json();
     if (result && typeof result === 'object' && 'confirmed' in result && result.confirmed === true)
       return { confirmed: true };
-  } catch {
-    // Fail closed. Network or timeout errors never reactivate central access.
+  } catch (error) {
+    // Fail closed; never expose the signed payload, credentials or destination URL in logs.
+    if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
+      return { confirmed: false, reason: 'DESTINATION_TIMEOUT' };
+    }
     return { confirmed: false, reason: 'DESTINATION_UNAVAILABLE' };
   }
   return { confirmed: false, reason: 'UNCONFIRMED' };
