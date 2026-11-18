@@ -17,12 +17,22 @@ export async function GET() {
   const headers = { 'Cache-Control': 'private, no-store, max-age=0' };
   if (result.error || !user || !user.email_confirmed_at)
     return NextResponse.json({ eligible: false }, { status: 403, headers });
-  const identity = await createAdminClient().from('identities')
-    .select('id,status,email').eq('auth_user_id', user.id).maybeSingle();
-  if (identity.error || identity.data?.status !== 'PENDING_INVITE' ||
-      identity.data.email.toLowerCase() !== user.email?.toLowerCase())
+  const identity = await createAdminClient()
+    .from('identities')
+    .select('id,status,email')
+    .eq('auth_user_id', user.id)
+    .maybeSingle();
+  if (
+    identity.error ||
+    identity.data?.status !== 'PENDING_INVITE' ||
+    identity.data.email.toLowerCase() !== user.email?.toLowerCase()
+  )
     return NextResponse.json({ eligible: false }, { status: 403, headers });
-  return NextResponse.json({
-    eligible: true, email: identity.data.email,
-  }, { headers });
+  return NextResponse.json(
+    {
+      eligible: true,
+      email: identity.data.email,
+    },
+    { headers },
+  );
 }

@@ -46,11 +46,13 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
         setValidSession(false);
       } else if (mode === 'invite') {
         const check = await fetch('/api/auth/invite-eligibility', { cache: 'no-store' });
-        const eligibility = await check.json().catch(() => null) as
-          | { eligible?: boolean; email?: string } | null;
+        const eligibility = (await check.json().catch(() => null)) as {
+          eligible?: boolean;
+          email?: string;
+        } | null;
         if (!mounted) return;
         setValidSession(check.ok && eligibility?.eligible === true);
-        setInviteAccount(check.ok ? eligibility?.email ?? '' : '');
+        setInviteAccount(check.ok ? (eligibility?.email ?? '') : '');
       } else {
         setValidSession(true);
       }
@@ -119,11 +121,18 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
     }
     if (mode === 'invite') {
       const check = await fetch('/api/auth/invite-eligibility', { cache: 'no-store' });
-      const result = await check.json().catch(() => null) as
-        | { eligible?: boolean; email?: string } | null;
-      if (!check.ok || result?.eligible !== true ||
-          result.email?.toLowerCase() !== user.email?.toLowerCase()) {
-        setError('Esta sessão não corresponde a um convite pendente. Saia da conta atual e abra o convite em uma janela privativa.');
+      const result = (await check.json().catch(() => null)) as {
+        eligible?: boolean;
+        email?: string;
+      } | null;
+      if (
+        !check.ok ||
+        result?.eligible !== true ||
+        result.email?.toLowerCase() !== user.email?.toLowerCase()
+      ) {
+        setError(
+          'Esta sessão não corresponde a um convite pendente. Saia da conta atual e abra o convite em uma janela privativa.',
+        );
         setValidSession(false);
         setSaving(false);
         return;

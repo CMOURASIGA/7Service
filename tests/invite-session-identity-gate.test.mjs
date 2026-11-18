@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
+const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 test('invitation password updates require a matching pending server identity', () => {
   const route = read('src/app/api/auth/invite-eligibility/route.ts');
   const form = read('src/features/auth/components/set-password-form.tsx');
