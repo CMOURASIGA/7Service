@@ -174,17 +174,27 @@ export async function createIdentityMembershipAction(
         // partial registration remains waiting for an invitation.
         let compensationFailed = false;
         if (createdMembership) {
-          const revert = await db.from('client_memberships').delete()
-            .eq('identity_id', identity.id).eq('client_id', clientId);
+          const revert = await db
+            .from('client_memberships')
+            .delete()
+            .eq('identity_id', identity.id)
+            .eq('client_id', clientId);
           if (revert.error) compensationFailed = true;
         }
         if (createdIdentity && !compensationFailed) {
-          const revert = await db.from('identities').delete().eq('id', identity.id)
-            .eq('status', 'PENDING_INVITE').is('auth_user_id', null);
+          const revert = await db
+            .from('identities')
+            .delete()
+            .eq('id', identity.id)
+            .eq('status', 'PENDING_INVITE')
+            .is('auth_user_id', null);
           if (revert.error) compensationFailed = true;
         }
         if (compensationFailed) {
-          return { error: 'Falha na reserva da licença e na reversão do cadastro. Não repita o convite; solicite conciliação administrativa.' };
+          return {
+            error:
+              'Falha na reserva da licença e na reversão do cadastro. Não repita o convite; solicite conciliação administrativa.',
+          };
         }
         const message = grant.error.message ?? '';
         return {
