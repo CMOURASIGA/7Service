@@ -18,7 +18,7 @@ import type {
  * central authorization, access-revocation and audit in the destination.
  * These RPCs do NOT exist automatically when a connection is registered.
  *
- * The 7Service never marks an operation CONFIRMED based on Auth user creation
+ * The Access Management Service never marks an operation CONFIRMED based on Auth user creation
  * or successful apply() alone; a separate readback is required.
  */
 

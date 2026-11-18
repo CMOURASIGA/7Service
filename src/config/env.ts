@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /**
- * Variáveis de ambiente do 7Service.
+ * Variáveis de ambiente do Access Management Service.
  *
  * Regra de arquitetura (docs/01-architecture/SECURITY.md):
  * - Service Role nunca deve ser exposta no cliente web.
@@ -50,7 +50,7 @@ export function getServerEnv() {
  * Indica se há um projeto Supabase real configurado neste ambiente.
  *
  * Enquanto nenhum projeto for provisionado (docs/MIGRATIONS.md -
- * "Estado atual"), o 7Service roda em MODO DEMONSTRAÇÃO: navegação e
+ * "Estado atual"), o Access Management Service roda em MODO DEMONSTRAÇÃO: navegação e
  * regras de negócio funcionam contra `src/lib/mock`, sem autenticação
  * real e sem persistência entre instâncias. Assim que as variáveis
  * NEXT_PUBLIC_SUPABASE_URL/ANON_KEY forem configuradas, esta função passa

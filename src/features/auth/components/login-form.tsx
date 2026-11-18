@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { safeAdminRedirect } from '@/lib/auth/safe-admin-redirect';
 
 /**
- * Formulário de login básico do 7Service.
+ * Formulário de login básico do Access Management Service.
  *
  * A administração de operadores internos e o RBAC completo são entregues
  * na Etapa 1 (docs/DEV_IMPLEMENTATION_PLAN.md). Este formulário cobre

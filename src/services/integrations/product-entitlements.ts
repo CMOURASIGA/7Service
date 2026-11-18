@@ -17,8 +17,8 @@ export interface ProductEntitlement {
 }
 
 /**
- * Internal 7Service query for the Consult administration panel.
- * This is NOT an external API authentication mechanism: neither 7Commander
+ * Internal Access Management Service query for the Consult administration panel.
+ * This is NOT an external API authentication mechanism: neither Commander
  * nor 7Clinic may trust a clientId from the browser as proof of tenancy.
  */
 export async function getProductEntitlement(

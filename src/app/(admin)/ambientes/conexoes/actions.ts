@@ -18,7 +18,7 @@ const requestSchema = z.object({
   adminKey: z.string().min(16).max(4096),
 });
 
-/** Operates exclusively on an existing project and existing 7Service environment. */
+/** Operates exclusively on an existing project and existing Access Management Service environment. */
 export async function verifyAndSaveConnection(
   _previous: ConnectionState,
   form: FormData,

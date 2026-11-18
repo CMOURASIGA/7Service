@@ -1,5 +1,5 @@
 /**
- * Tipos de domínio do 7Service.
+ * Tipos de domínio do Access Management Service.
  *
  * Espelham 1:1 as tabelas de `supabase/migrations` (ver `docs/MIGRATIONS.md`).
  * Usados tanto pela camada de mock (`src/lib/mock`) quanto — quando o

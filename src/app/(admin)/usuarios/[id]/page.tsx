@@ -316,13 +316,13 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                         </p>
                       ) : a.status === 'SUSPENDED' ? (
                         <p className="text-muted text-xs">
-                          Licença suspensa no 7Service. As consultas no produto são bloqueadas pelo
+                          Licença suspensa no Access Management Service. As consultas no produto são bloqueadas pelo
                           controle central. A sincronização técnica no Commander pode exigir
                           confirmação.
                         </p>
                       ) : a.status === 'REVOKED' ? (
                         <p className="text-muted text-xs">
-                          Licença revogada definitivamente no 7Service. O Commander deve negar novas
+                          Licença revogada definitivamente no Access Management Service. O Commander deve negar novas
                           consultas mesmo com sessão aberta. O vínculo técnico local precisa de
                           confirmação separada. Uma nova concessão exige procedimento administrativo
                           próprio.
@@ -356,10 +356,10 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                       />
                     ) : null}
                     {(a.status === 'SUSPENDED' || a.status === 'REVOKED') &&
-                    a.subscriptions?.products?.name === '7Commander' ? (
+                    a.subscriptions?.products?.name === 'Commander' ? (
                       <ConfirmAction
                         triggerLabel="Sincronizar bloqueio no Commander"
-                        impactMessage="Confirma a suspensão técnica no Commander. O bloqueio de consultas já é obrigatório pelo 7Service e a sincronização não substitui a revogação central."
+                        impactMessage="Confirma a suspensão técnica no Commander. O bloqueio de consultas já é obrigatório pelo Access Management Service e a sincronização não substitui a revogação central."
                         action={retryCommanderRevocationAction.bind(null, id, a.client_id)}
                         confirmLabel="Sincronizar"
                       />

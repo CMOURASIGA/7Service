@@ -5,7 +5,7 @@ import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const metadata = {
-  title: 'Produtos - 7Service',
+  title: 'Produtos - Access Management Service',
 };
 
 export default async function ProductsPage({

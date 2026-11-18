@@ -3,7 +3,7 @@
  *
  * Remote Auth creation alone does not grant access. The destination must
  * atomically enforce company+product+profile and return an attested state.
- * The 7Service coordinator may mark success only after querying this state.
+ * The Access Management Service coordinator may mark success only after querying this state.
  */
 export interface ProductProvisioningRequest {
   requestId: string;

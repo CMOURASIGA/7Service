@@ -10,7 +10,7 @@ import { writeAudit } from './audit';
 /**
  * Recuperação de acesso (Etapa 10).
  *
- * O 7Service inicia o fluxo mas nunca conhece nem exibe a senha atual
+ * O Access Management Service inicia o fluxo mas nunca conhece nem exibe a senha atual
  * (docs/01-architecture/AUTHENTICATION.md - "Recuperação"). Quem gera o
  * token seguro é o provedor de autenticação.
  *

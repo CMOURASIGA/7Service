@@ -8,8 +8,8 @@ import { BRAND_LOGO_URL, BRAND_NAME, BRAND_SUBTITLE, COMPANY_NAME } from '@/lib/
 
 /**
  * Menu principal (docs/02-design/NAVIGATION.md), agrupado em seções e com
- * ícones — mesmo padrão de navegação do 7Commander (referência oficial de
- * shell da família Consult Services), com os itens próprios do 7Service.
+ * ícones — mesmo padrão de navegação do Commander (referência oficial de
+ * shell da família Consult Services), com os itens próprios do Access Management Service.
  */
 const NAV_ITEMS = [
   { section: 'Principal', href: '/', label: 'Dashboard', icon: 'home' as const },

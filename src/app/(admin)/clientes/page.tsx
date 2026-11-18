@@ -7,7 +7,7 @@ import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata = {
-  title: 'Clientes - 7Service',
+  title: 'Clientes - Access Management Service',
 };
 
 function formatDocument(document: string): string {

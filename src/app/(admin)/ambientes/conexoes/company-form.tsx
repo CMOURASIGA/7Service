@@ -36,7 +36,7 @@ export function EnvironmentCompanyForm({
         </select>
       </label>
       <label className="flex flex-col gap-1 text-sm">
-        Empresa do 7Service
+        Empresa do Access Management Service
         <select name="clientId" required className={input} defaultValue="">
           <option value="" disabled>
             Selecione a empresa

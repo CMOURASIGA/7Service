@@ -1,5 +1,5 @@
 /**
- * 7Service - contract-scoped named seats.
+ * Access Management Service - contract-scoped named seats.
  *
  * Pure domain rules. Do not replace the current product-scoped subscription
  * enforcement until the contract-seat migration and provisioning E2E pass.

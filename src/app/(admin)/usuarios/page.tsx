@@ -9,7 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { IDENTITY_STATUS_LABEL } from '@/lib/status-labels';
 
 export const metadata = {
-  title: 'Usuários - 7Service',
+  title: 'Usuários - Access Management Service',
 };
 
 export default async function IdentitiesPage({

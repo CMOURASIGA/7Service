@@ -7,7 +7,7 @@ import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
  *
  * Credentials must be persisted as encrypted strings in a private table after
  * the additive schema migration. Never send them to the browser or audit log.
- * The admin client bypasses RLS: only call it after 7Service permission,
+ * The admin client bypasses RLS: only call it after Access Management Service permission,
  * contract, installation and tenant checks.
  */
 export type SealedCredential = string & { readonly __sealedCredential: unique symbol };

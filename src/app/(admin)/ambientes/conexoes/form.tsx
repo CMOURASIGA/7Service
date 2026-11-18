@@ -15,7 +15,7 @@ export function ConnectionForm({
       <h2 className="font-semibold">Conectar Supabase existente</h2>
       <p className="text-muted text-sm">
         Informe uma conexão para um ambiente já cadastrado. A credencial é enviada somente para a
-        operação de servidor, verificada no Auth e armazenada criptografada. O 7Service não cria
+        operação de servidor, verificada no Auth e armazenada criptografada. O Access Management Service não cria
         bancos.
       </p>
       <label className="flex flex-col gap-1 text-sm">
@@ -54,7 +54,7 @@ export function ConnectionForm({
       </label>
       <p className="text-muted text-xs">
         A credencial possui privilégios elevados. Nunca a envie por chat, e-mail ou armazenamento
-        público. Utilize somente a conexão protegida do 7Service.
+        público. Utilize somente a conexão protegida do Access Management Service.
       </p>
       {result.error && (
         <p role="alert" className="text-sm text-red-700">
