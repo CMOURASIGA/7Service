@@ -144,7 +144,8 @@ export async function retryCommanderRevocationAction(
   if (!sync.confirmed) {
     const feedback: Record<typeof sync.reason, string> = {
       NOT_CONFIGURED: 'Integração não configurada. Suspensão remota não confirmada.',
-      DESTINATION_PROTECTED: 'Proteção da Preview impediu resposta JSON. Verifique o bypass na Vercel.',
+      DESTINATION_PROTECTED:
+        'Proteção da Preview impediu resposta JSON. Verifique o bypass na Vercel.',
       DESTINATION_REJECTED: 'Destino rejeitou a solicitação. Verifique HMAC, vínculos e auditoria.',
       DESTINATION_UNAVAILABLE: 'Falha de rede ao conectar com o Commander.',
       DESTINATION_TIMEOUT: 'Commander não respondeu em 15 segundos.',
