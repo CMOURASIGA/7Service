@@ -356,7 +356,7 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                       />
                     ) : null}
                     {(a.status === 'SUSPENDED' || a.status === 'REVOKED') &&
-                    a.subscriptions?.products?.name === 'Commander' ? (
+                    ['Commander', '7Commander'].includes(a.subscriptions?.products?.name ?? '') ? (
                       <ConfirmAction
                         triggerLabel="Sincronizar bloqueio no Commander"
                         impactMessage="Confirma a suspensão técnica no Commander. O bloqueio de consultas já é obrigatório pelo Access Management Service e a sincronização não substitui a revogação central."
