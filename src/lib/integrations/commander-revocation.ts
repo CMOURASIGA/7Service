@@ -46,13 +46,19 @@ export async function syncCommanderRevocation(
     const signature = createHmac('sha256', secret)
       .update(timestamp + '.' + body)
       .digest('hex');
+    // Preview protection remains enabled. The automation bypass is a server-only
+    // deployment credential; the Commander still requires a valid HMAC signature
+    // and checks both explicit central mappings before changing local access.
+    const bypass = process.env.SERVICE_COMMANDER_VERCEL_AUTOMATION_BYPASS_SECRET;
+    const headers: Record<string, string> = {
+      'content-type': 'application/json',
+      'x-7service-timestamp': timestamp,
+      'x-7service-signature': signature,
+    };
+    if (bypass) headers['x-vercel-protection-bypass'] = bypass;
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-7service-timestamp': timestamp,
-        'x-7service-signature': signature,
-      },
+      headers,
       body,
       cache: 'no-store',
       redirect: 'error',
