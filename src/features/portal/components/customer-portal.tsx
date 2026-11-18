@@ -17,6 +17,7 @@ export type PortalSystem = {
  * The Commander mark is copied unchanged from its own app/icon.tsx source.
  * Unknown products use a neutral application glyph, never a made-up initial.
  */
+// prettier-ignore
 function ProductIcon({ productCode, productName }: { productCode: string; productName: string }) {
   if (productCode === 'COMMANDER7') {
     return (
