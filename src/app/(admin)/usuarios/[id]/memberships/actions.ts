@@ -96,66 +96,79 @@ export async function retryCommanderRevocationAction(
   _form: FormData,
 ): Promise<{ error: string | null; success?: string }> {
   await requirePermission('users.access.manage');
-  const db = createAdminClient();
-  const membership = await db
-    .from('client_memberships')
-    .select('status')
-    .eq('identity_id', identityId)
-    .eq('client_id', clientId)
-    .maybeSingle();
-  if (membership.error || !membership.data) {
-    return { error: 'Vínculo central não encontrado. Nenhuma alteração foi executada.' };
-  }
-  if (membership.data.status === 'ACTIVE') {
-    const product = await db.from('products').select('id').eq('code', 'COMMANDER7').maybeSingle();
-    if (product.error || !product.data)
-      return { error: 'Não foi possível verificar o produto Commander.' };
-    const subscriptions = await db
-      .from('subscriptions')
-      .select('id')
+  let stage = 'central-authorization';
+  try {
+    const db = createAdminClient();
+    const membership = await db
+      .from('client_memberships')
+      .select('status')
+      .eq('identity_id', identityId)
       .eq('client_id', clientId)
-      .eq('product_id', product.data.id);
-    if (subscriptions.error)
-      return { error: 'Não foi possível verificar as assinaturas do Commander.' };
-    const ids = (subscriptions.data ?? []).map((item) => item.id);
-    if (ids.length) {
-      const stillActive = await db
-        .from('user_product_access')
-        .select('id')
-        .eq('identity_id', identityId)
-        .eq('client_id', clientId)
-        .eq('status', 'ACTIVE')
-        .in('subscription_id', ids)
-        .limit(1);
-      if (stillActive.error)
-        return { error: 'Não foi possível verificar as concessões existentes.' };
-      if (stillActive.data?.length)
-        return {
-          error:
-            'Acesso central ainda ativo. A suspensão remota foi impedida para proteger outras concessões.',
-        };
+      .maybeSingle();
+    if (membership.error || !membership.data) {
+      return { error: 'Vínculo central não encontrado. Nenhuma alteração foi executada.' };
     }
-  }
-  const sync = await syncCommanderRevocation({
-    identityId,
-    clientId,
-    productCode: 'COMMANDER7',
-  });
-  if (!sync.confirmed) {
-    const feedback: Record<typeof sync.reason, string> = {
-      NOT_CONFIGURED: 'Integração não configurada. Suspensão remota não confirmada.',
-      DESTINATION_PROTECTED:
-        'Proteção da Preview impediu resposta JSON. Verifique o bypass na Vercel.',
-      DESTINATION_REJECTED: 'Destino rejeitou a solicitação. Verifique HMAC, vínculos e auditoria.',
-      DESTINATION_UNAVAILABLE: 'Falha de rede ao conectar com o Commander.',
-      DESTINATION_TIMEOUT: 'Commander não respondeu em 15 segundos.',
-      DESTINATION_REDIRECT: 'Commander redirecionou a chamada. Verifique a proteção da Preview.',
-      UNCONFIRMED: 'Commander respondeu sem confirmar o bloqueio.',
-    };
+    if (membership.data.status === 'ACTIVE') {
+      const product = await db.from('products').select('id').eq('code', 'COMMANDER7').maybeSingle();
+      if (product.error || !product.data)
+        return { error: 'Não foi possível verificar o produto Commander.' };
+      const subscriptions = await db
+        .from('subscriptions')
+        .select('id')
+        .eq('client_id', clientId)
+        .eq('product_id', product.data.id);
+      if (subscriptions.error)
+        return { error: 'Não foi possível verificar as assinaturas do Commander.' };
+      const ids = (subscriptions.data ?? []).map((item) => item.id);
+      if (ids.length) {
+        const stillActive = await db
+          .from('user_product_access')
+          .select('id')
+          .eq('identity_id', identityId)
+          .eq('client_id', clientId)
+          .eq('status', 'ACTIVE')
+          .in('subscription_id', ids)
+          .limit(1);
+        if (stillActive.error)
+          return { error: 'Não foi possível verificar as concessões existentes.' };
+        if (stillActive.data?.length)
+          return {
+            error:
+              'Acesso central ainda ativo. A suspensão remota foi impedida para proteger outras concessões.',
+          };
+      }
+    }
+    stage = 'remote-confirmation';
+    const sync = await syncCommanderRevocation({
+      identityId,
+      clientId,
+      productCode: 'COMMANDER7',
+    });
+    if (!sync.confirmed) {
+      const feedback: Record<typeof sync.reason, string> = {
+        NOT_CONFIGURED: 'Integração não configurada. Suspensão remota não confirmada.',
+        DESTINATION_PROTECTED:
+          'Proteção da Preview impediu resposta JSON. Verifique o bypass na Vercel.',
+        DESTINATION_REJECTED: 'Destino rejeitou a solicitação. Verifique HMAC, vínculos e auditoria.',
+        DESTINATION_UNAVAILABLE: 'Falha de rede ao conectar com o Commander.',
+        DESTINATION_TIMEOUT: 'Commander não respondeu em 15 segundos.',
+        DESTINATION_REDIRECT: 'Commander redirecionou a chamada. Verifique a proteção da Preview.',
+        UNCONFIRMED: 'Commander respondeu sem confirmar o bloqueio.',
+      };
+      return {
+        error: 'A revogação central permanece efetiva. ' + feedback[sync.reason],
+      };
+    }
+    revalidatePath('/usuarios/' + identityId);
+    return { error: null, success: 'Suspensão confirmada no Commander.' };
+  } catch (error) {
+    // Log only the stage and error type. Never log credentials or user identifiers.
+    console.error('[revocation-sync] unexpected failure', {
+      stage,
+      errorType: error instanceof Error ? error.name : 'UnknownError',
+    });
     return {
-      error: 'A revogação central permanece efetiva. ' + feedback[sync.reason],
+      error: 'Falha interna ao confirmar o bloqueio (' + stage + '). A revogação central permanece efetiva.',
     };
   }
-  revalidatePath('/usuarios/' + identityId);
-  return { error: null, success: 'Suspensão confirmada no Commander.' };
 }
