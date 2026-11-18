@@ -78,7 +78,8 @@ export async function createIdentityMembershipAction(
   if (lookupResult.error) return { error: 'Falha ao pesquisar identidade global.' };
   if (identity?.status === 'SUSPENDED') {
     return {
-      error: 'Esta identidade está suspensa. Acesse Consultar usuários, abra o cadastro existente e solicite a reativação administrativa antes de conceder um produto ou reenviar convite.',
+      error:
+        'Esta identidade está suspensa. Acesse Consultar usuários, abra o cadastro existente e solicite a reativação administrativa antes de conceder um produto ou reenviar convite.',
     };
   }
   if (identity && ['REMOVED', 'BLOCKED'].includes(identity.status)) {

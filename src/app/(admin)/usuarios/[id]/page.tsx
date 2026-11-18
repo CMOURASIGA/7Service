@@ -182,8 +182,8 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
         {user.status === 'SUSPENDED' ? (
           <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3">
             <p className="mb-2 text-sm text-amber-900">
-              Esta identidade está suspensa. A reativação exige confirmação administrativa
-              e não libera os vínculos empresariais anteriormente suspensos.
+              Esta identidade está suspensa. A reativação exige confirmação administrativa e não
+              libera os vínculos empresariais anteriormente suspensos.
             </p>
             <ConfirmAction
               triggerLabel="Preparar identidade para novo convite"

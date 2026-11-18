@@ -14,8 +14,14 @@ export function CommanderLaunchButton({ targetOrigin }: { targetOrigin: string }
     let origin: string;
     try {
       const target = new URL(targetOrigin);
-      if (target.protocol !== 'https:' || target.username || target.password ||
-          target.pathname !== '/' || target.search || target.hash)
+      if (
+        target.protocol !== 'https:' ||
+        target.username ||
+        target.password ||
+        target.pathname !== '/' ||
+        target.search ||
+        target.hash
+      )
         throw new Error('Origem do Commander inválida.');
       origin = target.origin;
     } catch {
@@ -37,8 +43,13 @@ export function CommanderLaunchButton({ targetOrigin }: { targetOrigin: string }
       setBusy(false);
     };
     const receive = async (event: MessageEvent) => {
-      if (event.origin !== origin || event.source !== popup ||
-          !event.data || event.data.type !== 'COMMANDER_PORTAL_READY') return;
+      if (
+        event.origin !== origin ||
+        event.source !== popup ||
+        !event.data ||
+        event.data.type !== 'COMMANDER_PORTAL_READY'
+      )
+        return;
       // Only one verified transfer per launch.
       window.removeEventListener('message', receive);
       try {
@@ -47,13 +58,15 @@ export function CommanderLaunchButton({ targetOrigin }: { targetOrigin: string }
         if (sessionError || !data.session?.access_token)
           throw new Error('Sessão expirada. Faça login novamente no Meu Portal.');
         const verified = await supabase.auth.getUser();
-        if (verified.error || !verified.data.user ||
-            verified.data.user.id !== data.session.user.id)
+        if (verified.error || !verified.data.user || verified.data.user.id !== data.session.user.id)
           throw new Error('Não foi possível confirmar sua identidade.');
-        popup.postMessage({
-          type: 'SEVENSERVICE_CENTRAL_SESSION',
-          accessToken: data.session.access_token,
-        }, origin);
+        popup.postMessage(
+          {
+            type: 'SEVENSERVICE_CENTRAL_SESSION',
+            accessToken: data.session.access_token,
+          },
+          origin,
+        );
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Falha na sessão central.');
         popup.close();
@@ -66,11 +79,19 @@ export function CommanderLaunchButton({ targetOrigin }: { targetOrigin: string }
 
   return (
     <div>
-      <button type="button" disabled={busy} onClick={open}
-        className="w-full rounded-lg bg-blue-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900 disabled:opacity-60">
+      <button
+        type="button"
+        disabled={busy}
+        onClick={open}
+        className="w-full rounded-lg bg-blue-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900 disabled:opacity-60"
+      >
         {busy ? 'Abrindo Commander...' : 'Acessar Commander'}
       </button>
-      {error ? <p role="alert" className="mt-2 text-sm text-red-700">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="mt-2 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
