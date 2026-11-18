@@ -110,7 +110,7 @@ export default async function CustomerApplicationsPage() {
       {
         company: company.trade_name || company.legal_name,
         product: product.name,
-      productCode: product.code,
+        productCode: product.code,
         role: roles.get(grant.product_role_id) || 'Perfil não identificado',
         status: grant.status,
       },

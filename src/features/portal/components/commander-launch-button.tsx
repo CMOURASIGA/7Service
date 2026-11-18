@@ -12,16 +12,20 @@ export function CommanderLaunchButton({ targetOrigin }: { targetOrigin: string }
     setError('');
     try {
       const destination = new URL('/api/auth/portal-entry', targetOrigin);
-      if (destination.protocol !== 'https:' || destination.username ||
-          destination.password || destination.search || destination.hash)
+      if (
+        destination.protocol !== 'https:' ||
+        destination.username ||
+        destination.password ||
+        destination.search ||
+        destination.hash
+      )
         throw new Error('Endereço do Commander não autorizado.');
       const supabase = createClient();
       const { data, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !data.session?.access_token)
         throw new Error('Sessão expirada. Faça login novamente no Meu Portal.');
       const verified = await supabase.auth.getUser();
-      if (verified.error || !verified.data.user ||
-          verified.data.user.id !== data.session.user.id)
+      if (verified.error || !verified.data.user || verified.data.user.id !== data.session.user.id)
         throw new Error('Não foi possível confirmar sua identidade.');
       // POST only, never insert access tokens in the URL, query string,
       // local storage or navigation history.
@@ -51,7 +55,11 @@ export function CommanderLaunchButton({ targetOrigin }: { targetOrigin: string }
       >
         {busy ? 'Confirmando acesso...' : 'Acessar Commander'}
       </button>
-      {error ? <p role="alert" className="mt-2 text-sm text-red-700">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="mt-2 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
