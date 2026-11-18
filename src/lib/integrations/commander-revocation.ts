@@ -8,7 +8,7 @@ type RevocationScope = {
 };
 
 export type RevocationSyncResult =
-  { confirmed: true } | { confirmed: false; reason: 'NOT_CONFIGURED' | 'UNCONFIRMED' };
+  { confirmed: true } | { confirmed: false; reason: 'NOT_CONFIGURED' | 'DESTINATION_PROTECTED' | 'DESTINATION_REJECTED' | 'DESTINATION_UNAVAILABLE' | 'UNCONFIRMED' };
 
 /**
  * Only sends a restricted, signed *revocation* intent. The Commander
@@ -64,13 +64,21 @@ export async function syncCommanderRevocation(
       redirect: 'error',
       signal: AbortSignal.timeout(5000),
     });
-    if (!response.ok || !response.headers.get('content-type')?.includes('application/json'))
-      return { confirmed: false, reason: 'UNCONFIRMED' };
+    // A Vercel authentication page is HTML, not the signed JSON response.
+    // Distinguish that failure from a valid application-level rejection.
+    const jsonResponse = response.headers.get('content-type')?.includes('application/json');
+    if (!jsonResponse) {
+      return { confirmed: false, reason: 'DESTINATION_PROTECTED' };
+    }
+    if (!response.ok) {
+      return { confirmed: false, reason: 'DESTINATION_REJECTED' };
+    }
     const result: unknown = await response.json();
     if (result && typeof result === 'object' && 'confirmed' in result && result.confirmed === true)
       return { confirmed: true };
   } catch {
-    // Central authorization remains revoked even if destination is unavailable.
+    // Fail closed. Network or timeout errors never reactivate central access.
+    return { confirmed: false, reason: 'DESTINATION_UNAVAILABLE' };
   }
   return { confirmed: false, reason: 'UNCONFIRMED' };
 }
