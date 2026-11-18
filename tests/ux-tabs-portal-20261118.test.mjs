@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
+const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 
 test('client and users use existing keyboard-accessible local tabs without URL navigation', () => {
   const client = read('src/app/(admin)/clientes/[id]/page.tsx');

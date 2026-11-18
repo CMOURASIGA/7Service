@@ -23,11 +23,7 @@ import {
 import type { Client, ClientAddress, ClientStatus, Contract, Product } from '@/types/domain';
 
 export const dynamic = 'force-dynamic';
-export default async function ClientDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   await requirePermission('clients.view');
   const { id } = await params;
   const db = createAdminClient();
@@ -191,71 +187,124 @@ export default async function ClientDetailPage({
       <WorkspaceTabs
         label="Seções do cliente"
         tabs={[
-          { id: 'dados', label: 'Dados cadastrais', content: (
-            <section className="rounded-lg border p-5">
-              <h2 className="mb-4 font-semibold">Dados cadastrais</h2>
-              <ClientForm client={client} action={updateClientAction.bind(null, id)} submitLabel="Salvar alterações" />
-            </section>
-          ) },
-          { id: 'contratos', label: 'Contratos', content: (
-            <section className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-lg border p-5">
-                <h2 className="mb-2 font-semibold">Contratos</h2>
-                <ContractForm action={createContractAction.bind(null, id)} />
-                {!contracts.data?.length ? <p className="text-muted text-sm">Nenhum contrato registrado.</p> : (
-                  <ul>{contracts.data.map(c => (
-                    <li key={c.id} className="border-b py-3 text-sm">
-                      <div className="font-medium">{c.reference} · {c.status}</div>
-                      <UploadDocumentForm action={uploadContractDocumentAction.bind(null, id, c.id)} />
-                      {(docsResult.data ?? []).filter(d => d.contract_id === c.id).length ? (
-                        <ul className="mt-2 space-y-1">
-                          {(docsResult.data ?? []).filter(d => d.contract_id === c.id).map(d => (
-                            <li key={d.id}>
-                              <a className="text-brand-700 underline" target="_blank" rel="noopener noreferrer" href={`/api/contracts/${c.id}/documents/${d.id}`}>
-                                {d.original_name} ({Math.ceil(d.size_bytes / 1024)} KB)
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : <p className="text-muted text-xs">Nenhum PDF anexado.</p>}
-                    </li>
-                  ))}</ul>
-                )}
-              </div>
-            </section>
-          ) },
-          { id: 'produtos', label: 'Produtos', content: (
-            <section className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-lg border p-5">
-                <h2 className="mb-2 font-semibold">Produtos contratados</h2>
-                <SubscriptionForm action={createSubscriptionAction.bind(null, id)} contracts={contractOptions} products={productOptions} />
-                {!subscriptions.data?.length ? <p className="text-muted text-sm">Nenhuma assinatura registrada.</p> : (
-                  <ul>{subscriptions.data.map(sub => (
-                    <li key={sub.id} className="border-b py-2 text-sm">
-                      {subscriptionProductNames.get(sub.product_id) ?? sub.product_id} · {sub.status} · {sub.license_limit} licenças
-                    </li>
-                  ))}</ul>
-                )}
-              </div>
-            </section>
-          ) },
-          { id: 'usuarios', label: 'Usuários', content: (
-            <section className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-lg border p-5">
-                <h2 className="mb-2 font-semibold">Usuários vinculados</h2>
-                {!memberships.data?.length ? <p className="text-muted text-sm">Nenhuma identidade vinculada.</p> : (
-                  <ul>{memberships.data.map(member => (
-                    <li key={member.id} className="border-b py-2 text-sm">
-                      {membershipIdentityNames.get(member.identity_id) ?? member.identity_id} · {member.status}
-                    </li>
-                  ))}</ul>
-                )}
-              </div>
-            </section>
-          ) },
-          { id: 'funcionalidades', label: 'Funcionalidades', content: (
-            <ClientFeaturesPanel clientId={id} />
-          ) },
+          {
+            id: 'dados',
+            label: 'Dados cadastrais',
+            content: (
+              <section className="rounded-lg border p-5">
+                <h2 className="mb-4 font-semibold">Dados cadastrais</h2>
+                <ClientForm
+                  client={client}
+                  action={updateClientAction.bind(null, id)}
+                  submitLabel="Salvar alterações"
+                />
+              </section>
+            ),
+          },
+          {
+            id: 'contratos',
+            label: 'Contratos',
+            content: (
+              <section className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg border p-5">
+                  <h2 className="mb-2 font-semibold">Contratos</h2>
+                  <ContractForm action={createContractAction.bind(null, id)} />
+                  {!contracts.data?.length ? (
+                    <p className="text-muted text-sm">Nenhum contrato registrado.</p>
+                  ) : (
+                    <ul>
+                      {contracts.data.map((c) => (
+                        <li key={c.id} className="border-b py-3 text-sm">
+                          <div className="font-medium">
+                            {c.reference} · {c.status}
+                          </div>
+                          <UploadDocumentForm
+                            action={uploadContractDocumentAction.bind(null, id, c.id)}
+                          />
+                          {(docsResult.data ?? []).filter((d) => d.contract_id === c.id).length ? (
+                            <ul className="mt-2 space-y-1">
+                              {(docsResult.data ?? [])
+                                .filter((d) => d.contract_id === c.id)
+                                .map((d) => (
+                                  <li key={d.id}>
+                                    <a
+                                      className="text-brand-700 underline"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      href={`/api/contracts/${c.id}/documents/${d.id}`}
+                                    >
+                                      {d.original_name} ({Math.ceil(d.size_bytes / 1024)} KB)
+                                    </a>
+                                  </li>
+                                ))}
+                            </ul>
+                          ) : (
+                            <p className="text-muted text-xs">Nenhum PDF anexado.</p>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </section>
+            ),
+          },
+          {
+            id: 'produtos',
+            label: 'Produtos',
+            content: (
+              <section className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg border p-5">
+                  <h2 className="mb-2 font-semibold">Produtos contratados</h2>
+                  <SubscriptionForm
+                    action={createSubscriptionAction.bind(null, id)}
+                    contracts={contractOptions}
+                    products={productOptions}
+                  />
+                  {!subscriptions.data?.length ? (
+                    <p className="text-muted text-sm">Nenhuma assinatura registrada.</p>
+                  ) : (
+                    <ul>
+                      {subscriptions.data.map((sub) => (
+                        <li key={sub.id} className="border-b py-2 text-sm">
+                          {subscriptionProductNames.get(sub.product_id) ?? sub.product_id} ·{' '}
+                          {sub.status} · {sub.license_limit} licenças
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </section>
+            ),
+          },
+          {
+            id: 'usuarios',
+            label: 'Usuários',
+            content: (
+              <section className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg border p-5">
+                  <h2 className="mb-2 font-semibold">Usuários vinculados</h2>
+                  {!memberships.data?.length ? (
+                    <p className="text-muted text-sm">Nenhuma identidade vinculada.</p>
+                  ) : (
+                    <ul>
+                      {memberships.data.map((member) => (
+                        <li key={member.id} className="border-b py-2 text-sm">
+                          {membershipIdentityNames.get(member.identity_id) ?? member.identity_id} ·{' '}
+                          {member.status}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </section>
+            ),
+          },
+          {
+            id: 'funcionalidades',
+            label: 'Funcionalidades',
+            content: <ClientFeaturesPanel clientId={id} />,
+          },
         ]}
       />
     </main>

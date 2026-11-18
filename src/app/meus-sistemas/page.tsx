@@ -115,22 +115,19 @@ export default async function CustomerApplicationsPage() {
     ];
   });
 
-  const activeCount = visible.filter(item => item.status === 'ACTIVE').length;
+  const activeCount = visible.filter((item) => item.status === 'ACTIVE').length;
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-7 sm:px-6">
       <header className="overflow-hidden rounded-2xl border border-blue-900 bg-[#082a4e] px-6 py-7 text-white shadow-sm sm:px-8">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">
+            <p className="text-xs font-semibold tracking-[0.18em] text-blue-200 uppercase">
               7Service | Meu Portal
             </p>
-            <h1 className="text-2xl font-semibold sm:text-3xl">
-              Olá, {identity.first_name}!
-            </h1>
+            <h1 className="text-2xl font-semibold sm:text-3xl">Olá, {identity.first_name}!</h1>
             <p className="max-w-2xl text-sm leading-6 text-blue-100">
-              Consulte os produtos concedidos pelas suas empresas. Seu login é
-              centralizado no 7Service e as permissões são verificadas individualmente
-              em cada sistema.
+              Consulte os produtos concedidos pelas suas empresas. Seu login é centralizado no
+              7Service e as permissões são verificadas individualmente em cada sistema.
             </p>
           </div>
           <div className="rounded-xl border border-white/20 bg-white/10 p-4 text-right">
@@ -152,8 +149,8 @@ export default async function CustomerApplicationsPage() {
           <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8">
             <h3 className="text-lg font-semibold text-slate-900">Nenhum sistema disponível</h3>
             <p className="mt-2 text-sm text-slate-600">
-              Sua conta está ativa, mas ainda não possui produtos autorizados.
-              Entre em contato com o administrador da sua empresa.
+              Sua conta está ativa, mas ainda não possui produtos autorizados. Entre em contato com
+              o administrador da sua empresa.
             </p>
           </div>
         ) : (
@@ -165,12 +162,19 @@ export default async function CustomerApplicationsPage() {
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-50 text-lg font-bold text-blue-800" aria-hidden="true">
+                    <span
+                      className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-50 text-lg font-bold text-blue-800"
+                      aria-hidden="true"
+                    >
                       {item.product.slice(0, 1).toUpperCase()}
                     </span>
-                    <span className={item.status === 'ACTIVE'
-                      ? 'rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800'
-                      : 'rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800'}>
+                    <span
+                      className={
+                        item.status === 'ACTIVE'
+                          ? 'rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800'
+                          : 'rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800'
+                      }
+                    >
                       {item.status === 'ACTIVE' ? 'Licença ativa' : 'Licença reservada'}
                     </span>
                   </div>
@@ -202,9 +206,9 @@ export default async function CustomerApplicationsPage() {
       </section>
       <footer className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
         <p>
-          O 7Service administra sua identidade e suas licenças. A entrada direta em cada
-          sistema será liberada após confirmar a integração de autenticação e as
-          permissões do produto. Você não precisa criar outra senha.
+          O 7Service administra sua identidade e suas licenças. A entrada direta em cada sistema
+          será liberada após confirmar a integração de autenticação e as permissões do produto. Você
+          não precisa criar outra senha.
         </p>
         <Link href="/entrar" className="mt-2 inline-block font-medium text-blue-700 underline">
           Voltar à entrada do portal

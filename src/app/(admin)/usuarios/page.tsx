@@ -90,85 +90,93 @@ export default async function IdentitiesPage({
       <WorkspaceTabs
         label="Gestão de usuários"
         tabs={[
-          { id: 'novo', label: 'Cadastrar usuário', content: (
-            <NewIdentityForm clients={clients ?? []} products={onboardingProducts} />
-          ) },
-          { id: 'consultar', label: 'Consultar usuários', content: (
-            <div className="space-y-4">
-      <form className="flex flex-wrap gap-2" action="/usuarios">
-        <input
-          type="search"
-          name="q"
-          defaultValue={params.q}
-          placeholder="Buscar por nome ou e-mail"
-          className="border-border focus:border-brand-600 focus:ring-brand-100 w-full max-w-md rounded-md border px-3 py-2 text-sm outline-none focus:ring-2"
-        />
-        <select
-          name="status"
-          defaultValue={params.status === 'all' ? 'all' : 'operational'}
-          className="rounded-md border px-3 py-2 text-sm"
-        >
-          <option value="operational">Usuários operacionais</option>
-          <option value="all">Incluir históricos e suspensos</option>
-        </select>
-        <button
-          type="submit"
-          className="border-border rounded-md border px-4 py-2 text-sm font-medium hover:bg-slate-50"
-        >
-          Buscar
-        </button>
-      </form>
+          {
+            id: 'novo',
+            label: 'Cadastrar usuário',
+            content: <NewIdentityForm clients={clients ?? []} products={onboardingProducts} />,
+          },
+          {
+            id: 'consultar',
+            label: 'Consultar usuários',
+            content: (
+              <div className="space-y-4">
+                <form className="flex flex-wrap gap-2" action="/usuarios">
+                  <input
+                    type="search"
+                    name="q"
+                    defaultValue={params.q}
+                    placeholder="Buscar por nome ou e-mail"
+                    className="border-border focus:border-brand-600 focus:ring-brand-100 w-full max-w-md rounded-md border px-3 py-2 text-sm outline-none focus:ring-2"
+                  />
+                  <select
+                    name="status"
+                    defaultValue={params.status === 'all' ? 'all' : 'operational'}
+                    className="rounded-md border px-3 py-2 text-sm"
+                  >
+                    <option value="operational">Usuários operacionais</option>
+                    <option value="all">Incluir históricos e suspensos</option>
+                  </select>
+                  <button
+                    type="submit"
+                    className="border-border rounded-md border px-4 py-2 text-sm font-medium hover:bg-slate-50"
+                  >
+                    Buscar
+                  </button>
+                </form>
 
-      <div className="border-border bg-background overflow-x-auto rounded-lg border">
-        <table className="w-full text-left text-sm">
-          <thead className="border-border text-muted border-b bg-slate-50 text-xs">
-            <tr>
-              <th className="px-4 py-2 font-medium">Nome</th>
-              <th className="px-4 py-2 font-medium">E-mail</th>
-              <th className="px-4 py-2 font-medium">Cliente</th>
-              <th className="px-4 py-2 font-medium">Produtos ativos</th>
-              <th className="px-4 py-2 font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(identities ?? []).map((identity) => {
-              const clients = identity.client_memberships
-                .filter((x) => x.status === 'ACTIVE')
-                .map((x) => x.clients?.trade_name || x.clients?.legal_name)
-                .filter(Boolean);
-              const activeProducts = identity.user_product_access.filter(
-                (x) => x.status === 'ACTIVE',
-              ).length;
-              const statusInfo =
-                IDENTITY_STATUS_LABEL[identity.status as keyof typeof IDENTITY_STATUS_LABEL];
+                <div className="border-border bg-background overflow-x-auto rounded-lg border">
+                  <table className="w-full text-left text-sm">
+                    <thead className="border-border text-muted border-b bg-slate-50 text-xs">
+                      <tr>
+                        <th className="px-4 py-2 font-medium">Nome</th>
+                        <th className="px-4 py-2 font-medium">E-mail</th>
+                        <th className="px-4 py-2 font-medium">Cliente</th>
+                        <th className="px-4 py-2 font-medium">Produtos ativos</th>
+                        <th className="px-4 py-2 font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(identities ?? []).map((identity) => {
+                        const clients = identity.client_memberships
+                          .filter((x) => x.status === 'ACTIVE')
+                          .map((x) => x.clients?.trade_name || x.clients?.legal_name)
+                          .filter(Boolean);
+                        const activeProducts = identity.user_product_access.filter(
+                          (x) => x.status === 'ACTIVE',
+                        ).length;
+                        const statusInfo =
+                          IDENTITY_STATUS_LABEL[
+                            identity.status as keyof typeof IDENTITY_STATUS_LABEL
+                          ];
 
-              return (
-                <tr
-                  key={identity.id}
-                  className="border-border border-b last:border-0 hover:bg-slate-50"
-                >
-                  <td className="px-4 py-2">
-                    <Link
-                      href={`/usuarios/${identity.id}`}
-                      className="text-brand-700 font-medium hover:underline"
-                    >
-                      {identity.first_name} {identity.last_name}
-                    </Link>
-                  </td>
-                  <td className="text-muted px-4 py-2">{identity.email}</td>
-                  <td className="text-muted px-4 py-2">{clients.join(', ') || '—'}</td>
-                  <td className="text-muted px-4 py-2">{activeProducts}</td>
-                  <td className="px-4 py-2">
-                    <StatusBadge label={statusInfo.label} tone={statusInfo.tone} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-            </div>
-          ) },
+                        return (
+                          <tr
+                            key={identity.id}
+                            className="border-border border-b last:border-0 hover:bg-slate-50"
+                          >
+                            <td className="px-4 py-2">
+                              <Link
+                                href={`/usuarios/${identity.id}`}
+                                className="text-brand-700 font-medium hover:underline"
+                              >
+                                {identity.first_name} {identity.last_name}
+                              </Link>
+                            </td>
+                            <td className="text-muted px-4 py-2">{identity.email}</td>
+                            <td className="text-muted px-4 py-2">{clients.join(', ') || '—'}</td>
+                            <td className="text-muted px-4 py-2">{activeProducts}</td>
+                            <td className="px-4 py-2">
+                              <StatusBadge label={statusInfo.label} tone={statusInfo.tone} />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ),
+          },
         ]}
       />
     </div>
