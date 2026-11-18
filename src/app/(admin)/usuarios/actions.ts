@@ -76,6 +76,12 @@ export async function createIdentityMembershipAction(
     .maybeSingle();
   let identity = lookupResult.data;
   if (lookupResult.error) return { error: 'Falha ao pesquisar identidade global.' };
+  if (identity?.status === 'SUSPENDED') {
+    return {
+      error:
+        'Esta identidade está suspensa. Acesse Consultar usuários, abra o cadastro existente e solicite a reativação administrativa antes de conceder um produto ou reenviar convite.',
+    };
+  }
   if (identity && ['REMOVED', 'BLOCKED'].includes(identity.status)) {
     return { error: 'Identidade existente está bloqueada ou removida.' };
   }
@@ -163,9 +169,42 @@ export async function createIdentityMembershipAction(
         p_role: productRoleId,
       });
       if (grant.error) {
+        // New identities and memberships were inserted only for this
+        // onboarding attempt. Compensate both on grant failure so no
+        // partial registration remains waiting for an invitation.
+        let compensationFailed = false;
+        if (createdMembership) {
+          const revert = await db
+            .from('client_memberships')
+            .delete()
+            .eq('identity_id', identity.id)
+            .eq('client_id', clientId);
+          if (revert.error) compensationFailed = true;
+        }
+        if (createdIdentity && !compensationFailed) {
+          const revert = await db
+            .from('identities')
+            .delete()
+            .eq('id', identity.id)
+            .eq('status', 'PENDING_INVITE')
+            .is('auth_user_id', null);
+          if (revert.error) compensationFailed = true;
+        }
+        if (compensationFailed) {
+          return {
+            error:
+              'Falha na reserva da licença e na reversão do cadastro. Não repita o convite; solicite conciliação administrativa.',
+          };
+        }
+        const message = grant.error.message ?? '';
         return {
-          error:
-            'Vínculo empresarial registrado, mas não foi possível reservar a licença. Verifique o limite e as concessões antes de reenviar convite.',
+          error: /License limit reached/i.test(message)
+            ? 'Limite de licenças atingido. Nenhum convite foi enviado.'
+            : /Identity not eligible/i.test(message)
+              ? 'Identidade não habilitada para receber acesso. Revise seu status antes do convite.'
+              : /Permission denied/i.test(message)
+                ? 'Sua conta não possui permissão para conceder licenças.'
+                : 'Não foi possível reservar a licença. O cadastro novo foi revertido e nenhum convite foi enviado.',
         };
       }
     }

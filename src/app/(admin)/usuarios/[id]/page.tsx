@@ -23,6 +23,7 @@ import {
   grantAccessAction,
   correctPendingIdentityEmailAction,
   resendPendingActivationAction,
+  prepareSuspendedIdentityInviteAction,
 } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -178,6 +179,21 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
         </h1>
         <p className="text-muted text-sm">{user.email}</p>
         <StatusBadge label={badge.label} tone={badge.tone} />
+        {user.status === 'SUSPENDED' ? (
+          <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3">
+            <p className="mb-2 text-sm text-amber-900">
+              Esta identidade está suspensa. A reativação exige confirmação administrativa e não
+              libera os vínculos empresariais anteriormente suspensos.
+            </p>
+            <ConfirmAction
+              triggerLabel="Preparar identidade para novo convite"
+              impactMessage="Após revisão, reabre a identidade para novo convite, sem reativar vínculos nem produtos antigos."
+              action={prepareSuspendedIdentityInviteAction.bind(null, id)}
+              requireReason
+              confirmLabel="Confirmar reativação para convite"
+            />
+          </div>
+        ) : null}
         {user.status === 'PENDING_INVITE' ? (
           <CorrectPendingEmailForm
             initialEmail={user.email}
