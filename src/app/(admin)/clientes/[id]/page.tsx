@@ -1,3 +1,4 @@
+import { displayProductName } from '@/lib/product-display-name';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requirePermission } from '@/lib/auth/session';
@@ -65,7 +66,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   if (subscriptionProducts.error || membershipIdentities.error)
     throw new Error('Falha ao consultar referências vinculadas ao cliente');
   const subscriptionProductNames = new Map(
-    (subscriptionProducts.data ?? []).map((product) => [product.id, product.name]),
+    (subscriptionProducts.data ?? []).map((product) => [product.id, displayProductName(product.name)]),
   );
   const membershipIdentityNames = new Map(
     (membershipIdentities.data ?? []).map((identity) => [
@@ -125,7 +126,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const productOptions: Product[] = (products.data ?? []).map((x) => ({
     id: x.id,
     code: x.code,
-    name: x.name,
+    name: displayProductName(x.name),
     description: x.description,
     status: x.status as Product['status'],
     entryUrl: x.entry_url,
