@@ -1,0 +1,30 @@
+name: Temporary format compensation
+on:
+  push:
+    branches:
+      - fix/sso-launch-and-suspended-invite-20261118
+    paths:
+      - .github/workflows/temp-format-compensation.yml
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/sso-launch-and-suspended-invite-20261118
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: |
+          npx prettier --write 'src/app/(admin)/usuarios/actions.ts' 'tests/sso-preview-suspended-identity.test.mjs'
+      - name: Commit formatted code
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- 'src/app/(admin)/usuarios/actions.ts' 'tests/sso-preview-suspended-identity.test.mjs'
+          git diff --cached --quiet || { git commit -m "style: format license-compensation fix"; git push; }
