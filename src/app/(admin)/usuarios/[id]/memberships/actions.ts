@@ -146,7 +146,9 @@ export async function retryCommanderRevocationAction(
       NOT_CONFIGURED: 'Integração não configurada. Suspensão remota não confirmada.',
       DESTINATION_PROTECTED: 'Proteção da Preview impediu resposta JSON. Verifique o bypass na Vercel.',
       DESTINATION_REJECTED: 'Destino rejeitou a solicitação. Verifique HMAC, vínculos e auditoria.',
-      DESTINATION_UNAVAILABLE: 'Commander indisponível. Verifique URL, rede e timeout.',
+      DESTINATION_UNAVAILABLE: 'Falha de rede ao conectar com o Commander.',
+      DESTINATION_TIMEOUT: 'Commander não respondeu em 15 segundos.',
+      DESTINATION_REDIRECT: 'Commander redirecionou a chamada. Verifique a proteção da Preview.',
       UNCONFIRMED: 'Commander respondeu sem confirmar o bloqueio.',
     };
     return {
