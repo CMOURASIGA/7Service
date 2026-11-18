@@ -30,6 +30,7 @@ function useGreeting() {
   return greeting;
 }
 
+// prettier-ignore -- preserved while finalizing the corporate portal layout.
 export function CustomerPortal({
   firstName,
   systems,
