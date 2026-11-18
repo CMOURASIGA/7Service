@@ -4,6 +4,41 @@ import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { syncCommanderRevocation } from '@/lib/integrations/commander-revocation';
 
+/**
+ * Explicit recovery of a suspended global identity without an Auth user.
+ * Existing company suspensions and historical grants remain unchanged.
+ * The subsequent onboarding can reserve a license and send a fresh invite.
+ */
+export async function prepareSuspendedIdentityInviteAction(identityId: string, form: FormData) {
+  const { internalUser } = await requirePermission('users.manage');
+  const reason = String(form.get('reason') ?? '').trim();
+  if (reason.length < 8) throw new Error('Informe o motivo da reativação (mínimo 8 caracteres).');
+  const db = createAdminClient();
+  const { data: previous, error } = await db.from('identities')
+    .select('id,email,status,auth_user_id').eq('id', identityId).maybeSingle();
+  if (error || !previous || previous.status !== 'SUSPENDED' || previous.auth_user_id)
+    throw new Error('Somente identidades suspensas e sem conta Auth podem ser preparadas para novo convite.');
+  const existingGrants = await db.from('user_product_access')
+    .select('id').eq('identity_id', identityId).in('status', ['ACTIVE','PENDING']).limit(1);
+  if (existingGrants.error || existingGrants.data?.length)
+    throw new Error('Existem concessões ativas ou pendentes. Faça a revisão antes de reativar.');
+  const { data: updated, error: updateError } = await db.from('identities')
+    .update({ status: 'PENDING_INVITE' }).eq('id', identityId)
+    .eq('status', 'SUSPENDED').is('auth_user_id',null).select('id');
+  if (updateError || updated?.length !== 1) throw new Error('Não foi possível reabrir a identidade para convite.');
+  const audit = await db.from('audit_logs').insert({
+    actor_internal_user_id: internalUser.id,
+    action: 'identity.suspension_reviewed_for_invitation',
+    target_type: 'identity', target_id: identityId,
+    source: '7service', reason,
+    before_json: { status: 'SUSPENDED' },
+    after_json: { status: 'PENDING_INVITE' },
+  });
+  if (audit.error) throw new Error('Identidade reaberta; auditoria pendente. Bloqueie convites e solicite conciliação.');
+  revalidatePath('/usuarios');
+  revalidatePath('/usuarios/' + identityId);
+}
+
 export interface GrantAccessFormState {
   error: string | null;
 }
