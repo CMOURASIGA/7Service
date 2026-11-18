@@ -310,11 +310,26 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                           </div>
                         );
                       })()}
-                      {a.status === 'ACTIVE' ? null : (
+                      {a.status === 'PENDING' ? (
                         <p className="text-muted text-xs">
-                          Aguardando ativação. Não distribuir credenciais antes de liberar o acesso.
+                          Aguardando ativação da conta e da licença. Não distribuir credenciais.
                         </p>
-                      )}
+                      ) : a.status === 'SUSPENDED' ? (
+                        <p className="text-muted text-xs">
+                          Licença suspensa no 7Service. As consultas no produto são bloqueadas pelo controle central.
+                          A sincronização técnica no Commander pode exigir confirmação.
+                        </p>
+                      ) : a.status === 'REVOKED' ? (
+                        <p className="text-muted text-xs">
+                          Licença revogada definitivamente no 7Service. O Commander deve negar novas consultas
+                          mesmo com sessão aberta. O vínculo técnico local precisa de confirmação separada.
+                          Uma nova concessão exige procedimento administrativo próprio.
+                        </p>
+                      ) : a.status === 'EXPIRED' ? (
+                        <p className="text-muted text-xs">
+                          Licença expirada. Regularize a assinatura antes de solicitar novo acesso.
+                        </p>
+                      ) : null}
                     </div>
                     <StatusBadge label={info.label} tone={info.tone} />
                   </div>
@@ -338,10 +353,11 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                         confirmLabel="Reativar"
                       />
                     ) : null}
-                    {a.status !== 'ACTIVE' && a.subscriptions?.products?.name === '7Commander' ? (
+                    {(a.status === 'SUSPENDED' || a.status === 'REVOKED') &&
+                    a.subscriptions?.products?.name === '7Commander' ? (
                       <ConfirmAction
                         triggerLabel="Sincronizar bloqueio no Commander"
-                        impactMessage="A suspensão local só é feita se não existir outra concessão central ativa para este produto e empresa."
+                        impactMessage="Confirma a suspensão técnica no Commander. O bloqueio de consultas já é obrigatório pelo 7Service e a sincronização não substitui a revogação central."
                         action={retryCommanderRevocationAction.bind(null, id, a.client_id)}
                         confirmLabel="Sincronizar"
                       />
