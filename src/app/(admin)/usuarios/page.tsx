@@ -1,3 +1,4 @@
+import { displayProductName } from '@/lib/product-display-name';
 import Link from 'next/link';
 
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -69,7 +70,7 @@ export default async function IdentitiesPage({
     .map((item) => ({
       clientId: item.client_id,
       subscriptionId: item.id,
-      productName: productsById.get(item.product_id)!.name,
+      productName: displayProductName(productsById.get(item.product_id)!.name),
       licenseLimit: item.license_limit,
       licensesUsed: (grantsResult.data ?? []).filter((grant) => grant.subscription_id === item.id)
         .length,
