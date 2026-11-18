@@ -36,7 +36,7 @@ function pageTitleFor(pathname: string): string {
 }
 
 function initialsFor(firstName: string, lastName: string): string {
-  return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase() || '7S';
+  return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase() || 'AM';
 }
 
 export function Topbar({
