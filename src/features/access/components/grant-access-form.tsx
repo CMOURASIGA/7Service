@@ -1,4 +1,5 @@
 'use client';
+import { displayProductName } from '@/lib/product-display-name';
 
 import { useActionState, useMemo, useState } from 'react';
 
@@ -57,7 +58,7 @@ export function GrantAccessForm({
         >
           {options.map(({ subscription, product }) => (
             <option key={subscription.id} value={subscription.id}>
-              {product.name}
+              {displayProductName(product.name)}
             </option>
           ))}
         </select>
