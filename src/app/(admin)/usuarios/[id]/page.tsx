@@ -130,7 +130,10 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
       id: a.id,
       clientId: a.client_id,
       productId: a.subscriptions?.product_id ?? '',
-      label: displayProductName(a.subscriptions?.products?.name ?? 'Produto') + ' / ' + a.client_id.slice(0, 8),
+      label:
+        displayProductName(a.subscriptions?.products?.name ?? 'Produto') +
+        ' / ' +
+        a.client_id.slice(0, 8),
     }));
   const links = clientIds.length
     ? await db
@@ -289,7 +292,9 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                 <li key={a.id} className="rounded border p-3">
                   <div className="mb-2 flex justify-between gap-2">
                     <div className="space-y-1">
-                      <span>{displayProductName(a.subscriptions?.products?.name) || a.subscription_id}</span>
+                      <span>
+                        {displayProductName(a.subscriptions?.products?.name) || a.subscription_id}
+                      </span>
                       {(() => {
                         const destination = customerProductEntryUrl(
                           a.client_id,
