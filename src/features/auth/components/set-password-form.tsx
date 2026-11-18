@@ -11,6 +11,7 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [validSession, setValidSession] = useState(false);
+  const [inviteAccount, setInviteAccount] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -41,18 +42,28 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
         error: authError,
       } = await supabase.auth.getUser();
       if (!mounted) return;
-      setValidSession(!authError && !!user);
+      if (authError || !user) {
+        setValidSession(false);
+      } else if (mode === 'invite') {
+        const check = await fetch('/api/auth/invite-eligibility', { cache: 'no-store' });
+        const eligibility = await check.json().catch(() => null) as
+          | { eligible?: boolean; email?: string } | null;
+        if (!mounted) return;
+        setValidSession(check.ok && eligibility?.eligible === true);
+        setInviteAccount(check.ok ? eligibility?.email ?? '' : '');
+      } else {
+        setValidSession(true);
+      }
       setReady(true);
     }
     void validateSession();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(() => {
       if (!mounted) return;
-      if (session?.user) {
-        setValidSession(true);
-        setReady(true);
-      }
+      // Re-validate the server-bound invite identity after any auth change.
+      // Do not authorize password updates merely because some session exists.
+      void validateSession();
     });
     return () => {
       mounted = false;
@@ -105,6 +116,18 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
       setError('Sua sessão expirou. Solicite um novo link.');
       setSaving(false);
       return;
+    }
+    if (mode === 'invite') {
+      const check = await fetch('/api/auth/invite-eligibility', { cache: 'no-store' });
+      const result = await check.json().catch(() => null) as
+        | { eligible?: boolean; email?: string } | null;
+      if (!check.ok || result?.eligible !== true ||
+          result.email?.toLowerCase() !== user.email?.toLowerCase()) {
+        setError('Esta sessão não corresponde a um convite pendente. Saia da conta atual e abra o convite em uma janela privativa.');
+        setValidSession(false);
+        setSaving(false);
+        return;
+      }
     }
     const { error: updateError } = await supabase.auth.updateUser({ password });
     if (updateError) {
@@ -205,6 +228,11 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
       <h1 className="text-xl font-semibold">
         {mode === 'invite' ? 'Definir senha de acesso' : 'Redefinir senha'}
       </h1>
+      {mode === 'invite' && inviteAccount ? (
+        <p className="rounded border border-blue-200 bg-blue-50 p-2 text-sm">
+          Convite destinado a: <strong>{inviteAccount}</strong>
+        </p>
+      ) : null}
       <p className="text-sm text-gray-600">
         Crie uma senha de pelo menos 12 caracteres para seu acesso ao 7Service.
       </p>
