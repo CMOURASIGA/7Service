@@ -1,3 +1,4 @@
+import { displayProductName } from '@/lib/product-display-name';
 import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { CreateProductForm } from '@/features/products/components/create-product-form';
@@ -61,7 +62,7 @@ export default async function ProductsPage({
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-foreground font-medium">
                 <Link className="text-brand-700 underline" href={`/produtos/${product.id}`}>
-                  {product.name}
+                  {displayProductName(product.name)}
                 </Link>
               </h2>
               <StatusBadge
