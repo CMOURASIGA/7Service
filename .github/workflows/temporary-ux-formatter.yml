@@ -1,0 +1,38 @@
+name: Temporary format UX changes
+on:
+  push:
+    branches:
+      - feat/ux-tabs-portal-status-20261118
+    paths:
+      - .github/workflows/temporary-ux-formatter.yml
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/ux-tabs-portal-status-20261118
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: |
+          npx prettier --write \
+            'src/app/(admin)/clientes/[id]/page.tsx' \
+            'src/app/(admin)/usuarios/page.tsx' \
+            'src/app/meus-sistemas/page.tsx' \
+            'tests/ux-tabs-portal-20261118.test.mjs'
+      - name: Commit formatted files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- \
+            'src/app/(admin)/clientes/[id]/page.tsx' \
+            'src/app/(admin)/usuarios/page.tsx' \
+            'src/app/meus-sistemas/page.tsx' \
+            'tests/ux-tabs-portal-20261118.test.mjs'
+          git diff --cached --quiet || { git commit -m "style: format 7Service UX updates"; git push; }
