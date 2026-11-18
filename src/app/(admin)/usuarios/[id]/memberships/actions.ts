@@ -167,11 +167,6 @@ export async function retryCommanderRevocationAction(
       stage,
       errorType: error instanceof Error ? error.name : 'UnknownError',
     });
-    return {
-      error:
-        'Falha interna ao confirmar o bloqueio (' +
-        stage +
-        '). A revogação central permanece efetiva.',
-    };
+    return { error: `Falha interna (${stage}). A revogação central permanece efetiva.` };
   }
 }
