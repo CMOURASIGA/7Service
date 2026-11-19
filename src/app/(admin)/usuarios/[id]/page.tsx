@@ -79,7 +79,10 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
   ]);
   if (productsResult.error || rolesResult.error)
     throw new Error('Falha ao consultar perfis dos produtos');
-  const alreadyGranted = new Set((accesses.data ?? []).map((x) => x.subscription_id));
+  // A REVOKED grant is immutable history and must not consume the next license.
+  const alreadyGranted = new Set((accesses.data ?? [])
+    .filter((x) => x.status !== 'REVOKED' && x.status !== 'EXPIRED')
+    .map((x) => x.subscription_id));
   const productsById = new Map((productsResult.data ?? []).map((x) => [x.id, x]));
   const grantOptions: GrantableSubscription[] = (candidateSubscriptions.data ?? [])
     .filter((x) => !alreadyGranted.has(x.id) && productsById.has(x.product_id))
