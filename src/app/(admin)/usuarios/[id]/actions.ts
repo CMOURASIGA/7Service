@@ -2,7 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { syncCommanderRevocation } from '@/lib/integrations/commander-revocation';
+import { syncCommanderRevocation, syncCommanderRestoration } from '@/lib/integrations/commander-revocation';
 
 /**
  * Explicit recovery of a suspended global identity without an Auth user.
@@ -70,17 +70,34 @@ export async function grantAccessAction(
   try {
     const subscriptionId = String(form.get('subscriptionId') ?? '');
     const roleId = String(form.get('productRoleId') ?? '');
-    const { error } = await createAdminClient().rpc('grant_product_access_atomic', {
+    const db = createAdminClient();
+    const { data: newAccessId, error } = await db.rpc('grant_product_access_atomic', {
       p_actor: internalUser.id,
       p_identity: identityId,
       p_subscription: subscriptionId,
       p_role: roleId,
     });
-    if (error)
+    if (error || !newAccessId)
       return {
         error: 'Não foi possível conceder acesso. Confira vínculo, licença, vigência e perfil.',
       };
     revalidatePath('/usuarios/' + identityId);
+    // A new central grant does not automatically unblock an earlier remote
+    // suspension. Only sync after an independently confirmed ACTIVE grant.
+    const grant = await db.from('user_product_access')
+      .select('client_id,status,subscriptions!user_product_access_subscription_id_fkey(products(code))')
+      .eq('id', newAccessId).eq('identity_id',identityId).maybeSingle();
+    if (grant.error || !grant.data) return {
+      error: 'Concessão registrada, mas confirmação de sincronização indisponível.',
+    };
+    if (grant.data.status === 'ACTIVE' && grant.data.subscriptions?.products?.code === 'COMMANDER7') {
+      const restored = await syncCommanderRestoration({
+        identityId, clientId: grant.data.client_id, productCode: 'COMMANDER7',
+      });
+      if (!restored.confirmed) return {
+        error: 'Concessão central ativa. Sincronização no Commander pendente: use "Sincronizar reativação".',
+      };
+    }
     return { error: null };
   } catch (e) {
     return { error: e instanceof Error ? e.message : 'Falha ao conceder acesso.' };
@@ -380,4 +397,21 @@ export async function resendPendingActivationAction(identityId: string, _form: F
   });
   if (auditError) throw new Error('Envio solicitado, mas auditoria não confirmada.');
   revalidatePath('/usuarios/' + identityId);
+}
+
+/** Explicit retry for a centrally ACTIVE grant. Commander independently verifies it. */
+export async function retryCommanderRestorationAction(identityId:string, accessId:string, _form:FormData) {
+  await requirePermission('users.access.manage');
+  const db=createAdminClient();
+  const grant=await db.from('user_product_access')
+    .select('client_id,status,subscriptions!user_product_access_subscription_id_fkey(products(code))')
+    .eq('id',accessId).eq('identity_id',identityId).maybeSingle();
+  if(grant.error || !grant.data || grant.data.status!=='ACTIVE' ||
+    grant.data.subscriptions?.products?.code!=='COMMANDER7')
+    throw new Error('Somente concessão ativa do Commander pode ser sincronizada.');
+  const restored=await syncCommanderRestoration({
+    identityId,clientId:grant.data.client_id,productCode:'COMMANDER7',
+  });
+  if(!restored.confirmed)throw new Error('Acesso central ativo, mas reativação no Commander não confirmada.');
+  revalidatePath('/usuarios/'+identityId);
 }
