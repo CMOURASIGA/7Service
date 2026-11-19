@@ -26,8 +26,9 @@ export type RevocationSyncResult =
  * independently resolves both central IDs through its approved mappings.
  * Never send user email, a database key, or a destination user ID.
  */
-export async function syncCommanderRevocation(
+async function syncCommanderAccessChange(
   scope: RevocationScope,
+  operation: 'SUSPEND' | 'RESTORE',
 ): Promise<RevocationSyncResult> {
   const destination = process.env.SERVICE_COMMANDER_REVOCATION_URL;
   const secret = process.env.SERVICE_COMMANDER_REVOCATION_SECRET;
@@ -52,7 +53,7 @@ export async function syncCommanderRevocation(
       identityId: scope.identityId,
       clientId: scope.clientId,
       productCode: scope.productCode,
-      operation: 'SUSPEND',
+      operation,
     });
     const signature = createHmac('sha256', secret)
       .update(timestamp + '.' + body)
@@ -110,4 +111,13 @@ export async function syncCommanderRevocation(
     return { confirmed: false, reason: 'DESTINATION_UNAVAILABLE' };
   }
   return { confirmed: false, reason: 'UNCONFIRMED' };
+}
+
+/** Called only after the administrator has issued a new, active central grant. */
+export async function syncCommanderRestoration(scope: RevocationScope): Promise<RevocationSyncResult> {
+  return syncCommanderAccessChange(scope, 'RESTORE');
+}
+
+export async function syncCommanderRevocation(scope: RevocationScope): Promise<RevocationSyncResult> {
+  return syncCommanderAccessChange(scope, 'SUSPEND');
 }
