@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { ActionButton } from '@/components/ui/action-button';
 import { createDedicatedDeployment, registerEnvironment } from './actions';
 
 interface Lookup {
@@ -33,7 +34,7 @@ export function EnvironmentRegistry({
   );
   const input = 'rounded-md border px-3 py-2 text-sm';
   return (
-    <section className="grid gap-5 lg:grid-cols-2">
+    <section className="grid gap-5 lg:grid-cols-2 xl:col-span-2">
       <form action={createAction} className="flex flex-col gap-3 rounded-lg border p-5">
         <h2 className="font-semibold">Vincular implantação dedicada</h2>
         <p className="text-muted text-xs">
@@ -79,12 +80,9 @@ export function EnvironmentRegistry({
             {deploymentState.success}
           </p>
         ) : null}
-        <button
-          className="rounded-md bg-blue-700 px-4 py-2 text-white disabled:opacity-50"
-          disabled={deploymentPending || !clients.length || !products.length}
-        >
+        <ActionButton disabled={deploymentPending || !clients.length || !products.length}>
           Cadastrar implantação
-        </button>
+        </ActionButton>
       </form>
       <form action={environmentAction} className="flex flex-col gap-3 rounded-lg border p-5">
         <h2 className="font-semibold">Registrar ambiente</h2>
@@ -133,12 +131,9 @@ export function EnvironmentRegistry({
             {environmentState.success}
           </p>
         ) : null}
-        <button
-          className="rounded-md bg-blue-700 px-4 py-2 text-white disabled:opacity-50"
-          disabled={environmentPending || !deployments.length}
-        >
+        <ActionButton disabled={environmentPending || !deployments.length}>
           Registrar ambiente
-        </button>
+        </ActionButton>
       </form>
     </section>
   );

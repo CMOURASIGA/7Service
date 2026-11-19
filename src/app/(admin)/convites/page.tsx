@@ -8,7 +8,7 @@ import { INVITATION_STATUS_LABEL } from '@/lib/status-labels';
 import { cancelInvitationAction } from './actions';
 
 export const metadata = {
-  title: 'Convites - 7Service',
+  title: 'Convites - Access Management Service',
 };
 
 export default async function InvitationsPage({

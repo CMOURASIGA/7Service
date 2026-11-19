@@ -81,7 +81,7 @@ export default function TenantLinksPage({ params }: { params: Promise<{ clientId
           >
             {products.map((p) => (
               <option key={p} value={p}>
-                {p}
+                {p === '7COMMANDER' ? 'Commander' : '7Clinic'}
               </option>
             ))}
           </select>
@@ -123,7 +123,8 @@ export default function TenantLinksPage({ params }: { params: Promise<{ clientId
         {rows.map((row) => (
           <li key={row.id} className="flex flex-wrap justify-between gap-3 p-3 text-sm">
             <span>
-              {row.product_code}: {row.external_tenant_id}
+              {row.product_code === '7COMMANDER' ? 'Commander' : '7Clinic'}:{' '}
+              {row.external_tenant_id}
             </span>
             <strong>{row.status}</strong>
           </li>

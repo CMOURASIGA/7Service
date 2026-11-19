@@ -1,7 +1,7 @@
 import { RestrictedAccess } from '@/features/auth/components/restricted-access';
 
 export const metadata = {
-  title: 'Acesso restrito - 7Service',
+  title: 'Acesso restrito - Access Management Service',
 };
 
 export default function RestrictedPage() {

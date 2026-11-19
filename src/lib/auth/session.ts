@@ -7,7 +7,7 @@ import type { InternalRoleCode, InternalUser } from '@/types/domain';
 
 /**
  * Fail-closed internal administration: a Supabase Auth login by itself
- * never grants access to 7Service. An ACTIVE internal_users record and
+ * never grants access to Access Management Service. An ACTIVE internal_users record and
  * an assigned internal role must both exist.
  */
 export interface CurrentSession {
@@ -31,7 +31,10 @@ export async function getCurrentSession(): Promise<CurrentSession> {
     .eq('status', 'ACTIVE')
     .maybeSingle();
   if (error || !operator) {
-    throw new AppError('FORBIDDEN', 'Usuário não autorizado a administrar o 7Service.');
+    throw new AppError(
+      'FORBIDDEN',
+      'Usuário não autorizado a administrar o Access Management Service.',
+    );
   }
   const { data: assigned, error: roleError } = await supabase
     .from('internal_user_roles')

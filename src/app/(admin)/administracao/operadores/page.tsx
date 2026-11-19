@@ -13,7 +13,7 @@ import {
 } from './actions';
 
 export const metadata = {
-  title: 'Administração de operadores - 7Service',
+  title: 'Administração de operadores - Access Management Service',
 };
 
 export default async function InternalOperatorsPage() {
@@ -111,7 +111,7 @@ export default async function InternalOperatorsPage() {
                     {user.status === 'ACTIVE' ? (
                       <ConfirmAction
                         triggerLabel="Bloquear"
-                        impactMessage={`${user.firstName} perderá acesso administrativo ao 7Service imediatamente.`}
+                        impactMessage={`${user.firstName} perderá acesso administrativo ao Access Management Service imediatamente.`}
                         action={block}
                         tone="danger"
                         confirmLabel="Bloquear"

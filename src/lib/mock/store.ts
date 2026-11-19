@@ -96,7 +96,7 @@ function buildSeed(): MockStore {
     [
       'SUPER_ADMIN',
       'Super Administrador',
-      'Acesso administrativo completo ao 7Service',
+      'Acesso administrativo completo ao Access Management Service',
       permissionsList.map(([c]) => c),
     ],
     [
@@ -224,7 +224,7 @@ function buildSeed(): MockStore {
     {
       id: commanderId,
       code: '7COMMANDER',
-      name: '7Commander',
+      name: 'Commander',
       description: 'Gestão de projetos e operações',
       status: 'ACTIVE',
       entryUrl: 'https://7commander.example.com',

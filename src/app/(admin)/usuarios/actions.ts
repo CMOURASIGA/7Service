@@ -23,6 +23,8 @@ export async function createIdentityMembershipAction(
     .trim()
     .toLowerCase();
   const clientId = String(form.get('clientId') ?? '');
+  const subscriptionId = String(form.get('subscriptionId') ?? '').trim();
+  const productRoleId = String(form.get('productRoleId') ?? '').trim();
   if (
     !firstName ||
     !lastName ||
@@ -33,6 +35,31 @@ export async function createIdentityMembershipAction(
   }
 
   const db = createAdminClient();
+  // Do not allow a product/role to be supplied for another company. The
+  // grant RPC also checks subscription, role, membership and license seats.
+  if (Boolean(subscriptionId) !== Boolean(productRoleId)) {
+    return { error: 'Selecione o produto e o perfil juntos.' };
+  }
+  if (subscriptionId) {
+    const [subscription, role] = await Promise.all([
+      db
+        .from('subscriptions')
+        .select('id,client_id,product_id,status')
+        .eq('id', subscriptionId)
+        .eq('client_id', clientId)
+        .maybeSingle(),
+      db.from('product_roles').select('id,product_id,status').eq('id', productRoleId).maybeSingle(),
+    ]);
+    if (
+      subscription.error ||
+      role.error ||
+      subscription.data?.status !== 'ACTIVE' ||
+      role.data?.status !== 'ACTIVE' ||
+      subscription.data.product_id !== role.data.product_id
+    ) {
+      return { error: 'Produto ou perfil não pertence à assinatura ativa desta empresa.' };
+    }
+  }
   const { data: client, error: clientError } = await db
     .from('clients')
     .select('id,status')
@@ -49,6 +76,12 @@ export async function createIdentityMembershipAction(
     .maybeSingle();
   let identity = lookupResult.data;
   if (lookupResult.error) return { error: 'Falha ao pesquisar identidade global.' };
+  if (identity?.status === 'SUSPENDED') {
+    return {
+      error:
+        'Esta identidade está suspensa. Acesse Consultar usuários, abra o cadastro existente e solicite a reativação administrativa antes de conceder um produto ou reenviar convite.',
+    };
+  }
   if (identity && ['REMOVED', 'BLOCKED'].includes(identity.status)) {
     return { error: 'Identidade existente está bloqueada ou removida.' };
   }
@@ -105,6 +138,76 @@ export async function createIdentityMembershipAction(
     if (membershipError)
       return { error: 'Identidade cadastrada, mas o vínculo empresarial não foi concluído.' };
     createdMembership = true;
+  }
+
+  // A selected product is granted during registration, under the
+  // subscription row lock. PENDING grants reserve seats before activation.
+  // If the license ceiling is reached, no invitation is sent.
+  if (subscriptionId && productRoleId) {
+    const existingGrant = await db
+      .from('user_product_access')
+      .select('id,product_role_id,status')
+      .eq('identity_id', identity.id)
+      .eq('subscription_id', subscriptionId)
+      .maybeSingle();
+    if (existingGrant.error) {
+      return { error: 'Não foi possível verificar concessões existentes.' };
+    }
+    if (existingGrant.data) {
+      // Retrying an invitation must not duplicate reserved seats.
+      if (
+        existingGrant.data.product_role_id !== productRoleId ||
+        !['ACTIVE', 'PENDING'].includes(existingGrant.data.status)
+      ) {
+        return { error: 'Já existe uma concessão diferente. Gerencie o acesso na identidade.' };
+      }
+    } else {
+      const grant = await db.rpc('grant_product_access_atomic', {
+        p_actor: internalUser.id,
+        p_identity: identity.id,
+        p_subscription: subscriptionId,
+        p_role: productRoleId,
+      });
+      if (grant.error) {
+        // New identities and memberships were inserted only for this
+        // onboarding attempt. Compensate both on grant failure so no
+        // partial registration remains waiting for an invitation.
+        let compensationFailed = false;
+        if (createdMembership) {
+          const revert = await db
+            .from('client_memberships')
+            .delete()
+            .eq('identity_id', identity.id)
+            .eq('client_id', clientId);
+          if (revert.error) compensationFailed = true;
+        }
+        if (createdIdentity && !compensationFailed) {
+          const revert = await db
+            .from('identities')
+            .delete()
+            .eq('id', identity.id)
+            .eq('status', 'PENDING_INVITE')
+            .is('auth_user_id', null);
+          if (revert.error) compensationFailed = true;
+        }
+        if (compensationFailed) {
+          return {
+            error:
+              'Falha na reserva da licença e na reversão do cadastro. Não repita o convite; solicite conciliação administrativa.',
+          };
+        }
+        const message = grant.error.message ?? '';
+        return {
+          error: /License limit reached/i.test(message)
+            ? 'Limite de licenças atingido. Nenhum convite foi enviado.'
+            : /Identity not eligible/i.test(message)
+              ? 'Identidade não habilitada para receber acesso. Revise seu status antes do convite.'
+              : /Permission denied/i.test(message)
+                ? 'Sua conta não possui permissão para conceder licenças.'
+                : 'Não foi possível reservar a licença. O cadastro novo foi revertido e nenhum convite foi enviado.',
+        };
+      }
+    }
   }
 
   if (!identity.auth_user_id) {

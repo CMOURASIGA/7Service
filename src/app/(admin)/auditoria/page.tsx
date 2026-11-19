@@ -2,7 +2,7 @@ import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata = {
-  title: 'Auditoria - 7Service',
+  title: 'Auditoria - Access Management Service',
 };
 
 export default async function AuditPage({

@@ -1,3 +1,4 @@
+import { displayProductName } from '@/lib/product-display-name';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requirePermission } from '@/lib/auth/session';
@@ -9,6 +10,7 @@ import { UploadDocumentForm } from '@/features/contracts/components/upload-docum
 import { SubscriptionForm } from '@/features/subscriptions/components/subscription-form';
 import { CLIENT_STATUS_LABEL } from '@/lib/status-labels';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { WorkspaceTabs } from '@/components/ui/workspace-tabs';
 import { ConfirmAction } from '@/components/ui/confirm-action';
 import {
   updateClientAction,
@@ -64,7 +66,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   if (subscriptionProducts.error || membershipIdentities.error)
     throw new Error('Falha ao consultar referências vinculadas ao cliente');
   const subscriptionProductNames = new Map(
-    (subscriptionProducts.data ?? []).map((product) => [product.id, product.name]),
+    (subscriptionProducts.data ?? []).map((product) => [
+      product.id,
+      displayProductName(product.name),
+    ]),
   );
   const membershipIdentityNames = new Map(
     (membershipIdentities.data ?? []).map((identity) => [
@@ -124,7 +129,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const productOptions: Product[] = (products.data ?? []).map((x) => ({
     id: x.id,
     code: x.code,
-    name: x.name,
+    name: displayProductName(x.name),
     description: x.description,
     status: x.status as Product['status'],
     entryUrl: x.entry_url,
@@ -183,89 +188,129 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           />
         ) : null}
       </div>
-      <section className="rounded-lg border p-5">
-        <h2 className="mb-4 font-semibold">Dados cadastrais</h2>
-        <ClientForm
-          client={client}
-          action={updateClientAction.bind(null, id)}
-          submitLabel="Salvar alteracoes"
-        />
-      </section>
-      <ClientFeaturesPanel clientId={id} />
-      <section className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-lg border p-5">
-          <h2 className="mb-2 font-semibold">Contratos</h2>
-          <ContractForm action={createContractAction.bind(null, id)} />
-          {!contracts.data?.length ? (
-            <p className="text-muted text-sm">Nenhum contrato registrado.</p>
-          ) : (
-            <ul>
-              {contracts.data.map((c) => (
-                <li key={c.id} className="border-b py-3 text-sm">
-                  <div className="font-medium">
-                    {c.reference} · {c.status}
-                  </div>
-                  <UploadDocumentForm action={uploadContractDocumentAction.bind(null, id, c.id)} />
-                  {(docsResult.data ?? []).filter((d) => d.contract_id === c.id).length ? (
-                    <ul className="mt-2 space-y-1">
-                      {(docsResult.data ?? [])
-                        .filter((d) => d.contract_id === c.id)
-                        .map((d) => (
-                          <li key={d.id}>
-                            <a
-                              className="text-brand-700 underline"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              href={`/api/contracts/${c.id}/documents/${d.id}`}
-                            >
-                              {d.original_name} ({Math.ceil(d.size_bytes / 1024)} KB)
-                            </a>
-                          </li>
-                        ))}
-                    </ul>
+      <WorkspaceTabs
+        label="Seções do cliente"
+        tabs={[
+          {
+            id: 'dados',
+            label: 'Dados cadastrais',
+            content: (
+              <section className="rounded-lg border p-5">
+                <h2 className="mb-4 font-semibold">Dados cadastrais</h2>
+                <ClientForm
+                  client={client}
+                  action={updateClientAction.bind(null, id)}
+                  submitLabel="Salvar alterações"
+                />
+              </section>
+            ),
+          },
+          {
+            id: 'contratos',
+            label: 'Contratos',
+            content: (
+              <section className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg border p-5">
+                  <h2 className="mb-2 font-semibold">Contratos</h2>
+                  <ContractForm action={createContractAction.bind(null, id)} />
+                  {!contracts.data?.length ? (
+                    <p className="text-muted text-sm">Nenhum contrato registrado.</p>
                   ) : (
-                    <p className="text-muted text-xs">Nenhum PDF anexado.</p>
+                    <ul>
+                      {contracts.data.map((c) => (
+                        <li key={c.id} className="border-b py-3 text-sm">
+                          <div className="font-medium">
+                            {c.reference} · {c.status}
+                          </div>
+                          <UploadDocumentForm
+                            action={uploadContractDocumentAction.bind(null, id, c.id)}
+                          />
+                          {(docsResult.data ?? []).filter((d) => d.contract_id === c.id).length ? (
+                            <ul className="mt-2 space-y-1">
+                              {(docsResult.data ?? [])
+                                .filter((d) => d.contract_id === c.id)
+                                .map((d) => (
+                                  <li key={d.id}>
+                                    <a
+                                      className="text-brand-700 underline"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      href={`/api/contracts/${c.id}/documents/${d.id}`}
+                                    >
+                                      {d.original_name} ({Math.ceil(d.size_bytes / 1024)} KB)
+                                    </a>
+                                  </li>
+                                ))}
+                            </ul>
+                          ) : (
+                            <p className="text-muted text-xs">Nenhum PDF anexado.</p>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
                   )}
-                </li>
-              ))}{' '}
-            </ul>
-          )}
-        </div>
-        <div className="rounded-lg border p-5">
-          <h2 className="mb-2 font-semibold">Produtos contratados</h2>
-          <SubscriptionForm
-            action={createSubscriptionAction.bind(null, id)}
-            contracts={contractOptions}
-            products={productOptions}
-          />
-          {!subscriptions.data?.length ? (
-            <p className="text-muted text-sm">Nenhuma assinatura registrada.</p>
-          ) : (
-            <ul>
-              {subscriptions.data.map((s) => (
-                <li key={s.id} className="border-b py-2 text-sm">
-                  {subscriptionProductNames.get(s.product_id) ?? s.product_id} · {s.status} ·{' '}
-                  {s.license_limit} licencas
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div className="rounded-lg border p-5">
-          <h2 className="mb-2 font-semibold">Usuarios vinculados</h2>
-          {!memberships.data?.length ? (
-            <p className="text-muted text-sm">Nenhuma identidade vinculada.</p>
-          ) : (
-            <ul>
-              {memberships.data.map((m) => (
-                <li key={m.id} className="border-b py-2 text-sm">
-                  {membershipIdentityNames.get(m.identity_id) ?? m.identity_id} · {m.status}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
+                </div>
+              </section>
+            ),
+          },
+          {
+            id: 'produtos',
+            label: 'Produtos',
+            content: (
+              <section className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg border p-5">
+                  <h2 className="mb-2 font-semibold">Produtos contratados</h2>
+                  <SubscriptionForm
+                    action={createSubscriptionAction.bind(null, id)}
+                    contracts={contractOptions}
+                    products={productOptions}
+                  />
+                  {!subscriptions.data?.length ? (
+                    <p className="text-muted text-sm">Nenhuma assinatura registrada.</p>
+                  ) : (
+                    <ul>
+                      {subscriptions.data.map((sub) => (
+                        <li key={sub.id} className="border-b py-2 text-sm">
+                          {subscriptionProductNames.get(sub.product_id) ?? sub.product_id} ·{' '}
+                          {sub.status} · {sub.license_limit} licenças
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </section>
+            ),
+          },
+          {
+            id: 'usuarios',
+            label: 'Usuários',
+            content: (
+              <section className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg border p-5">
+                  <h2 className="mb-2 font-semibold">Usuários vinculados</h2>
+                  {!memberships.data?.length ? (
+                    <p className="text-muted text-sm">Nenhuma identidade vinculada.</p>
+                  ) : (
+                    <ul>
+                      {memberships.data.map((member) => (
+                        <li key={member.id} className="border-b py-2 text-sm">
+                          {membershipIdentityNames.get(member.identity_id) ?? member.identity_id} ·{' '}
+                          {member.status}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </section>
+            ),
+          },
+          {
+            id: 'funcionalidades',
+            label: 'Funcionalidades',
+            content: <ClientFeaturesPanel clientId={id} />,
+          },
+        ]}
+      />
     </main>
   );
 }

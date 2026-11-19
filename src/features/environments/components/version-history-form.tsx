@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { ActionButton } from '@/components/ui/action-button';
 import {
   recordDeploymentVersion,
   type VersionFormState,
@@ -67,13 +68,9 @@ export function VersionHistoryForm({
           {state.success}
         </p>
       ) : null}
-      <button
-        type="submit"
-        disabled={pending || !environments.length}
-        className="rounded bg-blue-700 px-4 py-2 text-sm text-white disabled:opacity-50"
-      >
+      <ActionButton type="submit" disabled={pending || !environments.length}>
         {pending ? 'Salvando...' : 'Registrar versão'}
-      </button>
+      </ActionButton>
     </form>
   );
 }

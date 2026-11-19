@@ -2,6 +2,61 @@
 import { revalidatePath } from 'next/cache';
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { syncCommanderRevocation } from '@/lib/integrations/commander-revocation';
+
+/**
+ * Explicit recovery of a suspended global identity without an Auth user.
+ * Existing company suspensions and historical grants remain unchanged.
+ * The subsequent onboarding can reserve a license and send a fresh invite.
+ */
+export async function prepareSuspendedIdentityInviteAction(identityId: string, form: FormData) {
+  const { internalUser } = await requirePermission('users.manage');
+  const reason = String(form.get('reason') ?? '').trim();
+  if (reason.length < 8) throw new Error('Informe o motivo da reativação (mínimo 8 caracteres).');
+  const db = createAdminClient();
+  const { data: previous, error } = await db
+    .from('identities')
+    .select('id,email,status,auth_user_id')
+    .eq('id', identityId)
+    .maybeSingle();
+  if (error || !previous || previous.status !== 'SUSPENDED' || previous.auth_user_id)
+    throw new Error(
+      'Somente identidades suspensas e sem conta Auth podem ser preparadas para novo convite.',
+    );
+  const existingGrants = await db
+    .from('user_product_access')
+    .select('id')
+    .eq('identity_id', identityId)
+    .in('status', ['ACTIVE', 'PENDING'])
+    .limit(1);
+  if (existingGrants.error || existingGrants.data?.length)
+    throw new Error('Existem concessões ativas ou pendentes. Faça a revisão antes de reativar.');
+  const { data: updated, error: updateError } = await db
+    .from('identities')
+    .update({ status: 'PENDING_INVITE' })
+    .eq('id', identityId)
+    .eq('status', 'SUSPENDED')
+    .is('auth_user_id', null)
+    .select('id');
+  if (updateError || updated?.length !== 1)
+    throw new Error('Não foi possível reabrir a identidade para convite.');
+  const audit = await db.from('audit_logs').insert({
+    actor_internal_user_id: internalUser.id,
+    action: 'identity.suspension_reviewed_for_invitation',
+    target_type: 'identity',
+    target_id: identityId,
+    source: '7service',
+    reason,
+    before_json: { status: 'SUSPENDED' },
+    after_json: { status: 'PENDING_INVITE' },
+  });
+  if (audit.error)
+    throw new Error(
+      'Identidade reaberta; auditoria pendente. Bloqueie convites e solicite conciliação.',
+    );
+  revalidatePath('/usuarios');
+  revalidatePath('/usuarios/' + identityId);
+}
 
 export interface GrantAccessFormState {
   error: string | null;
@@ -38,7 +93,29 @@ async function changeStatus(
   reason: string | null,
 ) {
   const { internalUser } = await requirePermission('users.access.manage');
-  const { error } = await createAdminClient().rpc('change_product_access_status_atomic', {
+  const db = createAdminClient();
+  // Identify the target before changing the central authorization.
+  const previous = await db
+    .from('user_product_access')
+    .select('client_id,subscription_id')
+    .eq('id', accessId)
+    .eq('identity_id', identityId)
+    .maybeSingle();
+  if (previous.error || !previous.data) throw new Error('Concessão não encontrada.');
+  const subscription = await db
+    .from('subscriptions')
+    .select('product_id')
+    .eq('id', previous.data.subscription_id)
+    .single();
+  if (subscription.error || !subscription.data) throw new Error('Assinatura indisponível.');
+  const product = await db
+    .from('products')
+    .select('code')
+    .eq('id', subscription.data.product_id)
+    .single();
+  if (product.error || !product.data) throw new Error('Produto indisponível.');
+
+  const { error } = await db.rpc('change_product_access_status_atomic', {
     p_actor: internalUser.id,
     p_access: accessId,
     p_identity: identityId,
@@ -47,6 +124,37 @@ async function changeStatus(
   });
   if (error) throw new Error('Não foi possível alterar o acesso e registrar a auditoria.');
   revalidatePath('/usuarios/' + identityId);
+
+  if (status === 'ACTIVE' || product.data.code !== 'COMMANDER7') return;
+  // An identity may have more than one subscription for the same product and
+  // company. Do not suspend the local member while any grant remains active.
+  const sameProduct = await db
+    .from('subscriptions')
+    .select('id')
+    .eq('client_id', previous.data.client_id)
+    .eq('product_id', subscription.data.product_id);
+  if (sameProduct.error) throw new Error('Acesso central alterado. Reconciliação pendente.');
+  const subscriptionIds = (sameProduct.data ?? []).map((item) => item.id);
+  if (subscriptionIds.length) {
+    const remaining = await db
+      .from('user_product_access')
+      .select('id')
+      .eq('identity_id', identityId)
+      .eq('client_id', previous.data.client_id)
+      .eq('status', 'ACTIVE')
+      .in('subscription_id', subscriptionIds)
+      .limit(1);
+    if (remaining.error) throw new Error('Acesso central alterado. Reconciliação pendente.');
+    if (remaining.data?.length) return;
+  }
+  const sync = await syncCommanderRevocation({
+    identityId,
+    clientId: previous.data.client_id,
+    productCode: 'COMMANDER7',
+  });
+  if (!sync.confirmed) {
+    throw new Error('Acesso central revogado. Suspensão no Commander pendente de confirmação.');
+  }
 }
 export async function suspendAccessAction(accessId: string, identityId: string, form: FormData) {
   return changeStatus(

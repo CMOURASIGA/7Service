@@ -1,5 +1,6 @@
 'use client';
 
+import { ActionButton } from '@/components/ui/action-button';
 import { useActionState, useState } from 'react';
 import { manageEnvironment } from './actions';
 
@@ -22,30 +23,30 @@ export function EnvironmentLifecycleControls({ environment }: { environment: Env
     <div className="mt-3 space-y-3">
       {active && (
         <div className="flex flex-wrap gap-2">
-          <button
+          <ActionButton
             type="button"
-            className="rounded border px-3 py-1.5 text-sm"
+            variant="secondary"
             onClick={() => setEditing(!editing)}
             disabled={pending}
           >
             {editing ? 'Fechar edição' : 'Editar'}
-          </button>
+          </ActionButton>
           {canSuspend && (
             <form action={action}>
               <input type="hidden" name="environmentId" value={environment.id} />
               <input type="hidden" name="action" value="SUSPEND" />
-              <button disabled={pending} className="rounded border px-3 py-1.5 text-sm">
+              <ActionButton disabled={pending} variant="secondary">
                 Suspender
-              </button>
+              </ActionButton>
             </form>
           )}
           {canReactivate && (
             <form action={action}>
               <input type="hidden" name="environmentId" value={environment.id} />
               <input type="hidden" name="action" value="REACTIVATE" />
-              <button disabled={pending} className="rounded border px-3 py-1.5 text-sm">
+              <ActionButton disabled={pending} variant="secondary">
                 Reativar
-              </button>
+              </ActionButton>
             </form>
           )}
           <form
@@ -57,12 +58,9 @@ export function EnvironmentLifecycleControls({ environment }: { environment: Env
           >
             <input type="hidden" name="environmentId" value={environment.id} />
             <input type="hidden" name="action" value="RETIRE" />
-            <button
-              disabled={pending}
-              className="rounded border border-red-500 px-3 py-1.5 text-sm text-red-700"
-            >
+            <ActionButton disabled={pending} variant="danger">
               Encerrar
-            </button>
+            </ActionButton>
           </form>
         </div>
       )}
@@ -96,12 +94,9 @@ export function EnvironmentLifecycleControls({ environment }: { environment: Env
               defaultValue={environment.database_resource_ref ?? ''}
             />
           </label>
-          <button
-            disabled={pending}
-            className="rounded bg-blue-700 px-3 py-2 text-sm text-white sm:col-span-2"
-          >
+          <ActionButton disabled={pending} className="sm:col-span-2">
             {pending ? 'Salvando...' : 'Salvar alterações'}
-          </button>
+          </ActionButton>
         </form>
       )}
       {state.error && (

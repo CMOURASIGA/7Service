@@ -72,8 +72,8 @@ export default function ClientIntegrationsPage({
         Gerenciar vínculos de sistemas
       </Link>
       <p className="text-sm text-gray-600">
-        Situação de assinatura e limite de licenças no 7Service. A ativação técnica em cada sistema
-        é independente.
+        Situação de assinatura e limite de licenças no Access Management Service. A ativação técnica
+        em cada sistema é independente.
       </p>
       <button
         type="button"
@@ -89,7 +89,7 @@ export default function ClientIntegrationsPage({
           return (
             <section key={product} className="space-y-2 rounded-lg border p-5">
               <h2 className="text-lg font-semibold">
-                {product === '7COMMANDER' ? '7Commander' : '7Clinic'}
+                {product === '7COMMANDER' ? 'Commander' : '7Clinic'}
               </h2>
               {errors[product] && (
                 <p role="alert" className="text-sm text-red-700">

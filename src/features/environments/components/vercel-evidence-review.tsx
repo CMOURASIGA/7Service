@@ -1,5 +1,6 @@
 'use client';
 
+import { ActionButton } from '@/components/ui/action-button';
 import { useActionState } from 'react';
 import { verifyVercelEvidence } from '@/app/(admin)/ambientes/verify-vercel-actions';
 
@@ -8,12 +9,9 @@ export function VercelEvidenceReview({ evidenceId }: { evidenceId: string }) {
   return (
     <form action={action} className="mt-2 flex flex-col gap-2">
       <input type="hidden" name="evidenceId" value={evidenceId} />
-      <button
-        disabled={pending}
-        className="self-start rounded border px-2 py-1 text-xs disabled:opacity-50"
-      >
+      <ActionButton disabled={pending} variant="secondary" size="sm">
         {pending ? 'Consultando Vercel...' : 'Verificar deployment Vercel'}
-      </button>
+      </ActionButton>
       {state.error ? (
         <p role="alert" className="text-xs text-red-700">
           {state.error}

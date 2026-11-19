@@ -5,7 +5,7 @@ import { getDashboardKpis } from '@/services/dashboard';
 import { requirePermission } from '@/lib/auth/session';
 
 export const metadata = {
-  title: 'Dashboard - 7Service',
+  title: 'Dashboard - Access Management Service',
 };
 
 export default async function DashboardPage() {

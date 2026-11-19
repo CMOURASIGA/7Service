@@ -1,3 +1,4 @@
+import { displayProductName } from '@/lib/product-display-name';
 import Link from 'next/link';
 import { customerProductEntryUrl } from '@/lib/integrations/customer-entry-link';
 import { notFound } from 'next/navigation';
@@ -12,7 +13,7 @@ import {
 } from '@/features/access/components/grant-access-form';
 import { EnvironmentGrantForm } from '@/features/access/components/environment-grant-form';
 import { revokeEnvironmentAction } from './ambientes/actions';
-import { setMembershipStatusAction } from './memberships/actions';
+import { setMembershipStatusAction, retryCommanderRevocationAction } from './memberships/actions';
 import type { Product, Subscription, ProductRole } from '@/types/domain';
 import { IDENTITY_STATUS_LABEL, ACCESS_STATUS_LABEL } from '@/lib/status-labels';
 import {
@@ -23,6 +24,7 @@ import {
   grantAccessAction,
   correctPendingIdentityEmailAction,
   resendPendingActivationAction,
+  prepareSuspendedIdentityInviteAction,
 } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -128,7 +130,10 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
       id: a.id,
       clientId: a.client_id,
       productId: a.subscriptions?.product_id ?? '',
-      label: (a.subscriptions?.products?.name ?? 'Produto') + ' / ' + a.client_id.slice(0, 8),
+      label:
+        displayProductName(a.subscriptions?.products?.name ?? 'Produto') +
+        ' / ' +
+        a.client_id.slice(0, 8),
     }));
   const links = clientIds.length
     ? await db
@@ -178,6 +183,21 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
         </h1>
         <p className="text-muted text-sm">{user.email}</p>
         <StatusBadge label={badge.label} tone={badge.tone} />
+        {user.status === 'SUSPENDED' ? (
+          <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3">
+            <p className="mb-2 text-sm text-amber-900">
+              Esta identidade está suspensa. A reativação exige confirmação administrativa e não
+              libera os vínculos empresariais anteriormente suspensos.
+            </p>
+            <ConfirmAction
+              triggerLabel="Preparar identidade para novo convite"
+              impactMessage="Após revisão, reabre a identidade para novo convite, sem reativar vínculos nem produtos antigos."
+              action={prepareSuspendedIdentityInviteAction.bind(null, id)}
+              requireReason
+              confirmLabel="Confirmar reativação para convite"
+            />
+          </div>
+        ) : null}
         {user.status === 'PENDING_INVITE' ? (
           <CorrectPendingEmailForm
             initialEmail={user.email}
@@ -237,6 +257,14 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                       />
                     </>
                   ) : null}
+                  {m.status !== 'ACTIVE' ? (
+                    <ConfirmAction
+                      triggerLabel="Sincronizar bloqueio no Commander"
+                      impactMessage="Verifica a revogação central e solicita novamente a suspensão apenas nesta empresa no Commander."
+                      action={retryCommanderRevocationAction.bind(null, id, m.client_id)}
+                      confirmLabel="Sincronizar"
+                    />
+                  ) : null}
                   {m.status === 'SUSPENDED' ? (
                     <ConfirmAction
                       triggerLabel="Reativar nesta empresa"
@@ -264,7 +292,9 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                 <li key={a.id} className="rounded border p-3">
                   <div className="mb-2 flex justify-between gap-2">
                     <div className="space-y-1">
-                      <span>{a.subscriptions?.products?.name || a.subscription_id}</span>
+                      <span>
+                        {displayProductName(a.subscriptions?.products?.name) || a.subscription_id}
+                      </span>
                       {(() => {
                         const destination = customerProductEntryUrl(
                           a.client_id,
@@ -286,11 +316,28 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                           </div>
                         );
                       })()}
-                      {a.status === 'ACTIVE' ? null : (
+                      {a.status === 'PENDING' ? (
                         <p className="text-muted text-xs">
-                          Aguardando ativação. Não distribuir credenciais antes de liberar o acesso.
+                          Aguardando ativação da conta e da licença. Não distribuir credenciais.
                         </p>
-                      )}
+                      ) : a.status === 'SUSPENDED' ? (
+                        <p className="text-muted text-xs">
+                          Licença suspensa no Access Management Service. As consultas no produto são
+                          bloqueadas pelo controle central. A sincronização técnica no Commander
+                          pode exigir confirmação.
+                        </p>
+                      ) : a.status === 'REVOKED' ? (
+                        <p className="text-muted text-xs">
+                          Licença revogada definitivamente no Access Management Service. O Commander
+                          deve negar novas consultas mesmo com sessão aberta. O vínculo técnico
+                          local precisa de confirmação separada. Uma nova concessão exige
+                          procedimento administrativo próprio.
+                        </p>
+                      ) : a.status === 'EXPIRED' ? (
+                        <p className="text-muted text-xs">
+                          Licença expirada. Regularize a assinatura antes de solicitar novo acesso.
+                        </p>
+                      ) : null}
                     </div>
                     <StatusBadge label={info.label} tone={info.tone} />
                   </div>
@@ -312,6 +359,15 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                         action={reactivateAccessAction.bind(null, a.id, id)}
                         impactMessage="Reativa acesso, sujeito a vigencia da assinatura."
                         confirmLabel="Reativar"
+                      />
+                    ) : null}
+                    {(a.status === 'SUSPENDED' || a.status === 'REVOKED') &&
+                    ['Commander', '7Commander'].includes(a.subscriptions?.products?.name ?? '') ? (
+                      <ConfirmAction
+                        triggerLabel="Sincronizar bloqueio no Commander"
+                        impactMessage="Confirma a suspensão técnica no Commander. O bloqueio de consultas já é obrigatório pelo Access Management Service e a sincronização não substitui a revogação central."
+                        action={retryCommanderRevocationAction.bind(null, id, a.client_id)}
+                        confirmLabel="Sincronizar"
                       />
                     ) : null}
                     {a.status !== 'REVOKED' ? (

@@ -9,12 +9,21 @@ import type { InternalUser } from '@/types/domain';
 const PAGE_TITLES: Record<string, string> = {
   '/': 'Dashboard',
   '/clientes': 'Clientes',
+  '/clientes/grupos': 'Grupos empresariais',
+  '/clientes/licencas': 'Licenças por contrato',
   '/clientes/novo': 'Novo cliente',
   '/usuarios': 'Usuários',
+  '/acessos': 'Acessos por produto',
+  '/acessos/atribuicoes': 'Perfis por empresa e sistema',
+  '/acessos/provisionamento': 'Operações de provisionamento',
+  '/ambientes': 'Ambientes',
+  '/ambientes/conexoes': 'Conexões Supabase',
   '/produtos': 'Produtos',
   '/licenciamento': 'Licenciamento',
   '/convites': 'Convites',
   '/auditoria': 'Auditoria',
+  '/suporte': 'Suporte',
+  '/ajuda': 'Ajuda',
   '/administracao/operadores': 'Administração interna',
 };
 
@@ -27,7 +36,7 @@ function pageTitleFor(pathname: string): string {
 }
 
 function initialsFor(firstName: string, lastName: string): string {
-  return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase() || '7S';
+  return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase() || 'AM';
 }
 
 export function Topbar({
@@ -82,7 +91,7 @@ export function Topbar({
           }
         >
           <span className={`h-2 w-2 rounded-full ${configured ? 'bg-success' : 'bg-warning'}`} />
-          {configured ? 'Operacional' : 'Modo demonstração'}
+          {configured ? 'Ambiente configurado' : 'Modo demonstração'}
         </span>
         <span className="text-muted hidden text-[13px] md:inline">
           {user.firstName} {user.lastName} · {user.roleCodes.join(', ')}
