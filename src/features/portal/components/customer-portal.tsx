@@ -14,7 +14,7 @@ export type PortalSystem = {
 };
 
 /** Product marks are distinct from the tenant's whitelabel brand.
- * The Commander mark is copied unchanged from its own app/icon.tsx source.
+ * Official product artwork is versioned per system; client brand is independent.
  * Unknown products use a neutral application glyph, never a made-up initial.
  */
 // prettier-ignore
@@ -22,7 +22,7 @@ function ProductIcon({ productCode, productName }: { productCode: string; produc
   if (productCode === 'COMMANDER7') {
     return (
       <Image
-        src="/product-icons/commander.svg"
+        src="/product-icons/commander-approved.svg"
         alt={'Ícone do ' + productName}
         width={48}
         height={48}
@@ -221,6 +221,14 @@ export function CustomerPortal({
           <p className="font-semibold">Consult Services</p>
           <p className="text-xs text-blue-100">Access Management Service · Meu Portal</p>
         </div>
+        <Image
+          src="/product-icons/access-management-service.svg"
+          width={36}
+          height={36}
+          alt="Ícone do Access Management Service"
+          className="hidden size-9 rounded-lg sm:block"
+          unoptimized
+        />
         <div className="flex-1" />
         <button
           type="button"
