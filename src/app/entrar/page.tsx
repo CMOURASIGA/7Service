@@ -32,7 +32,11 @@ export default function CustomerLoginPage() {
   return (
     <main className="flex flex-1 items-center justify-center p-4">
       <form onSubmit={enter} className="flex w-full max-w-md flex-col gap-4 rounded-lg border p-7">
-        <h1 className="text-xl font-semibold">Entrar no Meu Portal</h1>
+        <div className="flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element -- imagem local, identidade do produto */}
+          <img src="/product-icons/access-management-service.svg" alt="" width={52} height={52} className="rounded-xl" />
+          <h1 className="text-xl font-semibold">Entrar no Meu Portal</h1>
+        </div>
         <p className="text-sm text-slate-600">
           Utilize a identidade e a senha que ativou no Access Management Service. O portal mostra
           somente os produtos autorizados para suas empresas.
