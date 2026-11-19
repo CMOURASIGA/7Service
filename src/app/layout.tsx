@@ -17,6 +17,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Access Management Service',
   description: 'Painel administrativo interno da Consult Services',
+  icons: {
+    icon: [{ url: '/product-icons/access-management-service.svg', type: 'image/svg+xml' }],
+    shortcut: '/product-icons/access-management-service.svg',
+    apple: '/product-icons/access-management-service.svg',
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
