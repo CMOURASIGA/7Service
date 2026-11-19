@@ -22,6 +22,7 @@ import {
   revokeAccessAction,
   initiateRecoveryAction,
   grantAccessAction,
+  retryCommanderRestorationAction,
   correctPendingIdentityEmailAction,
   resendPendingActivationAction,
   prepareSuspendedIdentityInviteAction,
@@ -345,6 +346,15 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                     <StatusBadge label={info.label} tone={info.tone} />
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    {a.status === 'ACTIVE' &&
+                    ['Commander','7Commander'].includes(a.subscriptions?.products?.name ?? '') ? (
+                      <ConfirmAction
+                        triggerLabel="Sincronizar reativação no Commander"
+                        impactMessage="O Commander verifica novamente a licença e o papel no Access antes de restaurar o vínculo. Não cria outra conta."
+                        action={retryCommanderRestorationAction.bind(null, id, a.id)}
+                        confirmLabel="Sincronizar"
+                      />
+                    ) : null}
                     {a.status === 'ACTIVE' ? (
                       <ConfirmAction
                         triggerLabel="Suspender"
