@@ -186,6 +186,7 @@ export function Sidebar({
           <span className="sidebar-expand-label">Recolher menu</span>
         </button>
         <div className="sidebar-product relative">
+          {/* prettier-ignore */}
           <div className="mb-2 flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element -- ícone estático local de produto */}
             <img src="/product-icons/access-management-service.svg" alt="" width={36} height={36} className="rounded-lg bg-white" />
