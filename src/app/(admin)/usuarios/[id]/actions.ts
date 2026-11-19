@@ -412,6 +412,9 @@ export async function retryCommanderRestorationAction(identityId:string, accessI
   const restored=await syncCommanderRestoration({
     identityId,clientId:grant.data.client_id,productCode:'COMMANDER7',
   });
-  if(!restored.confirmed)throw new Error('Acesso central ativo, mas reativação no Commander não confirmada.');
+  if(!restored.confirmed) {
+    console.warn('[access-regrant] Commander sync not confirmed', {reason:restored.reason});
+    throw new Error('Acesso central ativo, mas sincronização não confirmada ('+restored.reason+').');
+  }
   revalidatePath('/usuarios/'+identityId);
 }
