@@ -2,3 +2,6 @@ node_modules
 .next
 docs
 supabase/.temp
+
+# Generated Next.js favicon contains embedded base64 image data.
+src/app/icon.tsx
