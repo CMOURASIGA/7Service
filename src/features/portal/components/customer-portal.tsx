@@ -191,7 +191,7 @@ export function CustomerPortal({
   }
   function panel(items: PortalSystem[]) {
     return items.length ? (
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{items.map(card)}</div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{items.map(card)}</div>
     ) : (
       <div className="rounded-2xl border border-dashed border-border bg-white p-8">
         <h3 className="text-lg font-semibold">Nenhum sistema nesta categoria</h3>
@@ -214,10 +214,23 @@ export function CustomerPortal({
   );
 
   return (
-    <main className="mx-auto flex max-w-6xl flex-col gap-7 px-4 pb-10 sm:px-6">
-      <header className="-mx-4 flex items-center gap-4 bg-sidebar px-5 py-4 text-white sm:-mx-6">
-        <div className="flex size-10 items-center justify-center rounded-lg bg-white font-bold text-brand-700" aria-hidden="true">CS</div>
-        <div>
+    <main className="mx-auto flex w-full max-w-none flex-col gap-7 px-4 pb-10 sm:px-6 lg:px-10 2xl:px-16">
+      <header className="-mx-4 flex flex-wrap items-center gap-3 bg-sidebar px-5 py-4 text-white sm:-mx-6 sm:gap-4 lg:-mx-10 lg:px-10 2xl:-mx-16 2xl:px-16">
+        <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1">
+          {/* eslint-disable-next-line @next/next/no-img-element -- logo corporativo disponibilizado pela Consult Services */}
+          <img
+            src="https://i.imgur.com/wr0z5Xv.png"
+            alt="Logotipo Consult Services"
+            width={48}
+            height={48}
+            className="size-full object-contain"
+            onError={(event) => {
+              event.currentTarget.onerror = null;
+              event.currentTarget.src = 'https://i.imgur.com/gxXnYsA.png';
+            }}
+          />
+        </div>
+        <div className="min-w-0">
           <p className="font-semibold">Consult Services</p>
           <p className="text-xs text-blue-100">Access Management Service · Meu Portal</p>
         </div>
@@ -226,7 +239,7 @@ export function CustomerPortal({
           width={36}
           height={36}
           alt="Ícone do Access Management Service"
-          className="hidden size-9 rounded-lg sm:block"
+          className="hidden size-9 rounded-lg md:block"
           unoptimized
         />
         <div className="flex-1" />
@@ -234,13 +247,13 @@ export function CustomerPortal({
           type="button"
           onClick={openSearch}
           aria-label="Buscar sistema, atalho Control K"
-          className="min-h-11 rounded-lg border border-white/30 px-3 text-sm text-white focus-visible:outline-2"
+          className="min-h-11 shrink-0 rounded-lg border border-white/30 px-3 text-sm text-white focus-visible:outline-2"
         >
           Buscar <span className="hidden sm:inline">sistema · Ctrl+K</span>
         </button>
       </header>
 
-      <section className="grid gap-6 rounded-2xl bg-sidebar-deep px-6 py-8 text-white md:grid-cols-2 md:items-center">
+      <section className="grid gap-6 rounded-2xl bg-sidebar-deep px-5 py-8 text-white sm:px-7 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] lg:items-center lg:px-10 lg:py-10">
         <div>
           <h1 className="text-3xl font-semibold sm:text-4xl">{greeting}, {firstName}.</h1>
           <p className="mt-3 text-sm leading-6 text-blue-100">
