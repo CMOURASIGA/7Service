@@ -98,6 +98,26 @@ async function syncCommanderAccessChange(
       return { confirmed: false, reason: 'DESTINATION_PROTECTED' };
     }
     if (!response.ok) {
+      // Safe diagnostics, without identifiers, tokens or response payload.
+      // This makes one failed test sufficient to locate the rejected gate.
+      let remoteCode='UNCLASSIFIED';
+      try {
+        const responseBody:unknown=await response.json();
+        if(responseBody && typeof responseBody==='object' && 'error' in responseBody) {
+          const error=(responseBody as {error?:unknown}).error;
+          if(typeof error==='string') {
+            const known=['Unauthorized','Unsupported operation','Approved mapping required',
+              'Membership not found','Verified local identity required',
+              'Central confirmation unavailable','Central grant and local role must match',
+              'No recorded central suspension to restore','Membership state not restorable',
+              'Suspension provenance unavailable','Restoration not confirmed'];
+            if(known.includes(error))remoteCode=error.replace(/\\s+/g,'_').toUpperCase();
+          }
+        }
+      } catch { /* Never log arbitrary remote response contents. */ }
+      console.warn('[access-sync] destination rejected',{
+        operation, httpStatus:response.status, reason:remoteCode,
+      });
       return { confirmed: false, reason: 'DESTINATION_REJECTED' };
     }
     const result: unknown = await response.json();
