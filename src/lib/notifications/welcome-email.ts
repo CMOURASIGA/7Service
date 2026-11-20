@@ -1,13 +1,14 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { sendGmailSmtpMessage } from './gmail-smtp';
 
 const PORTAL_URL = 'https://portal.consultservices.com.br/entrar';
 
 /** Optional transactional welcome email, at most one attempt per identity. */
 export async function sendWelcomeEmailIfConfigured(authUserId: string): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.WELCOME_EMAIL_FROM;
-  if (!apiKey || !from) return;
+  const username = process.env.WELCOME_SMTP_USER;
+  const appPassword = process.env.WELCOME_SMTP_APP_PASSWORD;
+  if (!username || !appPassword) return;
   const db = createAdminClient();
   const { data: identity, error } = await db.from('identities')
     .select('id,email,first_name,status,activated_at')
@@ -37,24 +38,20 @@ export async function sendWelcomeEmailIfConfigured(authUserId: string): Promise<
   ].join('\n');
   let success = false;
   try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST', cache: 'no-store',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'Idempotency-Key': `consult-welcome-${identity.id}`,
-      },
-      body: JSON.stringify({
-        from, to: [identity.email],
-        subject: 'Seu acesso ao Portal Consult Services está pronto',
-        text,
-      }),
-      signal: AbortSignal.timeout(8000),
+    await sendGmailSmtpMessage({
+      username,
+      appPassword,
+      recipient: identity.email,
+      subject: 'Seu acesso ao Portal Consult Services está pronto',
+      text,
     });
-    success = response.ok;
-  } catch { success = false; }
+    success = true;
+  } catch {
+    // No SMTP response payload, credentials, or recipient is logged.
+    success = false;
+  }
   const update = await db.from('welcome_email_deliveries')
     .update({ status: success ? 'SENT' : 'FAILED', updated_at: new Date().toISOString() })
     .eq('identity_id', identity.id).eq('status', 'RESERVED');
-  if (update.error || !success) console.warn('[welcome-email] delivery not confirmed');
+  if (update.error || !success) console.warn('[welcome-email] SMTP acceptance not confirmed');
 }
