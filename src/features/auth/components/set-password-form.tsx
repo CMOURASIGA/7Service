@@ -21,6 +21,16 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
   const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
+    // A custom Supabase mail template or an old invitation can still contain
+    // a protected Vercel preview URL. Move the full URL, including the query
+    // and hash tokens, to the public portal before initializing Auth.
+    // Never let customers set their password under a preview origin.
+    if (/^7service-git-[a-z0-9-]+\\.vercel\\.app$/i.test(window.location.hostname)) {
+      const target = new URL(window.location.href);
+      target.host = '7service.vercel.app';
+      window.location.replace(target.toString());
+      return;
+    }
     // An expired invitation must not silently reuse a different account's
     // previously authenticated browser session.
     const queryError = new URLSearchParams(window.location.search).get('error');
@@ -61,11 +71,15 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
     void validateSession();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
+    } = supabase.auth.onAuthStateChange((event) => {
       if (!mounted) return;
-      // Re-validate the server-bound invite identity after any auth change.
-      // Do not authorize password updates merely because some session exists.
-      void validateSession();
+      // USER_UPDATED is fired when the invited user sets a password.
+      // Rechecking invite eligibility at that point races with activation:
+      // a successfully activated identity is no longer PENDING_INVITE.
+      // Never replace the password screen with the OTP screen for this event.
+      if (event === 'SIGNED_OUT') {
+        setValidSession(false);
+      }
     });
     return () => {
       mounted = false;
