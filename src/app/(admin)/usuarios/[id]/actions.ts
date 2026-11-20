@@ -206,7 +206,9 @@ export async function initiateRecoveryAction(identityId: string, _form: FormData
     .maybeSingle();
   if (error || !identity || !identity.auth_user_id || identity.status === 'REMOVED')
     throw new Error('Identidade nao habilitada para recuperacao.');
-  const { error: resetError } = await db.auth.resetPasswordForEmail(identity.email);
+  const { error: resetError } = await db.auth.resetPasswordForEmail(identity.email, {
+    redirectTo: 'https://7service.vercel.app/redefinir-senha',
+  });
   if (resetError) throw new Error('Nao foi possivel solicitar recuperacao.');
   const { error: auditError } = await db.from('audit_logs').insert({
     actor_internal_user_id: internalUser.id,
@@ -375,11 +377,8 @@ export async function resendPendingActivationAction(identityId: string, _form: F
   if (latest?.[0]?.sent_at && Date.now() - new Date(latest[0].sent_at).getTime() < 60000)
     throw new Error('Aguarde pelo menos 60 segundos antes de reenviar.');
 
-  const origin =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_ENV === 'preview'
-      ? 'https://7service-git-develop-christians-projects-4954426e.vercel.app'
-      : 'https://7service.vercel.app');
+  // Customer-facing password links must never target a protected preview.
+  const origin = 'https://7service.vercel.app';
   const { error: sendError } = await db.auth.resetPasswordForEmail(identity.email, {
     redirectTo: new URL('/redefinir-senha', origin).toString(),
   });
