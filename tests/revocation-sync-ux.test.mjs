@@ -61,3 +61,12 @@ test('regrant timestamp validator accepts milliseconds, rejects malformed and st
   const now=Date.now();
   assert.equal(Math.abs(now-(now-61_000))>60_000,true);
 });
+
+test('confirmed Commander restoration returns positive feedback and the dialog renders it', () => {
+  const actions=read('src/app/(admin)/usuarios/[id]/actions.ts');
+  const widget=read('src/components/ui/confirm-action.tsx');
+  assert.match(actions,/Reativação sincronizada e confirmada no Commander/);
+  assert.match(widget,/feedback\?\.success/);
+  assert.match(widget,/role="status"/);
+  assert.match(widget,/setFeedback\(\{ success: result\.success \}\)/);
+});
