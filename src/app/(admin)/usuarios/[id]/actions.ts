@@ -417,4 +417,5 @@ export async function retryCommanderRestorationAction(identityId:string, accessI
     throw new Error('Acesso central ativo, mas sincronização não confirmada ('+restored.reason+').');
   }
   revalidatePath('/usuarios/'+identityId);
+  return { success: 'Reativação sincronizada e confirmada no Commander. O acesso permanece ativo.' };
 }
