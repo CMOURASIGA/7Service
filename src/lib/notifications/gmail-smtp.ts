@@ -1,4 +1,3 @@
-import 'server-only';
 import { connect, type TLSSocket } from 'node:tls';
 import { once } from 'node:events';
 import { randomUUID } from 'node:crypto';
