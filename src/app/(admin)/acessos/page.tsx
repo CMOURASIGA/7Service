@@ -3,6 +3,7 @@ import { IconActionLink } from '@/components/ui/icon-action-link';
 
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { readCommanderAccountStates } from '@/lib/integrations/commander-account-status';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,7 @@ type AccessRow = {
   roleName: string;
   status: string;
   destination: string;
+  destinationDetail: string;
 };
 
 export default async function AccessManagementPage({
@@ -108,10 +110,44 @@ export default async function AccessManagementPage({
           roleName: role?.name ?? 'Perfil não identificado',
           status: valid ? 'Autorização ativa' : 'Sem autorização efetiva',
           destination: 'Não verificado',
+          destinationDetail: 'Consulta ao produto ainda não realizada',
         },
       ];
     })
     .sort((a, b) => a.companyName.localeCompare(b.companyName) || a.name.localeCompare(b.name));
+
+  // Read-only destination reconciliation. A failed check is never reported as
+  // confirmation, and the dashboard never provisions or modifies accounts.
+  const checks = rows
+    .filter((row) => row.productCode === 'COMMANDER7' && row.status === 'Autorização ativa')
+    .map((row) => ({
+      identityId: row.identityId,
+      clientId: row.companyId,
+      roleCode: (rolesResult.data ?? []).find((r) => r.name === row.roleName)?.code ?? '',
+    }));
+  const states = await readCommanderAccountStates(checks);
+  for (const row of rows) {
+    if (row.productCode !== 'COMMANDER7') continue;
+    if (row.status !== 'Autorização ativa') {
+      row.destination = 'Sem autorização efetiva';
+      row.destinationDetail = 'Concessão, identidade ou empresa não está ativa no Access';
+      continue;
+    }
+    const state = states.get(row.identityId + ':' + row.companyId);
+    if (state === 'CONFIRMED') {
+      row.destination = 'Conta confirmada';
+      row.destinationDetail = 'Conta ativa, vínculo empresarial e perfil confirmados pelo Commander';
+    } else if (state === 'PENDING') {
+      row.destination = 'Pendente';
+      row.destinationDetail = 'O Commander ainda não confirmou conta e vínculo ativos';
+    } else if (state === 'MISMATCH') {
+      row.destination = 'Divergente';
+      row.destinationDetail = 'Conta ou papel no Commander requer conciliação';
+    } else {
+      row.destination = 'Não verificado';
+      row.destinationDetail = 'Não foi possível consultar o Commander com segurança';
+    }
+  }
 
   const activeClients = clients.filter((client) => client.status === 'ACTIVE');
 
@@ -125,9 +161,9 @@ export default async function AccessManagementPage({
         </p>
       </header>
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-        A situação de provisionamento só poderá ser marcada como validada após uma consulta
-        autenticada ao sistema de destino. Sem confirmação técnica, a coluna indica &quot;Não
-        verificado&quot;. Nenhuma conta é criada automaticamente nesta tela.
+        A coluna de conta no produto consulta o Commander sem modificar acessos. Confirmado exige
+        conta, empresa e papel válidos no destino. Pendente não comprova que o convite foi aberto;
+        sem resposta técnica, mostramos Não verificado. Nenhuma conta é criada nesta tela.
       </div>
       <form
         action="/acessos"
@@ -180,7 +216,10 @@ export default async function AccessManagementPage({
                   <div className="text-xs text-slate-600">{row.roleName}</div>
                 </td>
                 <td className="p-3">{row.status}</td>
-                <td className="p-3">{row.destination}</td>
+                <td className="p-3">
+                  <span className="font-medium">{row.destination}</span>
+                  <p className="text-xs text-slate-600">{row.destinationDetail}</p>
+                </td>
                 <td className="p-3">
                   <IconActionLink
                     href={`/usuarios/${row.identityId}`}
