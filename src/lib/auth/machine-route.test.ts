@@ -24,6 +24,13 @@ describe('isMachineEntitlementRoute', () => {
     );
   });
 
+  it('passes only signed Commander regrant confirmation POST to its HMAC handler', () => {
+    expect(isMachineEntitlementRoute('/api/integrations/7commander/regrant-decision','POST')).toBe(true);
+    expect(isMachineEntitlementRoute('/api/integrations/7commander/regrant-decision','GET')).toBe(false);
+    expect(isMachineEntitlementRoute('/api/integrations/7clinic/regrant-decision','POST')).toBe(false);
+    expect(isMachineEntitlementRoute('/api/integrations/7commander/regrant-decision/extra','POST')).toBe(false);
+  });
+
   it('keeps private browser APIs and mutations protected', () => {
     expect(isMachineEntitlementRoute('/api/internal/contracts/1/documents', 'GET')).toBe(false);
     expect(
