@@ -12,7 +12,7 @@ describe('customer onboarding links', () => {
   });
   it('moves legacy preview invite links to the public portal preserving tokens', () => {
     const form = read('src/features/auth/components/set-password-form.tsx');
-    expect(form).toContain("target.host = '7service.vercel.app'");
+    expect(form).toContain("target.host = 'portal.consultservices.com.br'");
     expect(form).toContain("window.location.replace(target.toString())");
     expect(form).toContain('new URL(window.location.href)');
     expect(form).not.toContain("onAuthStateChange(() =>");
