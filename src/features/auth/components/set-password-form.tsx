@@ -61,11 +61,15 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
     void validateSession();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
+    } = supabase.auth.onAuthStateChange((event) => {
       if (!mounted) return;
-      // Re-validate the server-bound invite identity after any auth change.
-      // Do not authorize password updates merely because some session exists.
-      void validateSession();
+      // USER_UPDATED is fired when the invited user sets a password.
+      // Rechecking invite eligibility at that point races with activation:
+      // a successfully activated identity is no longer PENDING_INVITE.
+      // Never replace the password screen with the OTP screen for this event.
+      if (event === 'SIGNED_OUT') {
+        setValidSession(false);
+      }
     });
     return () => {
       mounted = false;
