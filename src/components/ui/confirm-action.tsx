@@ -39,13 +39,18 @@ export function ConfirmAction({
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className={`rounded-md border px-3 py-1.5 text-sm font-medium ${buttonClass}`}
-      >
-        {triggerLabel}
-      </button>
+      <div className="flex flex-col items-start gap-1">
+        <button
+          type="button"
+          onClick={() => { setFeedback(null); setOpen(true); }}
+          className={`rounded-md border px-3 py-1.5 text-sm font-medium ${buttonClass}`}
+        >
+          {triggerLabel}
+        </button>
+        {feedback?.success ? (
+          <p role="status" className="text-sm text-green-800">{feedback.success}</p>
+        ) : null}
+      </div>
     );
   }
 
