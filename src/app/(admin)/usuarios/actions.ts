@@ -268,7 +268,7 @@ export async function createIdentityMembershipAction(
     // Customer invitations must always direct the recipient to the public
     // production portal, even when an internal operator uses a preview.
     // Preview SSO is protected by Vercel and must not be emailed to customers.
-    const siteOrigin = 'https://7service.vercel.app';
+    const siteOrigin = 'https://portal.consultservices.com.br';
     const { data: invited, error: inviteError } = await db.auth.admin.inviteUserByEmail(email, {
       redirectTo: new URL('/aceitar-convite', siteOrigin).toString(),
     });

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { sendWelcomeEmailIfConfigured } from '@/lib/notifications/welcome-email';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,5 +25,8 @@ export async function POST() {
       { status: 403, headers: { 'Cache-Control': 'no-store' } },
     );
   }
+  // Transactional delivery failures never invalidate a completed activation.
+  try { await sendWelcomeEmailIfConfigured(user.id); }
+  catch { console.warn('[welcome-email] delivery exception'); }
   return NextResponse.json({ activated: true }, { headers: { 'Cache-Control': 'no-store' } });
 }

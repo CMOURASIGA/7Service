@@ -207,7 +207,7 @@ export async function initiateRecoveryAction(identityId: string, _form: FormData
   if (error || !identity || !identity.auth_user_id || identity.status === 'REMOVED')
     throw new Error('Identidade nao habilitada para recuperacao.');
   const { error: resetError } = await db.auth.resetPasswordForEmail(identity.email, {
-    redirectTo: 'https://7service.vercel.app/redefinir-senha',
+    redirectTo: 'https://portal.consultservices.com.br/redefinir-senha',
   });
   if (resetError) throw new Error('Nao foi possivel solicitar recuperacao.');
   const { error: auditError } = await db.from('audit_logs').insert({
@@ -378,7 +378,7 @@ export async function resendPendingActivationAction(identityId: string, _form: F
     throw new Error('Aguarde pelo menos 60 segundos antes de reenviar.');
 
   // Customer-facing password links must never target a protected preview.
-  const origin = 'https://7service.vercel.app';
+  const origin = 'https://portal.consultservices.com.br';
   const { error: sendError } = await db.auth.resetPasswordForEmail(identity.email, {
     redirectTo: new URL('/redefinir-senha', origin).toString(),
   });

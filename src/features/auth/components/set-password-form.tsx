@@ -27,7 +27,7 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
     // Never let customers set their password under a preview origin.
     if (/^7service-git-[a-z0-9-]+\\.vercel\\.app$/i.test(window.location.hostname)) {
       const target = new URL(window.location.href);
-      target.host = '7service.vercel.app';
+      target.host = 'portal.consultservices.com.br';
       window.location.replace(target.toString());
       return;
     }
