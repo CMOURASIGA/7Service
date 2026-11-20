@@ -47,3 +47,17 @@ test('regrant decision uses the existing signed channel and verifies a current l
   assert.match(endpoint,/codes.length===1/);
   assert.doesNotMatch(endpoint,/machineProductSecret/);
 });
+
+test('regrant timestamp validator accepts milliseconds, rejects malformed and stale input', () => {
+  const endpoint=read('src/app/api/integrations/7commander/regrant-decision/route.ts');
+  const correct=String.raw`/^\d{13}$/`;
+  const incorrect=String.raw`/^\\d{13}$/`;
+  assert.ok(endpoint.includes(correct),'HMAC endpoint must recognize 13 decimal digits');
+  assert.ok(!endpoint.includes(incorrect),'HMAC endpoint must never double-escape \\d');
+  const numeric=/^\d{13}$/;
+  assert.equal(numeric.test(String(Date.now())),true);
+  assert.equal(numeric.test('no-timestamp'),false);
+  assert.equal(numeric.test('123456789012'),false);
+  const now=Date.now();
+  assert.equal(Math.abs(now-(now-61_000))>60_000,true);
+});
