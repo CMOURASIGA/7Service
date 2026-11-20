@@ -3,6 +3,7 @@ import { IconActionLink } from '@/components/ui/icon-action-link';
 
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { readCommanderAccountStates } from '@/lib/integrations/commander-account-status';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,8 +20,11 @@ type AccessRow = {
   productName: string;
   productCode: string;
   roleName: string;
+  roleCode: string;
   status: string;
   destination: string;
+  destinationDetail: string;
+  invitation: string;
 };
 
 export default async function AccessManagementPage({
@@ -41,6 +45,7 @@ export default async function AccessManagementPage({
     grantsResult,
     productsResult,
     rolesResult,
+    invitationsResult,
   ] = await Promise.all([
     db.from('clients').select('id,legal_name,trade_name,status').order('legal_name'),
     db.from('identities').select('id,first_name,last_name,email,status,auth_user_id'),
@@ -51,6 +56,7 @@ export default async function AccessManagementPage({
       .select('id,identity_id,client_id,subscription_id,product_role_id,status'),
     db.from('products').select('id,code,name,status'),
     db.from('product_roles').select('id,name,code,status'),
+    db.from('invitations').select('identity_id,status,sent_at,accepted_at').order('created_at', { ascending: false }),
   ]);
 
   if (
@@ -62,12 +68,18 @@ export default async function AccessManagementPage({
       grantsResult,
       productsResult,
       rolesResult,
+      invitationsResult,
     ].some((result) => result.error)
   ) {
     throw new Error('Falha ao consultar concessões. Nenhum acesso foi alterado.');
   }
 
   const clients = clientsResult.data ?? [];
+  const latestInvitation = new Map<string, { status: string; sent_at: string | null; accepted_at: string | null }>();
+  for (const invitation of invitationsResult.data ?? []) {
+    if (!latestInvitation.has(invitation.identity_id))
+      latestInvitation.set(invitation.identity_id, invitation);
+  }
   const identities = new Map((identitiesResult.data ?? []).map((item) => [item.id, item]));
   const memberships = new Set(
     (membershipsResult.data ?? [])
@@ -106,12 +118,55 @@ export default async function AccessManagementPage({
           productName: product.name,
           productCode: product.code,
           roleName: role?.name ?? 'Perfil não identificado',
+          roleCode: role?.code ?? '',
           status: valid ? 'Autorização ativa' : 'Sem autorização efetiva',
           destination: 'Não verificado',
+          destinationDetail: 'Consulta ao produto ainda não realizada',
+          invitation: (() => {
+            const invite = latestInvitation.get(identity.id);
+            if (invite?.status === 'ACCEPTED') return 'Convite aceito';
+            if (invite?.status === 'SENT') return 'Convite enviado';
+            if (invite?.status === 'CANCELLED') return 'Convite cancelado';
+            if (identity.status === 'PENDING_INVITE') return 'Ativação pendente';
+            return 'Sem convite registrado';
+          })(),
         },
       ];
     })
     .sort((a, b) => a.companyName.localeCompare(b.companyName) || a.name.localeCompare(b.name));
+
+  // Read-only destination reconciliation. A failed check is never reported as
+  // confirmation, and the dashboard never provisions or modifies accounts.
+  const checks = rows
+    .filter((row) => row.productCode === 'COMMANDER7' && row.status === 'Autorização ativa')
+    .map((row) => ({
+      identityId: row.identityId,
+      clientId: row.companyId,
+      roleCode: row.roleCode,
+    }));
+  const states = await readCommanderAccountStates(checks);
+  for (const row of rows) {
+    if (row.productCode !== 'COMMANDER7') continue;
+    if (row.status !== 'Autorização ativa') {
+      row.destination = 'Sem autorização efetiva';
+      row.destinationDetail = 'Concessão, identidade ou empresa não está ativa no Access';
+      continue;
+    }
+    const state = states.get(row.identityId + ':' + row.companyId);
+    if (state === 'CONFIRMED') {
+      row.destination = 'Conta confirmada';
+      row.destinationDetail = 'Conta ativa, vínculo empresarial e perfil confirmados pelo Commander';
+    } else if (state === 'PENDING') {
+      row.destination = 'Pendente';
+      row.destinationDetail = 'O Commander ainda não confirmou conta e vínculo ativos';
+    } else if (state === 'MISMATCH') {
+      row.destination = 'Divergente';
+      row.destinationDetail = 'Conta ou papel no Commander requer conciliação';
+    } else {
+      row.destination = 'Não verificado';
+      row.destinationDetail = 'Não foi possível consultar o Commander com segurança';
+    }
+  }
 
   const activeClients = clients.filter((client) => client.status === 'ACTIVE');
 
@@ -125,9 +180,10 @@ export default async function AccessManagementPage({
         </p>
       </header>
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-        A situação de provisionamento só poderá ser marcada como validada após uma consulta
-        autenticada ao sistema de destino. Sem confirmação técnica, a coluna indica &quot;Não
-        verificado&quot;. Nenhuma conta é criada automaticamente nesta tela.
+        Convite aceito confirma a ativação no Access, não o primeiro login no Commander.
+        A coluna de conta no produto consulta o Commander sem modificar acessos. Confirmado exige
+        conta, empresa e papel válidos no destino. Pendente não comprova que o convite foi aberto;
+        sem resposta técnica, mostramos Não verificado. Nenhuma conta é criada nesta tela.
       </div>
       <form
         action="/acessos"
@@ -159,6 +215,7 @@ export default async function AccessManagementPage({
               <th className="p-3">Empresa</th>
               <th className="p-3">Pessoa</th>
               <th className="p-3">Produto e papel</th>
+              <th className="p-3">Convite</th>
               <th className="p-3">Concessão central</th>
               <th className="p-3">Conta no produto</th>
               <th className="p-3">Ações</th>
@@ -179,8 +236,12 @@ export default async function AccessManagementPage({
                   {row.productName}
                   <div className="text-xs text-slate-600">{row.roleName}</div>
                 </td>
+                <td className="p-3">{row.invitation}</td>
                 <td className="p-3">{row.status}</td>
-                <td className="p-3">{row.destination}</td>
+                <td className="p-3">
+                  <span className="font-medium">{row.destination}</span>
+                  <p className="text-xs text-slate-600">{row.destinationDetail}</p>
+                </td>
                 <td className="p-3">
                   <IconActionLink
                     href={`/usuarios/${row.identityId}`}
