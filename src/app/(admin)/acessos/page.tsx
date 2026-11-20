@@ -24,6 +24,7 @@ type AccessRow = {
   status: string;
   destination: string;
   destinationDetail: string;
+  invitation: string;
 };
 
 export default async function AccessManagementPage({
@@ -44,6 +45,7 @@ export default async function AccessManagementPage({
     grantsResult,
     productsResult,
     rolesResult,
+    invitationsResult,
   ] = await Promise.all([
     db.from('clients').select('id,legal_name,trade_name,status').order('legal_name'),
     db.from('identities').select('id,first_name,last_name,email,status,auth_user_id'),
@@ -54,6 +56,7 @@ export default async function AccessManagementPage({
       .select('id,identity_id,client_id,subscription_id,product_role_id,status'),
     db.from('products').select('id,code,name,status'),
     db.from('product_roles').select('id,name,code,status'),
+    db.from('invitations').select('identity_id,status,sent_at,accepted_at').order('created_at', { ascending: false }),
   ]);
 
   if (
@@ -65,12 +68,18 @@ export default async function AccessManagementPage({
       grantsResult,
       productsResult,
       rolesResult,
+      invitationsResult,
     ].some((result) => result.error)
   ) {
     throw new Error('Falha ao consultar concessões. Nenhum acesso foi alterado.');
   }
 
   const clients = clientsResult.data ?? [];
+  const latestInvitation = new Map<string, { status: string; sent_at: string | null; accepted_at: string | null }>();
+  for (const invitation of invitationsResult.data ?? []) {
+    if (!latestInvitation.has(invitation.identity_id))
+      latestInvitation.set(invitation.identity_id, invitation);
+  }
   const identities = new Map((identitiesResult.data ?? []).map((item) => [item.id, item]));
   const memberships = new Set(
     (membershipsResult.data ?? [])
@@ -113,6 +122,14 @@ export default async function AccessManagementPage({
           status: valid ? 'Autorização ativa' : 'Sem autorização efetiva',
           destination: 'Não verificado',
           destinationDetail: 'Consulta ao produto ainda não realizada',
+          invitation: (() => {
+            const invite = latestInvitation.get(identity.id);
+            if (invite?.status === 'ACCEPTED') return 'Convite aceito';
+            if (invite?.status === 'SENT') return 'Convite enviado';
+            if (invite?.status === 'CANCELLED') return 'Convite cancelado';
+            if (identity.status === 'PENDING_INVITE') return 'Ativação pendente';
+            return 'Sem convite registrado';
+          })(),
         },
       ];
     })
@@ -163,6 +180,7 @@ export default async function AccessManagementPage({
         </p>
       </header>
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+        Convite aceito confirma a ativação no Access, não o primeiro login no Commander.
         A coluna de conta no produto consulta o Commander sem modificar acessos. Confirmado exige
         conta, empresa e papel válidos no destino. Pendente não comprova que o convite foi aberto;
         sem resposta técnica, mostramos Não verificado. Nenhuma conta é criada nesta tela.
@@ -197,6 +215,7 @@ export default async function AccessManagementPage({
               <th className="p-3">Empresa</th>
               <th className="p-3">Pessoa</th>
               <th className="p-3">Produto e papel</th>
+              <th className="p-3">Convite</th>
               <th className="p-3">Concessão central</th>
               <th className="p-3">Conta no produto</th>
               <th className="p-3">Ações</th>
@@ -217,6 +236,7 @@ export default async function AccessManagementPage({
                   {row.productName}
                   <div className="text-xs text-slate-600">{row.roleName}</div>
                 </td>
+                <td className="p-3">{row.invitation}</td>
                 <td className="p-3">{row.status}</td>
                 <td className="p-3">
                   <span className="font-medium">{row.destination}</span>
