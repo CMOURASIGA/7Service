@@ -10,9 +10,12 @@ export async function sendWelcomeEmailIfConfigured(authUserId: string): Promise<
   if (!apiKey || !from) return;
   const db = createAdminClient();
   const { data: identity, error } = await db.from('identities')
-    .select('id,email,first_name,status')
+    .select('id,email,first_name,status,activated_at')
     .eq('auth_user_id', authUserId).eq('status', 'ACTIVE').maybeSingle();
-  if (error || !identity?.id || !identity.email) return;
+  if (error || !identity?.id || !identity.email || !identity.activated_at) return;
+  const activationAge = Date.now() - new Date(identity.activated_at).getTime();
+  // Recoveries of an already active account must not trigger welcome emails.
+  if (!Number.isFinite(activationAge) || activationAge < 0 || activationAge > 15 * 60 * 1000) return;
 
   const reserved = await db.from('welcome_email_deliveries')
     .insert({ identity_id: identity.id, status: 'RESERVED' })

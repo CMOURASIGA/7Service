@@ -25,7 +25,7 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
     // a protected Vercel preview URL. Move the full URL, including the query
     // and hash tokens, to the public portal before initializing Auth.
     // Never let customers set their password under a preview origin.
-    if (/^7service-git-[a-z0-9-]+\\.vercel\\.app$/i.test(window.location.hostname)) {
+    if (/^7service-git-[a-z0-9-]+\.vercel\.app$/i.test(window.location.hostname)) {
       const target = new URL(window.location.href);
       target.host = 'portal.consultservices.com.br';
       window.location.replace(target.toString());

@@ -15,6 +15,7 @@ describe('customer onboarding links', () => {
     expect(form).toContain("target.host = 'portal.consultservices.com.br'");
     expect(form).toContain("window.location.replace(target.toString())");
     expect(form).toContain('new URL(window.location.href)');
+    expect(form).toContain(String.raw`/^7service-git-[a-z0-9-]+\.vercel\.app$/i`);
     expect(form).not.toContain("onAuthStateChange(() =>");
     expect(form).toContain("event === 'SIGNED_OUT'");
   });
