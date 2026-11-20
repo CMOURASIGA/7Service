@@ -7,7 +7,7 @@ export function isMachineEntitlementRoute(path: string, method: string): boolean
     return /^\/api\/integrations\/(?:7commander|7clinic)\/entitlements\/[^/]+$/i.test(path);
   }
   if (method.toUpperCase() === 'POST') {
-    return /^\\/api\\/integrations\\/(?:7commander|7clinic)\\/access\\/[^/]+$/i.test(path) ||
+    return /^\/api\/integrations\/(?:7commander|7clinic)\/access\/[^/]+$/i.test(path) ||
       path === '/api/integrations/7commander/regrant-decision';
   }
   return false;
