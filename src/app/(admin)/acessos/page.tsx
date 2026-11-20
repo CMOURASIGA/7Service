@@ -20,6 +20,7 @@ type AccessRow = {
   productName: string;
   productCode: string;
   roleName: string;
+  roleCode: string;
   status: string;
   destination: string;
   destinationDetail: string;
@@ -108,6 +109,7 @@ export default async function AccessManagementPage({
           productName: product.name,
           productCode: product.code,
           roleName: role?.name ?? 'Perfil não identificado',
+          roleCode: role?.code ?? '',
           status: valid ? 'Autorização ativa' : 'Sem autorização efetiva',
           destination: 'Não verificado',
           destinationDetail: 'Consulta ao produto ainda não realizada',
@@ -123,7 +125,7 @@ export default async function AccessManagementPage({
     .map((row) => ({
       identityId: row.identityId,
       clientId: row.companyId,
-      roleCode: (rolesResult.data ?? []).find((r) => r.name === row.roleName)?.code ?? '',
+      roleCode: row.roleCode,
     }));
   const states = await readCommanderAccountStates(checks);
   for (const row of rows) {
