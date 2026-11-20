@@ -17,7 +17,7 @@ export async function POST(request:Request) {
   const secret=process.env.SERVICE_COMMANDER_REVOCATION_SECRET;
   const stamp=request.headers.get('x-7service-timestamp') ?? '';
   const sig=request.headers.get('x-7service-signature') ?? '';
-  if(!secret || secret.length<32 || !/^\\d{13}$/.test(stamp) ||
+  if(!secret || secret.length<32 || !/^\d{13}$/.test(stamp) ||
      Math.abs(Date.now()-Number(stamp))>60000 || !/^[a-f0-9]{64}$/i.test(sig))
     return NextResponse.json({error:'Unauthorized'},{status:401});
   const raw=await request.text();
