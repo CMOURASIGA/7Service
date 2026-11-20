@@ -8,6 +8,35 @@ export type Database = {
   };
   public: {
     Tables: {
+      welcome_email_deliveries: {
+        Row: {
+          identity_id: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          identity_id: string;
+          status: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          identity_id?: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'welcome_email_deliveries_identity_id_fkey';
+            columns: ['identity_id'];
+            isOneToOne: true;
+            referencedRelation: 'identities';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       audit_logs: {
         Row: {
           action: string;
