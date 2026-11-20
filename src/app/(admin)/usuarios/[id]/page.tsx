@@ -22,6 +22,7 @@ import {
   revokeAccessAction,
   initiateRecoveryAction,
   grantAccessAction,
+  retryCommanderRestorationAction,
   correctPendingIdentityEmailAction,
   resendPendingActivationAction,
   prepareSuspendedIdentityInviteAction,
@@ -79,7 +80,10 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
   ]);
   if (productsResult.error || rolesResult.error)
     throw new Error('Falha ao consultar perfis dos produtos');
-  const alreadyGranted = new Set((accesses.data ?? []).map((x) => x.subscription_id));
+  // A REVOKED grant is immutable history and must not consume the next license.
+  const alreadyGranted = new Set((accesses.data ?? [])
+    .filter((x) => x.status !== 'REVOKED' && x.status !== 'EXPIRED')
+    .map((x) => x.subscription_id));
   const productsById = new Map((productsResult.data ?? []).map((x) => [x.id, x]));
   const grantOptions: GrantableSubscription[] = (candidateSubscriptions.data ?? [])
     .filter((x) => !alreadyGranted.has(x.id) && productsById.has(x.product_id))
@@ -342,6 +346,15 @@ export default async function IdentityDetailPage({ params }: { params: Promise<{
                     <StatusBadge label={info.label} tone={info.tone} />
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    {a.status === 'ACTIVE' &&
+                    ['Commander','7Commander'].includes(a.subscriptions?.products?.name ?? '') ? (
+                      <ConfirmAction
+                        triggerLabel="Sincronizar reativação no Commander"
+                        impactMessage="O Commander verifica novamente a licença e o papel no Access antes de restaurar o vínculo. Não cria outra conta."
+                        action={retryCommanderRestorationAction.bind(null, id, a.id)}
+                        confirmLabel="Sincronizar"
+                      />
+                    ) : null}
                     {a.status === 'ACTIVE' ? (
                       <ConfirmAction
                         triggerLabel="Suspender"

@@ -170,8 +170,24 @@ export function SetPasswordForm({ mode }: { mode: 'invite' | 'recovery' }) {
       router.refresh();
       return;
     }
-    await supabase.auth.signOut();
-    router.replace('/login?password_updated=1');
+    // Customer recovery must return to the customer portal, never the
+    // internal administrator login. Only internal operators use that login.
+    // A failed permission check is not grounds to grant administrator access.
+    let internalStatus: number | null = null;
+    try {
+      const result = await fetch('/api/auth/internal-access', {
+        credentials: 'same-origin', cache: 'no-store',
+      });
+      internalStatus = result.status;
+    } catch {
+      // Remain in the authenticated customer session, fail closed for admin.
+    }
+    if (internalStatus === 200) {
+      await supabase.auth.signOut();
+      router.replace('/login?password_updated=1');
+    } else {
+      router.replace('/meus-sistemas');
+    }
     router.refresh();
   }
 

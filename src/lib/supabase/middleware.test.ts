@@ -50,6 +50,25 @@ describe('authentication middleware HTTP contract', () => {
     expect(response.headers.get('location')).toBeNull();
   });
 
+  it('passes anonymous signed regrant route to the HMAC handler, not the browser session gate', async () => {
+    mocks.getUser.mockResolvedValue({ data: { user: null } });
+    const response = await updateSession(new NextRequest(
+      'https://7service.example.test/api/integrations/7commander/regrant-decision',
+      {method:'POST'},
+    ));
+    expect(response.status).toBe(200);
+    expect(response.headers.get('location')).toBeNull();
+  });
+
+  it('still rejects anonymous browser GET to the regrant endpoint', async () => {
+    mocks.getUser.mockResolvedValue({ data: { user: null } });
+    const response = await updateSession(new NextRequest(
+      'https://7service.example.test/api/integrations/7commander/regrant-decision',
+      {method:'GET'},
+    ));
+    expect(response.status).toBe(401);
+  });
+
   it('keeps other unauthenticated administrative endpoints protected', async () => {
     mocks.getUser.mockResolvedValue({ data: { user: null } });
     const response = await updateSession(

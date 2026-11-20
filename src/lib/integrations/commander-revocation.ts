@@ -26,8 +26,9 @@ export type RevocationSyncResult =
  * independently resolves both central IDs through its approved mappings.
  * Never send user email, a database key, or a destination user ID.
  */
-export async function syncCommanderRevocation(
+async function syncCommanderAccessChange(
   scope: RevocationScope,
+  operation: 'SUSPEND' | 'RESTORE',
 ): Promise<RevocationSyncResult> {
   const destination = process.env.SERVICE_COMMANDER_REVOCATION_URL;
   const secret = process.env.SERVICE_COMMANDER_REVOCATION_SECRET;
@@ -52,7 +53,7 @@ export async function syncCommanderRevocation(
       identityId: scope.identityId,
       clientId: scope.clientId,
       productCode: scope.productCode,
-      operation: 'SUSPEND',
+      operation,
     });
     const signature = createHmac('sha256', secret)
       .update(timestamp + '.' + body)
@@ -97,6 +98,26 @@ export async function syncCommanderRevocation(
       return { confirmed: false, reason: 'DESTINATION_PROTECTED' };
     }
     if (!response.ok) {
+      // Safe diagnostics, without identifiers, tokens or response payload.
+      // This makes one failed test sufficient to locate the rejected gate.
+      let remoteCode='UNCLASSIFIED';
+      try {
+        const responseBody:unknown=await response.json();
+        if(responseBody && typeof responseBody==='object' && 'error' in responseBody) {
+          const error=(responseBody as {error?:unknown}).error;
+          if(typeof error==='string') {
+            const known=['Unauthorized','Unsupported operation','Approved mapping required',
+              'Membership not found','Verified local identity required',
+              'Central confirmation unavailable','Central grant and local role must match',
+              'No recorded central suspension to restore','Membership state not restorable',
+              'Suspension provenance unavailable','Restoration not confirmed'];
+            if(known.includes(error))remoteCode=error.replace(/\\s+/g,'_').toUpperCase();
+          }
+        }
+      } catch { /* Never log arbitrary remote response contents. */ }
+      console.warn('[access-sync] destination rejected',{
+        operation, httpStatus:response.status, reason:remoteCode,
+      });
       return { confirmed: false, reason: 'DESTINATION_REJECTED' };
     }
     const result: unknown = await response.json();
@@ -110,4 +131,13 @@ export async function syncCommanderRevocation(
     return { confirmed: false, reason: 'DESTINATION_UNAVAILABLE' };
   }
   return { confirmed: false, reason: 'UNCONFIRMED' };
+}
+
+/** Called only after the administrator has issued a new, active central grant. */
+export async function syncCommanderRestoration(scope: RevocationScope): Promise<RevocationSyncResult> {
+  return syncCommanderAccessChange(scope, 'RESTORE');
+}
+
+export async function syncCommanderRevocation(scope: RevocationScope): Promise<RevocationSyncResult> {
+  return syncCommanderAccessChange(scope, 'SUSPEND');
 }
