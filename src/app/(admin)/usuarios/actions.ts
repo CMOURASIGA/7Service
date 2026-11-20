@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
 
 import { requirePermission } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -266,13 +265,10 @@ export async function createIdentityMembershipAction(
     resentInvite = !createdIdentity && !createdMembership;
     // Preview invite links must land on a public password-setup page.
     // Configure the URL under Supabase Auth > URL Configuration redirect allowlist.
-    const siteOrigin =
-      process.env.NEXT_PUBLIC_SITE_URL ??
-      (process.env.VERCEL_ENV === 'preview'
-        ? 'https://7service-git-develop-christians-projects-4954426e.vercel.app'
-        : process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}`
-          : ((await headers()).get('origin') ?? 'http://localhost:3000'));
+    // Customer invitations must always direct the recipient to the public
+    // production portal, even when an internal operator uses a preview.
+    // Preview SSO is protected by Vercel and must not be emailed to customers.
+    const siteOrigin = 'https://7service.vercel.app';
     const { data: invited, error: inviteError } = await db.auth.admin.inviteUserByEmail(email, {
       redirectTo: new URL('/aceitar-convite', siteOrigin).toString(),
     });
