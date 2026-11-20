@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { machineProductSecret, tokenMatches } from '@/lib/integrations/machine-auth';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { subscriptionInAccessWindow } from '@/lib/integrations/subscription-validity';
 
 export const runtime = 'nodejs';
@@ -11,13 +11,26 @@ const denied = () => NextResponse.json({ allowed:false, roleCodes:[] }, {headers
  * The signed restoration request does NOT authorize an identity by itself.
  */
 export async function POST(request:Request) {
-  if (!tokenMatches(request.headers.get('authorization'),machineProductSecret('7COMMANDER')))
+  // The same signed channel used for central suspension is reused for the
+  // read-only entitlement verification. Do not depend on an unrelated legacy
+  // product-machine token that may not be configured on both applications.
+  const secret=process.env.SERVICE_COMMANDER_REVOCATION_SECRET;
+  const stamp=request.headers.get('x-7service-timestamp') ?? '';
+  const sig=request.headers.get('x-7service-signature') ?? '';
+  if(!secret || secret.length<32 || !/^\\d{13}$/.test(stamp) ||
+     Math.abs(Date.now()-Number(stamp))>60000 || !/^[a-f0-9]{64}$/i.test(sig))
+    return NextResponse.json({error:'Unauthorized'},{status:401});
+  const raw=await request.text();
+  if(raw.length>1000)return NextResponse.json({error:'Payload too large'},{status:400});
+  const expected=createHmac('sha256',secret).update(stamp+'.'+raw).digest();
+  if(!timingSafeEqual(expected,Buffer.from(sig,'hex')))
     return NextResponse.json({error:'Unauthorized'},{status:401});
   let input:unknown;
-  try { input=await request.json(); } catch {return NextResponse.json({error:'Invalid JSON'},{status:400});}
+  try { input=JSON.parse(raw); } catch {return NextResponse.json({error:'Invalid JSON'},{status:400});}
   if (!input || typeof input!=='object')return denied();
   const v=input as Record<string,unknown>;
-  if(typeof v.identityId!=='string'||!uuid.test(v.identityId)||
+  if(v.operation!=='CHECK_REGRANT' || v.productCode!=='COMMANDER7' ||
+     typeof v.identityId!=='string'||!uuid.test(v.identityId)||
      typeof v.clientId!=='string'||!uuid.test(v.clientId))return denied();
   const db=createAdminClient();
   const [identity,client,membership,product]=await Promise.all([
